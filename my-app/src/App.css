@@ -1,0 +1,55 @@
+.maincontainer {
+  background-color: #1a1a1a;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 40px 20px;
+  box-sizing: border-box;
+  position: relative;
+}
+.logo{
+  position: absolute;
+  left: 0;
+  top:0;
+  margin-top: 40px;
+  margin-left:100px ;
+  color: white;
+}
+.daily-checkin-container {
+  display: flex;
+  flex-wrap: wrap;  /* ✅ Allow wrapping on small screens */
+  gap: 20px;
+  width: 100%;
+  max-width: 1500px; /* ✅ Prevent stretching too wide */
+  justify-content: flex-start;
+  margin-top: 100px;
+  margin-bottom: 30px;
+}
+.container1st{
+
+  width: 100%;
+  height: 400px;
+  max-width: 1540px; /* ✅ Prevent stretching too wide */
+  display: flex;
+  gap: 30px;
+}
+.pfp{
+  background-color: aliceblue;
+  width: 400px;
+  min-width:400px;
+  border-radius: 50px;
+  overflow: hidden;
+}
+.dynamicpfp{
+  width: 100%;
+  height: 100%;
+  object-fit: cover top;
+
+}
+.othercontainer1boxes{
+  background-color: red;
+  width: 100%;
+}
