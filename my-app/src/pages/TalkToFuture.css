@@ -1,0 +1,247 @@
+/* TalkToFuture.css (scoped version)
+   ONLY affects elements inside .vintage-root
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Great+Vibes&display=swap');
+
+/* Scope variables and base styles to avoid leaking */
+.vintage-root{
+  --v-bg-1: #efe6d6; /* light warm */
+  --v-bg-2: #f6f0e3; /* parchment mid */
+  --v-accent: #6b3a7a; /* deep plum */
+  --v-ink: #1a1a1a;
+  --muted: #6b5f58;
+  --card-radius: 18px;
+
+  /* layout for this component only */
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 36px;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--v-ink);
+  background:
+    radial-gradient(circle at 10% 10%, rgba(0,0,0,0.02), transparent 8%),
+    linear-gradient(180deg, #fbf8f3 0%, #efe6d6 100%);
+  z-index: 0;
+}
+
+/* limit box-sizing to component subtree */
+.vintage-root *, .vintage-root *::before, .vintage-root *::after {
+  box-sizing: border-box;
+}
+
+/* subtle grain overlay, scoped to vintage-root */
+.vintage-root::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.02' /></svg>");
+  opacity:0.9;
+}
+
+/* component inner width cap */
+.vintage-root .page-root{
+  width:100%;
+  max-width:1000px;
+  z-index:1; /* above the grain */
+}
+
+/* card */
+.vintage-root .card{
+  background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(250,245,240,0.94));
+  border-radius:var(--card-radius);
+  box-shadow: 0 30px 80px rgba(34,20,12,0.18);
+  padding:28px;
+  border: 1px solid rgba(0,0,0,0.06);
+  position: relative;
+  z-index: 2;
+}
+
+.vintage-root .card-header h1{
+  margin:0;
+  font-size:28px;
+  letter-spacing:-0.2px;
+  color:var(--v-accent);
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.vintage-root .subtitle{
+  margin:6px 0 0 0;
+  color:var(--muted);
+  font-size:14px;
+}
+
+.vintage-root .form{margin-top:18px}
+.vintage-root .label{display:block;color:var(--muted);margin-bottom:8px;font-size:13px}
+
+.vintage-root textarea{
+  width:100%;
+  border-radius:10px;
+  border:1px solid rgba(20,20,20,0.06);
+  padding:12px;
+  font-size:15px;
+  resize:vertical;
+  min-height:120px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(250,245,240,0.9));
+  font-family: inherit;
+}
+
+.vintage-root .actions{
+  margin-top:12px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.vintage-root .btn{
+  border:0;
+  padding:10px 16px;
+  border-radius:10px;
+  font-weight:600;
+  cursor:pointer;
+  font-size:14px;
+}
+
+.vintage-root .btn.primary{
+  background: linear-gradient(90deg, var(--v-accent), #8b5fbf);
+  color:white;
+  box-shadow: 0 8px 24px rgba(107,58,122,0.18);
+}
+
+.vintage-root .btn.ghost{
+  background:transparent;
+  border:1px solid rgba(20,20,20,0.06);
+  color:#111827;
+}
+
+.vintage-root .btn[disabled]{opacity:0.6;cursor:not-allowed}
+
+.vintage-root .error{
+  color:#b91c1c;
+  margin-top:10px;
+  font-size:13px;
+}
+
+.vintage-root .note{
+  margin-top:14px;
+  color:var(--muted);
+  font-size:12px;
+}
+
+/* ---------- Parchment / Travelled-letter styles (enhanced) ---------- */
+.vintage-root .letter-wrap{margin-top:20px;display:flex;justify-content:center}
+.vintage-root .parchment{
+  width:100%;
+  max-width:760px;
+  position:relative;
+  padding:26px 32px;
+  border-radius:6px;
+  background: linear-gradient(180deg,#f9f1dc 0%, #efd9a8 70%);
+  box-shadow: 0 30px 60px rgba(24,16,8,0.18), inset 0 6px 30px rgba(255,255,255,0.12);
+  border: 1px solid rgba(0,0,0,0.06);
+  overflow:visible;
+  transform: rotate(-0.6deg);
+  z-index: 3;
+}
+
+/* jagged torn edges using clip-path */
+.vintage-root .parchment{
+  clip-path: polygon(
+    0 2%, 3% 1%, 7% 4%, 11% 2%, 17% 6%, 23% 3%, 29% 7%, 36% 4%, 42% 8%,
+    48% 3%, 54% 8%, 61% 4%, 68% 9%, 74% 5%, 80% 10%, 86% 6%, 92% 12%, 97% 9%, 100% 10%,
+    100% 90%, 97% 94%, 92% 92%, 86% 96%, 80% 92%, 74% 97%, 68% 94%, 61% 98%, 54% 95%,
+    48% 99%, 42% 95%, 36% 99%, 29% 96%, 23% 100%, 17% 96%, 11% 100%, 7% 97%, 3% 99%, 0 96%
+  );
+}
+
+/* realistic torn shadow layers */
+.vintage-root .torn-edge{
+  position:absolute; left:0; right:0; height:36px; pointer-events:none; z-index:0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0));
+  filter: blur(6px);
+  opacity:0.6;
+}
+.vintage-root .torn-edge.top{ top:-18px; transform: rotate(-2deg); }
+.vintage-root .torn-edge.bottom{ bottom:-18px; transform: rotate(2deg); }
+
+.vintage-root .parchment-inner{
+  position:relative;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+  padding:28px 22px;
+  border-radius:6px;
+  min-height:260px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.45);
+  z-index:2;
+}
+
+.vintage-root .parchment-inner::before{
+  /* small burn mark */
+  content:"";
+  position:absolute; left:10px; top:12px; width:94px; height:72px;
+  background: radial-gradient(circle at 40% 30%, rgba(60,30,10,0.12), rgba(60,30,10,0.06) 30%, transparent 60%);
+  transform: rotate(-8deg);
+  filter: blur(1.4px);
+  z-index:1;
+  opacity:0.95;
+}
+
+.vintage-root .parchment-inner h2{
+  font-family: 'Great Vibes', cursive;
+  font-size:32px;
+  margin:0 0 12px 0;
+  color: var(--v-accent);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.65);
+}
+
+.vintage-root .parchment-body{
+  color:var(--v-ink);
+  line-height:1.75;
+  font-size:16px;
+  white-space:pre-wrap;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  letter-spacing:0.1px;
+  z-index:3;
+}
+
+/* subtle ink smudge effect using text-shadow duplicates */
+.vintage-root .parchment-body span{ text-shadow: 0 0 0 rgba(0,0,0,0); }
+
+/* floating dust particles */
+.vintage-root .dust{
+  position:absolute; inset:0; pointer-events:none; z-index:3;
+  background-image: radial-gradient(circle at 20% 30%, rgba(0,0,0,0.03) 0.5px, transparent 0.6px),
+                    radial-gradient(circle at 70% 70%, rgba(0,0,0,0.02) 0.5px, transparent 0.6px);
+  background-size: 8px 8px, 10px 10px;
+  opacity:0.6;
+  animation: drift 12s linear infinite;
+  mix-blend-mode: multiply;
+}
+
+@keyframes drift{
+  0%{ transform: translateY(0) translateX(0) rotate(0deg) }
+  50%{ transform: translateY(-6px) translateX(6px) rotate(2deg) }
+  100%{ transform: translateY(0) translateX(0) rotate(0deg) }
+}
+
+/* responsive */
+@media (max-width:840px){
+  .vintage-root .parchment{ padding:20px; transform:none }
+  .vintage-root .parchment-inner{ padding:18px }
+  .vintage-root .parchment-body{ font-size:15px }
+}
+
+/* accessibility focus */
+.vintage-root textarea:focus, .vintage-root .btn:focus{outline: 3px solid rgba(139,95,191,0.14); outline-offset:3px}
+
+/* small print */
+.vintage-root .card footer.note{ margin-top:18px; color:var(--muted); font-size:13px }
