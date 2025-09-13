@@ -1,0 +1,119 @@
+.emotional-chat-widget {
+  background: #e5e5e5;
+  border-radius: 20px;
+  padding: 40px;
+  margin: 0;
+}
+
+.emotional-chat-widget__container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.emotional-chat-widget__button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  padding: 10px;
+}
+
+.emotional-chat-widget__button:hover {
+  transform: translateY(-4px);
+}
+
+.emotional-chat-widget__button:active {
+  transform: translateY(-2px);
+}
+
+.emotional-chat-widget__circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.emotional-chat-widget__button:hover .emotional-chat-widget__circle {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05);
+}
+
+.emotional-chat-widget__emoji {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.emotional-chat-widget__label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .emotional-chat-widget {
+    padding: 30px 20px;
+  }
+  
+  .emotional-chat-widget__container {
+    gap: 15px;
+  }
+  
+  .emotional-chat-widget__circle {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .emotional-chat-widget__emoji {
+    font-size: 28px;
+  }
+  
+  .emotional-chat-widget__label {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .emotional-chat-widget__container {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+  }
+  
+  .emotional-chat-widget__button {
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .emotional-chat-widget {
+    padding: 20px 15px;
+  }
+  
+  .emotional-chat-widget__circle {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .emotional-chat-widget__emoji {
+    font-size: 24px;
+  }
+  
+  .emotional-chat-widget__label {
+    font-size: 13px;
+  }
+}

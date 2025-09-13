@@ -16,7 +16,7 @@ function Layout() {
       {/* Optional: Navigation Header */}
       <nav className="main-navigation">
         <div className="nav-brand">
-          <h2>MoodCheck</h2>
+          <h2>MOODORA</h2>
         </div>
         <div className="nav-links">
           <Link 
@@ -24,28 +24,28 @@ function Layout() {
             className={`nav-link ${isActive('/') ? 'active' : ''}`}
           >
             <Home size={20} />
-            Dashboard
+            
           </Link>
           <Link 
             to="/mood-tracker" 
             className={`nav-link ${isActive('/mood-tracker') ? 'active' : ''}`}
           >
             <Calendar size={20} />
-            Mood Tracker
+          
           </Link>
           <Link 
             to="/analytics" 
             className={`nav-link ${isActive('/analytics') ? 'active' : ''}`}
           >
             <BarChart3 size={20} />
-            Analytics
+            
           </Link>
           <Link 
             to="/settings" 
             className={`nav-link ${isActive('/settings') ? 'active' : ''}`}
           >
             <Settings size={20} />
-            Settings
+            
           </Link>
         </div>
       </nav>
