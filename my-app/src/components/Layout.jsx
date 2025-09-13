@@ -1,0 +1,61 @@
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Home, BarChart3, Settings, Calendar } from 'lucide-react';
+import './Layout.css';
+
+function Layout() {
+  const location = useLocation();
+
+  const isActive = (path) => {
+    if (path === '/' && location.pathname === '/') return true;
+    if (path !== '/' && location.pathname.startsWith(path)) return true;
+    return false;
+  };
+
+  return (
+    <div className="layout">
+      {/* Optional: Navigation Header */}
+      <nav className="main-navigation">
+        <div className="nav-brand">
+          <h2>MoodCheck</h2>
+        </div>
+        <div className="nav-links">
+          <Link 
+            to="/" 
+            className={`nav-link ${isActive('/') ? 'active' : ''}`}
+          >
+            <Home size={20} />
+            Dashboard
+          </Link>
+          <Link 
+            to="/mood-tracker" 
+            className={`nav-link ${isActive('/mood-tracker') ? 'active' : ''}`}
+          >
+            <Calendar size={20} />
+            Mood Tracker
+          </Link>
+          <Link 
+            to="/analytics" 
+            className={`nav-link ${isActive('/analytics') ? 'active' : ''}`}
+          >
+            <BarChart3 size={20} />
+            Analytics
+          </Link>
+          <Link 
+            to="/settings" 
+            className={`nav-link ${isActive('/settings') ? 'active' : ''}`}
+          >
+            <Settings size={20} />
+            Settings
+          </Link>
+        </div>
+      </nav>
+
+      {/* Main content area */}
+      <main className="main-content">
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+
+export default Layout;

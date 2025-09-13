@@ -1,0 +1,394 @@
+/* MoodTrackerPage.css */
+
+.mood-tracker-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem 1rem;
+}
+
+.mood-tracker-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Loading State */
+.mood-tracker-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  color: white;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.loading-spinner.small {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Header */
+.mood-tracker-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 3rem;
+}
+
+.mood-tracker-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.mood-tracker-title h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.mood-tracker-title-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #fde047;
+}
+
+.mood-tracker-subtitle {
+  font-size: 1.125rem;
+  opacity: 0.9;
+  margin: 0;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Today's Mood Section */
+.today-mood-section {
+  margin-bottom: 3rem;
+}
+
+.today-mood-card {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.today-mood-card h2 {
+  font-size: 1.5rem;
+  color: #374151;
+  margin-bottom: 1.5rem;
+}
+
+.current-mood-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1rem;
+}
+
+.current-mood-icon {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.current-mood-info {
+  text-align: left;
+}
+
+.current-mood-info h3 {
+  font-size: 1.25rem;
+  color: #374151;
+  margin: 0 0 0.25rem 0;
+}
+
+.current-mood-info p {
+  color: #6b7280;
+  margin: 0 0 1rem 0;
+}
+
+.change-mood-btn {
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.change-mood-btn:hover {
+  background: #4f46e5;
+}
+
+.no-mood-display p {
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+  font-size: 1.125rem;
+}
+
+.log-mood-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.log-mood-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+/* Stats Section */
+.mood-stats-section {
+  margin-bottom: 3rem;
+}
+
+.mood-stats-section h2 {
+  color: white;
+  text-align: center;
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.mood-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.mood-stat-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.mood-stat-icon {
+  width: 2rem;
+  height: 2rem;
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.mood-stat-mood {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.mood-stat-content h3 {
+  font-size: 1.5rem;
+  color: #374151;
+  margin: 0 0 0.25rem 0;
+}
+
+.mood-stat-content p {
+  color: #6b7280;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Calendar Section */
+.calendar-section {
+  margin-bottom: 2rem;
+}
+
+.calendar-section h2 {
+  color: white;
+  text-align: center;
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Mood Selector Modal */
+.mood-selector-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.mood-selector-modal {
+  background: white;
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.mood-selector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1.5rem 0;
+}
+
+.mood-selector-header h3 {
+  font-size: 1.25rem;
+  color: #374151;
+  margin: 0;
+}
+
+.mood-selector-close {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+}
+
+.mood-selector-close:hover {
+  background: #f3f4f6;
+}
+
+.mood-selector-date {
+  text-align: center;
+  color: #6b7280;
+  padding: 0 1.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.mood-selector-options {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mood-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.mood-option:hover {
+  border-color: #6366f1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+.mood-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mood-option-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.mood-option-content h4 {
+  font-size: 1rem;
+  color: #374151;
+  margin: 0 0 0.25rem 0;
+}
+
+.mood-option-content p {
+  color: #6b7280;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.mood-selector-saving {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 1.5rem;
+  color: #6b7280;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .mood-tracker-page {
+    padding: 1rem 0.5rem;
+  }
+  
+  .mood-tracker-title h1 {
+    font-size: 2rem;
+  }
+  
+  .current-mood-display {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .current-mood-info {
+    text-align: center;
+  }
+  
+  .mood-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .mood-selector-modal {
+    margin: 1rem;
+  }
+}

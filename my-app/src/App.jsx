@@ -1,31 +1,38 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import './App.css';
 import "@fontsource/poppins"; // Defaults to weight 400
 import "@fontsource/poppins/600.css"; // Specific weight
-import DailyCheckin from './components/DailyCheckIn';
 
+// Import your components
+import Dashboard from './pages/Dashboard';
+import MoodTrackerPage from './pages/MoodTracker';
+import Layout from './components/Layout';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-    <div className="maincontainer">
-      <div className="logo">
-        <h1 className='logotext'>MoodCheck</h1>
+    <Router>
+      <div className="App">
+        <Routes>
+          {/* Main layout wrapper */}
+          <Route path="/" element={<Layout />}>
+            {/* Dashboard route */}
+            <Route index element={<Dashboard />} />
+            
+            {/* Mood Tracker route */}
+            <Route path="/mood-tracker" element={<MoodTrackerPage />} />
+            
+            {/* Add more routes as needed */}
+            <Route path="/analytics" element={<div>Analytics Page (Coming Soon)</div>} />
+            <Route path="/settings" element={<div>Settings Page (Coming Soon)</div>} />
+            
+            {/* Catch-all redirect to dashboard */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
       </div>
-     <DailyCheckin />
-     <div className="container1st">
-      <div className="pfp">
-        <img src="/pfp1.jpg" alt="" className="dynamicpfp" />
-      </div>
-      <div className="othercontainer1boxes"></div>
-     </div>
-    </div>
-    </>
-  )
+    </Router>
+  );
 }
 
-export default App
+export default App;
