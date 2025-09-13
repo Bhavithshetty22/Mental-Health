@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, Settings, Calendar } from 'lucide-react';
+import { Home, BarChart3, Settings, Calendar, MessageCircle } from 'lucide-react';
 import './Layout.css';
 
 function Layout() {
@@ -19,29 +19,37 @@ function Layout() {
           <h2>MoodCheck</h2>
         </div>
         <div className="nav-links">
-          <Link 
-            to="/" 
-            className={`nav-link ${isActive('/') ? 'active' : ''}`}
-          >
+          <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
             <Home size={20} />
             Dashboard
           </Link>
-          <Link 
-            to="/mood-tracker" 
+
+          <Link
+            to="/mood-tracker"
             className={`nav-link ${isActive('/mood-tracker') ? 'active' : ''}`}
           >
             <Calendar size={20} />
             Mood Tracker
           </Link>
-          <Link 
-            to="/analytics" 
+
+          <Link
+            to="/talk-to-future"
+            className={`nav-link ${isActive('/talk-to-future') ? 'active' : ''}`}
+          >
+            <MessageCircle size={20} />
+            Talk To Future
+          </Link>
+
+          <Link
+            to="/analytics"
             className={`nav-link ${isActive('/analytics') ? 'active' : ''}`}
           >
             <BarChart3 size={20} />
             Analytics
           </Link>
-          <Link 
-            to="/settings" 
+
+          <Link
+            to="/settings"
             className={`nav-link ${isActive('/settings') ? 'active' : ''}`}
           >
             <Settings size={20} />
