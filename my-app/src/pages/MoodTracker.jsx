@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { Calendar, TrendingUp, BarChart3, Plus, X } from "lucide-react"
+import MoodCalendar from '../components/MoodCalendar'
 import "./MoodTracker.css"
 
 const MoodTrackerPage = () => {
   const [showMoodSelector, setShowMoodSelector] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [userMoods, setUserMoods] = useState({})
-  const [loading, setLoading] = useState(false) // Set to false for demo
+  const [loading, setLoading] = useState(true) // Back to true for real backend loading
   const [saving, setSaving] = useState(false)
   const [todayMood, setTodayMood] = useState(null)
   const [sliderValue, setSliderValue] = useState(50)
@@ -78,57 +79,86 @@ const MoodTrackerPage = () => {
   const loadMoods = async () => {
     try {
       setLoading(true)
-      const mockMoods = {
-        "2024-1-15": { mood: "good", notes: "", timestamp: new Date().toISOString() },
-        "2024-1-14": { mood: "amazing", notes: "", timestamp: new Date().toISOString() },
-        "2024-1-13": { mood: "okay", notes: "", timestamp: new Date().toISOString() },
-      }
-
-      setUserMoods(mockMoods)
-
-      // Check if today's mood is set
-      const todayKey = getTodayKey()
-      const todayMoodData = mockMoods[todayKey]
-      if (todayMoodData) {
-        setTodayMood(todayMoodData.mood)
-        setSliderValue(getSliderValueFromMood(todayMoodData.mood))
+      const response = await fetch('http://localhost:5000/api/moods')
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('API Response:', data) // Debug log
+        
+        if (data.success) {
+          setUserMoods(data.moods || {})
+          
+          // Check if today's mood is set
+          const todayKey = getTodayKey()
+          console.log('Today key:', todayKey) // Debug log
+          console.log('Available moods:', data.moods) // Debug log
+          
+          const todayMoodData = data.moods[todayKey]
+          if (todayMoodData) {
+            setTodayMood(todayMoodData.mood)
+            setSliderValue(getSliderValueFromMood(todayMoodData.mood))
+          }
+        }
       }
     } catch (error) {
-      console.error("Error loading moods:", error)
+      console.error('Error loading moods:', error)
     } finally {
       setLoading(false)
     }
   }
 
   // FIXED: Save mood to API with correct date format
-  const saveMood = async (date, moodType, notes = "") => {
+  const saveMood = async (date, moodType, notes = '') => {
     try {
       setSaving(true)
       // Use API format: YYYY-M-D
       const apiDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
-
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Update local state with the same key format as API returns
-      const displayKey = apiDate
-      setUserMoods((prev) => ({
-        ...prev,
-        [displayKey]: {
-          mood: moodType,
-          notes: notes,
-          timestamp: new Date().toISOString(),
+      
+      const response = await fetch('http://localhost:5000/api/moods', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Removed auth header since we're using mock user
         },
-      }))
+        body: JSON.stringify({
+          date: apiDate,
+          mood: moodType,
+          notes: notes
+        })
+      })
 
-      // Update today's mood if it's today
-      if (apiDate === getTodayKey()) {
-        setTodayMood(moodType)
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Save result:', result) // Debug log
+        
+        // Update local state with the same key format as API returns
+        const displayKey = apiDate // Keep same format as API
+        setUserMoods(prev => ({
+          ...prev,
+          [displayKey]: {
+            mood: moodType,
+            notes: notes,
+            timestamp: new Date().toISOString()
+          }
+        }))
+
+        // Update today's mood if it's today
+        if (apiDate === getTodayKey()) {
+          setTodayMood(moodType)
+        }
+
+        // Reload moods to sync with server
+        await loadMoods()
+
+        return true
+      } else {
+        const errorData = await response.json()
+        console.error('Save error:', errorData)
+        throw new Error(errorData.error || 'Failed to save mood')
       }
-
-      return true
     } catch (error) {
-      console.error("Error saving mood:", error)
-      alert("Failed to save mood. Please try again.")
+      console.error('Error saving mood:', error)
+      alert('Failed to save mood. Please try again.')
       return false
     } finally {
       setSaving(false)
@@ -137,6 +167,14 @@ const MoodTrackerPage = () => {
 
   const handleMoodSelect = async () => {
     const moodType = getMoodFromSliderValue(sliderValue)
+    const success = await saveMood(selectedDate, moodType)
+    if (success) {
+      setShowMoodSelector(false)
+    }
+  }
+
+  // Handle mood selection from calendar (for direct mood selection without slider)
+  const handleMoodSelectFromCalendar = async (moodType) => {
     const success = await saveMood(selectedDate, moodType)
     if (success) {
       setShowMoodSelector(false)
@@ -279,68 +317,107 @@ const MoodTrackerPage = () => {
         {/* Calendar Section */}
         <section className="calendar-section">
           <h2>Mood Calendar</h2>
-          <div className="calendar-placeholder">
-            <p>Calendar component would go here</p>
-          </div>
+          <MoodCalendar 
+            moods={userMoods} 
+            onMoodSelect={handleMoodSelectFromCalendar}
+            onDateSelect={(date) => {
+              setSelectedDate(date);
+              // Check if this date already has a mood to set the slider appropriately
+              const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+              const existingMood = userMoods[dateKey];
+              if (existingMood && existingMood.mood) {
+                setSliderValue(getSliderValueFromMood(existingMood.mood));
+              } else {
+                setSliderValue(50);
+              }
+              setShowMoodSelector(true);
+            }}
+          />
         </section>
 
         {showMoodSelector && (
           <div className="mood-selector-overlay">
-            <div className="mood-selector-modal">
-              <div className="mood-selector-header">
-                <h3>Select your mood</h3>
-                <button className="mood-selector-close" onClick={() => setShowMoodSelector(false)}>
-                  <X size={24} />
+            <div className="mood-selector-modal mobile-mood-interface">
+              {/* Mobile-style header */}
+              <div className="mobile-header">
+                <button className="back-btn" onClick={() => setShowMoodSelector(false)}>
+                  ←
+                </button>
+                <button className="save-btn" onClick={handleMoodSelect} disabled={saving}>
+                  Save
                 </button>
               </div>
 
-              <div className="mood-selector-date">{selectedDate.toDateString()}</div>
-
-              <div className="mood-slider-container">
-                {/* Large mood display */}
-                <div className="mood-display">
-                  <div className="mood-display-icon" style={{ backgroundColor: currentMoodInfo.color }}>
-                    {currentMoodInfo.face}
-                  </div>
-                  <div className="mood-display-info">
-                    <h3>{currentMoodInfo.label}</h3>
-                    <p>{currentMoodInfo.description}</p>
-                  </div>
+              {/* Large mood display area */}
+              <div className="large-mood-display">
+                <div
+                  className="mood-face-container"
+                  style={{
+                    background: `linear-gradient(135deg, ${currentMoodInfo.color}dd, ${currentMoodInfo.color})`,
+                  }}
+                >
+                  <div className="mood-face">{currentMoodInfo.face}</div>
                 </div>
+              </div>
 
-                {/* Slider */}
-                <div className="mood-slider-section">
-                  <div className="mood-slider-track">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={sliderValue}
-                      onChange={(e) => setSliderValue(Number.parseInt(e.target.value))}
-                      className="mood-slider"
+              {/* Elegant heading */}
+              <div className="mood-selection-heading">
+                <h2>Select your today's mood</h2>
+              </div>
+
+              {/* Selected date display */}
+              <div className="mood-selector-date">
+                {selectedDate.toDateString()}
+              </div>
+
+              {/* Equalizer-style slider */}
+              <div className="equalizer-slider-container">
+                <div className="equalizer-bars">
+                  {Array.from({ length: 25 }, (_, i) => {
+                    const position = (i / 24) * 100
+                    const isActive = Math.abs(position - sliderValue) < 4
+                    const height = Math.sin((i / 24) * Math.PI * 3) * 20 + 30
+
+                    return (
+                      <div
+                        key={i}
+                        className={`equalizer-bar ${isActive ? "active" : ""}`}
+                        style={{
+                          height: `${height}px`,
+                          backgroundColor: isActive ? currentMoodInfo.color : "#333",
+                        }}
+                      />
+                    )
+                  })}
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={sliderValue}
+                  onChange={(e) => setSliderValue(Number.parseInt(e.target.value))}
+                  className="hidden-slider"
+                />
+              </div>
+
+              {/* Mood category buttons */}
+              <div className="mood-category-buttons">
+                {Object.entries(moodTypes).map(([key, mood]) => {
+                  const isSelected = key === currentMoodKey
+                  return (
+                    <button
+                      key={key}
+                      className={`mood-category-btn ${isSelected ? "selected" : ""}`}
                       style={{
-                        background: `linear-gradient(to right, 
-                          #ef4444 0%, #ef4444 20%, 
-                          #f97316 20%, #f97316 40%, 
-                          #f59e0b 40%, #f59e0b 60%, 
-                          #3b82f6 60%, #3b82f6 80%, 
-                          #10b981 80%, #10b981 100%)`,
+                        backgroundColor: isSelected ? mood.color : "transparent",
+                        color: isSelected ? "white" : "#666",
                       }}
-                    />
-                    <div className="mood-slider-labels">
-                      <span>😢</span>
-                      <span>😔</span>
-                      <span>😐</span>
-                      <span>😊</span>
-                      <span>😄</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Save button */}
-                <button className="mood-save-btn" onClick={handleMoodSelect} disabled={saving}>
-                  {saving ? "Saving..." : "Save Mood"}
-                </button>
+                      onClick={() => setSliderValue(getSliderValueFromMood(key))}
+                    >
+                      {mood.label}
+                    </button>
+                  )
+                })}
               </div>
 
               {saving && (
