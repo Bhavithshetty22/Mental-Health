@@ -40,8 +40,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Header */
@@ -243,6 +247,15 @@
   margin-bottom: 1.5rem;
 }
 
+.calendar-placeholder {
+  background: white;
+  border-radius: 1rem;
+  padding: 3rem;
+  text-align: center;
+  color: #6b7280;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
 /* Mood Selector Modal */
 .mood-selector-overlay {
   position: fixed;
@@ -262,7 +275,7 @@
   background: white;
   border-radius: 1rem;
   width: 100%;
-  max-width: 500px;
+  max-width: 450px;
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -365,30 +378,162 @@
   border-top: 1px solid #e5e7eb;
 }
 
+/* Slider-based mood selector */
+.mood-slider-container {
+  padding: 2rem 1.5rem;
+}
+
+.mood-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.mood-display-icon {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.mood-display-info h3 {
+  font-size: 1.5rem;
+  color: #374151;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.mood-display-info p {
+  color: #6b7280;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.mood-slider-section {
+  margin-bottom: 2rem;
+}
+
+.mood-slider-track {
+  position: relative;
+  padding: 0 1rem;
+}
+
+.mood-slider {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  margin-bottom: 1rem;
+}
+
+.mood-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid #6366f1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.mood-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.mood-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid #6366f1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.mood-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 0.5rem;
+  font-size: 1.25rem;
+  opacity: 0.7;
+}
+
+.mood-save-btn {
+  width: 100%;
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.mood-save-btn:hover:not(:disabled) {
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.mood-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .mood-tracker-page {
     padding: 1rem 0.5rem;
   }
-  
+
   .mood-tracker-title h1 {
     font-size: 2rem;
   }
-  
+
   .current-mood-display {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .current-mood-info {
     text-align: center;
   }
-  
+
   .mood-stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .mood-selector-modal {
     margin: 1rem;
+  }
+
+  .mood-display-icon {
+    width: 5rem;
+    height: 5rem;
+    font-size: 2.5rem;
+  }
+
+  .mood-slider-container {
+    padding: 1.5rem 1rem;
   }
 }
