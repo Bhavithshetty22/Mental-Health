@@ -79,7 +79,9 @@ const MoodProfile = ({ userId = null, selectedDate = null }) => {
       style={{
         backgroundImage: `url(${moodImages[currentMood] || moodImages.okay})`
       }}
-    ></div>
+    >
+      
+    </div>
   );
 };
 
