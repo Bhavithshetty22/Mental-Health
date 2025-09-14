@@ -1,15 +1,5 @@
 /* Reset and base styles */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-}
 
 /* App container */
 .app {
@@ -283,6 +273,33 @@ body {
   color: #9ca3af;
 }
 
+/* Voice transcript */
+.voice-transcript {
+  max-width: 300px;
+  padding: 1rem;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+}
+
+.dark .voice-transcript {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+.voice-transcript p {
+  color: #111827;
+  font-style: italic;
+  text-align: left;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.dark .voice-transcript p {
+  color: white;
+}
+
 /* Select */
 .select {
   width: 100%;
@@ -403,6 +420,36 @@ body {
 
 .dark .output-text p {
   color: white;
+}
+
+/* Image output */
+.image-output {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.generated-image {
+  max-width: 100%;
+  max-height: 400px;
+  width: auto;
+  height: auto;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  object-fit: contain;
+}
+
+.image-prompt {
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+  max-width: 80%;
+  line-height: 1.5;
+}
+
+.dark .image-prompt {
+  color: #9ca3af;
 }
 
 .action-buttons {
