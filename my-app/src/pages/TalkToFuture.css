@@ -8,14 +8,14 @@
 .vintage-root{
   --v-bg-1: #efe6d6; /* light warm */
   --v-bg-2: #f6f0e3; /* parchment mid */
-  --v-accent: #6b3a7a; /* deep plum */
+  --v-accent: #2e613f; /* deep plum */
   --v-ink: #1a1a1a;
   --muted: #6b5f58;
   --card-radius: 18px;
 
   /* layout for this component only */
   position: relative;
-  min-height: 100vh;
+  min-height: calc(100vh - 170px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -113,7 +113,7 @@
 }
 
 .vintage-root .btn.primary{
-  background: linear-gradient(90deg, var(--v-accent), #8b5fbf);
+  background: linear-gradient(90deg, var(--v-accent), #3e8a5e);
   color:white;
   box-shadow: 0 8px 24px rgba(107,58,122,0.18);
 }

@@ -1,4 +1,14 @@
 /* Layout.css */
+:root {
+  --color-bg: #f9f9ff; /* very soft pastel background */
+  --color-primary: #a8dadc; /* mint pastel */
+  --color-secondary: #ffd6a5; /* warm pastel yellow */
+  --color-accent: #cdb4db; /* lavender pastel */
+  --color-text: #333;
+  --color-muted: #777;
+
+  --transition-speed: 0.3s;
+}
 .layout {
   min-height: 100vh;
   display: flex;
@@ -6,7 +16,7 @@
 }
 
 .main-navigation {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #479682 0%, #2e613f 100%);
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
@@ -16,12 +26,15 @@
   top: 0;
   z-index: 100;
 }
-
+.nav-brand{
+  margin-left: 50%;
+}
 .nav-brand h2 {
   color: white;
   margin: 0;
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
+  
 }
 
 .nav-links {
