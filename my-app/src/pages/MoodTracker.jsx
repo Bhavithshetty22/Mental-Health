@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Calendar, TrendingUp, BarChart3, Plus, X } from "lucide-react"
 import MoodCalendar from '../components/MoodCalendar'
 import "./MoodTracker.css"
@@ -9,10 +9,11 @@ const MoodTrackerPage = () => {
   const [showMoodSelector, setShowMoodSelector] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [userMoods, setUserMoods] = useState({})
-  const [loading, setLoading] = useState(true) // Back to true for real backend loading
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [todayMood, setTodayMood] = useState(null)
   const [sliderValue, setSliderValue] = useState(50)
+  const hasFetched = useRef(false); // Ref to track if data has been fetched
 
   const moodTypes = {
     terrible: {
@@ -69,14 +70,18 @@ const MoodTrackerPage = () => {
     return 50
   }
 
-  // FIXED: Get today's date key to match API format (YYYY-M-D)
+  // Get today's date key to match API format (YYYY-M-D)
   const getTodayKey = () => {
     const today = new Date()
     return `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`
   }
 
-  // FIXED: Load moods from API (removed auth headers that were causing issues)
-  const loadMoods = async () => {
+  // Load moods from API (with fix for multiple calls)
+  const loadMoods = async (forceRefresh = false) => {
+    // Prevent multiple calls unless forced refresh
+    if (hasFetched.current && !forceRefresh) return;
+    hasFetched.current = true;
+    
     try {
       setLoading(true)
       const response = await fetch('http://localhost:5000/api/moods')
@@ -102,12 +107,19 @@ const MoodTrackerPage = () => {
       }
     } catch (error) {
       console.error('Error loading moods:', error)
+      hasFetched.current = false; // Reset on error to allow retry
     } finally {
       setLoading(false)
     }
   }
 
-  // FIXED: Save mood to API with correct date format
+  // Manual refresh function
+  const handleRefreshMoods = () => {
+    hasFetched.current = false; // Reset the flag to allow fetching again
+    loadMoods(true); // Force refresh
+  };
+
+  // Save mood to API with correct date format
   const saveMood = async (date, moodType, notes = '') => {
     try {
       setSaving(true)
@@ -118,7 +130,6 @@ const MoodTrackerPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Removed auth header since we're using mock user
         },
         body: JSON.stringify({
           date: apiDate,
@@ -148,7 +159,7 @@ const MoodTrackerPage = () => {
         }
 
         // Reload moods to sync with server
-        await loadMoods()
+        await loadMoods(true)
 
         return true
       } else {
@@ -192,7 +203,7 @@ const MoodTrackerPage = () => {
     setShowMoodSelector(true)
   }
 
-  // FIXED: Get mood statistics with better error handling
+  // Get mood statistics with better error handling
   const getMoodStats = () => {
     const moodEntries = Object.values(userMoods)
     const totalEntries = moodEntries.length
@@ -217,7 +228,7 @@ const MoodTrackerPage = () => {
     }
   }
 
-  // Load moods on component mount
+  // Load moods on component mount (only once)
   useEffect(() => {
     loadMoods()
   }, [])
@@ -332,6 +343,7 @@ const MoodTrackerPage = () => {
               }
               setShowMoodSelector(true);
             }}
+            onRefresh={handleRefreshMoods} // Pass refresh function to calendar
           />
         </section>
 
