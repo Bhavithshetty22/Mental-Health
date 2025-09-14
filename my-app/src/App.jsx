@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import MoodTrackerPage from './pages/MoodTracker';
 import TalkToFuture from './pages/TalkToFuture';
 import Layout from './components/Layout';
+import DailyJournal from './pages/DailyJournal';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
 
             {/* Talk To Future route */}
             <Route path="talk-to-future" element={<TalkToFuture />} />
+             <Route path="daily-journal" element={<DailyJournal />} />
 
             {/* Add more routes as needed */}
             <Route path="analytics" element={<div>Analytics Page (Coming Soon)</div>} />
