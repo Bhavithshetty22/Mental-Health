@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import './MoodCalendar.css';
 
@@ -6,6 +6,7 @@ const MoodCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [moods, setMoods] = useState({});
   const [loading, setLoading] = useState(false);
+  const hasFetched = useRef(false); // Ref to track if data has been fetched
 
   // Mood types with colors and faces
   const moodTypes = {
@@ -24,7 +25,11 @@ const MoodCalendar = () => {
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Fetch moods from API
-  const fetchMoods = async () => {
+  const fetchMoods = async (forceRefresh = false) => {
+    // Prevent multiple calls unless forced refresh
+    if (hasFetched.current && !forceRefresh) return;
+    hasFetched.current = true;
+    
     setLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/moods');
@@ -47,9 +52,16 @@ const MoodCalendar = () => {
       }
     } catch (error) {
       console.error('Error fetching moods:', error);
+      hasFetched.current = false; // Reset on error to allow retry
     } finally {
       setLoading(false);
     }
+  };
+
+  // Manual refresh function
+  const handleRefresh = () => {
+    hasFetched.current = false; // Reset the flag to allow fetching again
+    fetchMoods(true); // Force refresh
   };
 
   // Get days in month
@@ -90,10 +102,10 @@ const MoodCalendar = () => {
     return moods[dateKey];
   };
 
-  // Fetch moods when component mounts or month changes
+  // Fetch moods only once when component mounts
   useEffect(() => {
     fetchMoods();
-  }, [currentDate]);
+  }, []); // Empty dependency array means this runs only once
 
   const days = getDaysInMonth(currentDate);
   const trackedDaysThisMonth = Object.keys(moods).filter(
@@ -130,7 +142,7 @@ const MoodCalendar = () => {
         
         <button 
           className="mood-calendar__export-button"
-          onClick={fetchMoods}
+          onClick={handleRefresh}
           title="Refresh moods"
           style={{ 
             backgroundColor: loading ? '#f3f4f6' : 'transparent',
