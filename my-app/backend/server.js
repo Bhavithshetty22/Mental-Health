@@ -1,4 +1,4 @@
-// server.js (merged)
+// server.js
 require("dotenv").config(); // Load .env first
 
 const express = require("express");
@@ -6,8 +6,9 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 
-const moodRoutes = require("./routes/moodRoutes"); // keep existing mood routes
-const { GoogleGenerativeAI } = require("@google/generative-ai"); // generative AI SDK
+const moodRoutes = require("./routes/moodRoutes"); // existing mood routes
+const lettersRouter = require("./routes/letters"); // exports router and .Letter model
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,6 +16,8 @@ const PORT = process.env.PORT || 5000;
 // ===== CORS Middleware =====
 // Allow setting via env or default to React dev server
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+
+// ===== Middleware (CORS + JSON) =====
 app.use(
   cors({
     origin: CLIENT_ORIGIN,
@@ -23,8 +26,6 @@ app.use(
     credentials: true,
   })
 );
-
-// ===== Middleware =====
 app.use(express.json());
 
 // ===== Request logging =====
@@ -38,7 +39,7 @@ app.use(
   "/api/",
   rateLimit({
     windowMs: 60 * 1000, // 1 minute
-    max: 20, // limit each IP to 20 requests per windowMs
+    max: 20,
   })
 );
 
@@ -52,7 +53,6 @@ console.log("DEBUG CLIENT_ORIGIN:", CLIENT_ORIGIN);
 // ===== Connect to MongoDB =====
 if (!process.env.MONGO_URI) {
   console.error("❌ MONGO_URI is missing! Check your .env file.");
-  // If you want server to continue without DB, comment the exit line.
   process.exit(1);
 }
 
@@ -76,14 +76,21 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => res.json({ status: "ok", pid: process.pid }));
 
 app.get("/api/health", (req, res) => {
-  res.json({
-    status: "OK",
-    message: "Health check passed",
-  });
+  res.json({ status: "OK", message: "Health check passed" });
 });
 
-// ===== Use mood routes =====
+// ===== Use mood routes (unchanged) =====
 app.use("/api/moods", moodRoutes);
+
+// ===== Mount letters router (after JSON middleware) =====
+app.use("/api/letters", lettersRouter);
+// Grab model exported from router file
+const Letter = lettersRouter.Letter;
+// after you require other routers
+const songsRouter = require("./routes/songs");
+app.use("/api/songs", songsRouter);
+const creativeRouter = require("./routes/creative");
+app.use("/api/creative", creativeRouter);
 
 // ===== Generative AI setup =====
 const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
@@ -91,12 +98,9 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 const USE_FAKE = process.env.USE_FAKE === "true";
 
 if (!GEMINI_KEY && !USE_FAKE) {
-  console.warn(
-    "⚠️ GEMINI_API_KEY missing and USE_FAKE not enabled. AI generation will fail unless USE_FAKE=true."
-  );
+  console.warn("⚠️ GEMINI_API_KEY missing and USE_FAKE not enabled. AI generation will fail unless USE_FAKE=true.");
 }
 
-// Instantiate the SDK client (per your earlier file)
 let genAI = null;
 try {
   genAI = new GoogleGenerativeAI(GEMINI_KEY);
@@ -124,12 +128,13 @@ function detectCrisis(text) {
 // ===== /api/generate endpoint =====
 app.post("/api/generate", async (req, res) => {
   try {
-    const { situation } = req.body;
+    const { situation, title, owner } = req.body;
     if (!situation || !situation.trim()) {
       return res.status(400).json({ error: "No situation provided" });
     }
 
     if (detectCrisis(situation)) {
+      // Do not save crisis content
       return res.json({
         crisis: true,
         message:
@@ -138,17 +143,31 @@ app.post("/api/generate", async (req, res) => {
     }
 
     if (USE_FAKE) {
-      return res.json({
-        letter:
-          "Dear past me,\n\nEverything looks a bit intense right now, but looking back this was one of the turning points. You took small, steady steps... — Future You",
-      });
+      const fakeLetter =
+        "Dear past me,\n\nEverything looks a bit intense right now, but looking back this was one of the turning points. You took small, steady steps... — Future You";
+
+      // try saving fake letter (optional)
+      let savedDoc = null;
+      try {
+        savedDoc = await Letter.create({
+          title: title ? String(title).slice(0, 140) : "From the Future",
+          situation,
+          letter: fakeLetter,
+          model: "FAKE",
+          crisis: false,
+          owner: owner || undefined,
+        });
+      } catch (saveErr) {
+        console.error("Warning: failed to save fake letter:", saveErr && saveErr.message);
+      }
+
+      return res.json({ letter: fakeLetter, savedId: savedDoc ? savedDoc._id : null });
     }
 
     if (!genAI) {
       return res.status(500).json({ error: "AI client not initialized" });
     }
 
-    // Build system + user prompts
     const systemPrompt =
       "You are an empathetic, hopeful, and realistic future version of the user. Write a warm short letter (3-6 short paragraphs) from their future self about how the current situation turned out, what small practical steps were taken, and encouraging lessons learned. Do not give medical or legal advice. If the user is in severe crisis include a suggestion to seek help and do not give instructions for self-harm.";
 
@@ -156,39 +175,43 @@ app.post("/api/generate", async (req, res) => {
 
     const combinedPrompt = `${systemPrompt}\n\n${userPrompt}`;
 
-    // Get model and generate (kept same usage as your original code)
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent(combinedPrompt);
     const response = await result.response;
     const letterText = response.text();
 
-    return res.json({ letter: letterText });
+    // Save to DB (non-blocking error handling)
+    let savedDoc = null;
+    try {
+      savedDoc = await Letter.create({
+        title: title ? String(title).slice(0, 140) : "Letter from Future",
+        situation,
+        letter: letterText,
+        model: GEMINI_MODEL,
+        crisis: false,
+        owner: owner || undefined,
+      });
+    } catch (saveErr) {
+      console.error("Warning: failed to save generated letter:", saveErr && saveErr.message);
+    }
+
+    return res.json({ letter: letterText, savedId: savedDoc ? savedDoc._id : null });
   } catch (err) {
     console.error("Server error in /api/generate:", err);
+    if (err && err.message) console.error("Error message:", err.message);
+    if (err && err.status) console.error("Error status:", err.status);
 
-    if (err && err.message) {
-      console.error("Error message:", err.message);
-    }
-    if (err && err.status) {
-      console.error("Error status:", err.status);
-    }
-
-    return res.status(500).json({
-      error: "Generation failed",
-      details: err.message || String(err),
-    });
+    return res.status(500).json({ error: "Generation failed", details: err.message || String(err) });
   }
 });
 
 // ===== 404 handler =====
 app.use((req, res) => {
-  res.status(404).json({
-    error: `Route not found: ${req.method} ${req.path}`,
-  });
+  res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
 });
 
 // ===== Start server =====
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`✅ Test routes: /, /health, /api/health, /api/moods, /api/generate`);
+  console.log(`✅ Test routes: /, /health, /api/health, /api/moods, /api/letters, /api/generate`);
 });

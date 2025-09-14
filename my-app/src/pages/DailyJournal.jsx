@@ -60,6 +60,7 @@ const DailyJournal = () => {
   const [output, setOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDark, setIsDark] = useState(false);
+
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef(null);
 
@@ -102,6 +103,11 @@ const DailyJournal = () => {
     }
   }, []);
 
+  const [songs, setSongs] = useState([]);
+  const [story, setStory] = useState("");
+  const [poem, setPoem] = useState("");
+
+
   const handleInputModeChange = (mode) => {
     setInputMode(mode);
     setTextInput("");
@@ -133,18 +139,34 @@ const DailyJournal = () => {
     document.documentElement.classList.toggle("dark");
   };
 
+  // build YouTube search url fallback (same rules as backend)
+  const buildYouTubeSearchUrl = (title = "", artist = "") => {
+    let q = `${title || ""} ${artist || ""}`.trim();
+    q = q.replace(/[\n\r]+/g, " ");
+    q = q.replace(/["'`‘’“”]/g, "");
+    q = q.replace(/[\/\\|]/g, " ");
+    q = q.replace(/\s+/g, " ").trim();
+    if (!q) q = "music";
+    return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+  };
+
   const generateOutput = async () => {
   const currentInput = inputMode === "text" ? textInput : voiceInput;
   if (!currentInput.trim() && !isRecording) return;
+  if (!selectedOption) return;
 
   setIsGenerating(true);
+  setOutput("");
+  setSongs([]);
+  setStory("");
+  setPoem("");
 
   try {
     if (selectedOption === "image") {
-      // 1️⃣ Enhance the raw input into an artistic healing prompt
+      // 1. Enhance with Gemini
       const visualPrompt = await enhancePromptWithGemini(currentInput);
 
-      // 2️⃣ Send to Stability
+      // 2. Stability API
       const formData = new FormData();
       formData.append("prompt", visualPrompt);
       formData.append("aspect_ratio", "1:1");
@@ -162,13 +184,10 @@ const DailyJournal = () => {
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status} - ${errorText}`);
+        throw new Error(`HTTP ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("Stability API response:", data);
-
       if (data?.image) {
         setOutput({
           type: "image",
@@ -178,22 +197,39 @@ const DailyJournal = () => {
       } else {
         setOutput({
           type: "text",
-          content: "❌ No image returned. Check console for details.",
+          content: "❌ No image returned.",
         });
       }
+    } 
+    else if (selectedOption === "song") {
+      const resp = await fetch("http://localhost:5000/api/songs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: currentInput }),
+      });
+      const data = await resp.json();
+      setSongs(Array.isArray(data.songs) ? data.songs : []);
+    } 
+    else if (selectedOption === "poem") {
+      const resp = await fetch("http://localhost:5000/api/creative", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: currentInput }),
+      });
+      const data = await resp.json();
+      setStory(data.story || "");
+      setPoem(data.poem || "");
     }
-  } catch (error) {
-    console.error("Error during generation:", error);
+  } catch (err) {
+    console.error("generateOutput error:", err);
     setOutput({
       type: "text",
-      content: "⚠️ Something went wrong while generating. Please try again.",
+      content: "⚠️ Something went wrong. Please try again.",
     });
   } finally {
     setIsGenerating(false);
   }
 };
-
-
 
 
   return (
@@ -307,7 +343,6 @@ const DailyJournal = () => {
                   <h2 className="title">Your Content</h2>
                   <p className="subtitle">Generated content will appear here</p>
                 </div>
-
                 <div className="output-area">
                   {isGenerating ? (
                     <div className="loading">
@@ -316,6 +351,65 @@ const DailyJournal = () => {
                         {selectedOption === "image" ? "Generating your image..." : "Generating content..."}
                       </p>
                     </div>
+                  ) : selectedOption === "song" ? (
+                    songs && songs.length > 0 ? (
+                      <div className="song-list">
+                        {songs.map((s, idx) => {
+                          const title = s.title || "Untitled";
+                          const artist = s.artist || "";
+                          // Use YouTube URL or fallback to YouTube search
+                          const url =
+                            s.url && s.url.length > 0
+                              ? s.url
+                              : buildYouTubeSearchUrl(title, artist);
+
+                          return (
+                            <div className="song-card" key={idx}>
+                              <a href={url} target="_blank" rel="noreferrer" className="song-link">
+                                <div className="song-title">{title}</div>
+                                <div className="song-artist">{artist}</div>
+                              </a>
+                              <div style={{ marginTop: 8, fontSize: 12, color: "#666", wordBreak: "break-all" }}>{url}</div>
+                              {s.reason && <div className="song-reason">{s.reason}</div>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="empty-state">
+                        <div className="empty-icon"><MessageSquare className="icon" /></div>
+                        <div className="empty-content">
+                          <h3 className="empty-title">No suggestions yet</h3>
+                          <p className="empty-text">Write about your day and press Generate to get song recommendations.</p>
+                        </div>
+                      </div>
+                    )
+                  ) : selectedOption === "poem" ? (
+                    (story || poem) ? (
+                      <div className="creative-list">
+                        {story && (
+                          <div className="creative-card">
+                            <h3 className="creative-title">Short Inspiration</h3>
+                            <div className="creative-body">{story}</div>
+                          </div>
+                        )}
+
+                        {poem && (
+                          <div className="creative-card">
+                            <h3 className="creative-title">Poem</h3>
+                            <pre className="creative-poem">{poem}</pre>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="empty-state">
+                        <div className="empty-icon"><MessageSquare className="icon" /></div>
+                        <div className="empty-content">
+                          <h3 className="empty-title">No content yet</h3>
+                          <p className="empty-text">Write about your day and press Generate to get a story and a poem.</p>
+                        </div>
+                      </div>
+                    )
                   ) : output ? (
                     <div className="output-content">
                       {output.type === "image" ? (
@@ -337,9 +431,7 @@ const DailyJournal = () => {
                     </div>
                   ) : (
                     <div className="empty-state">
-                      <div className="empty-icon">
-                        <MessageSquare className="icon" />
-                      </div>
+                      <div className="empty-icon"><MessageSquare className="icon" /></div>
                       <div className="empty-content">
                         <h3 className="empty-title">Ready to create</h3>
                         <p className="empty-text">Choose an input method to get started</p>
