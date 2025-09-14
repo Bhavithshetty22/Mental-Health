@@ -86,6 +86,11 @@ app.use("/api/moods", moodRoutes);
 app.use("/api/letters", lettersRouter);
 // Grab model exported from router file
 const Letter = lettersRouter.Letter;
+// after you require other routers
+const songsRouter = require("./routes/songs");
+app.use("/api/songs", songsRouter);
+const creativeRouter = require("./routes/creative");
+app.use("/api/creative", creativeRouter);
 
 // ===== Generative AI setup =====
 const GEMINI_KEY = process.env.GEMINI_API_KEY || "";

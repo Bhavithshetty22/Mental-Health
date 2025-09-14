@@ -41,10 +41,11 @@ function Layout() {
           </Link>
 
           <Link
-            to="/analytics"
-            className={`nav-link ${isActive('/analytics') ? 'active' : ''}`}
+            to="/daily-journal"
+            className={`nav-link ${isActive('/daily-journal') ? 'active' : ''}`}
           >
             <BarChart3 size={20} />
+            Daily Journal
             
           </Link>
 

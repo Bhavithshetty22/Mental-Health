@@ -225,7 +225,7 @@ const EmotionWidget = () => {
           <div className="emotion-widget__header-content">
             <h1 className="emotion-widget__title">TALK TO AI EMOTION BOTS</h1>
             <p className="emotion-widget__subtitle">
-              Choose how you're feeling and chat with Gemini AI in that emotional context
+              Choose how you're feeling and chat with that emotional context
             </p>
           </div>
           <div className="emotion-widget__navigation">
