@@ -4,6 +4,7 @@ import MoodCalendar from '../components/MoodCalendar';
 import MoodTrackerWidget from '../components/MoodTrackerWidget';
 import ProfileDynamic from '../components/ProfileDynamic';
 import './Dashboard.css';
+import EmotionChatWidget from '../components/EmotionalChatWidget';
 
 function Dashboard() {
   const [count, setCount] = useState(0);
@@ -24,6 +25,7 @@ function Dashboard() {
           <MoodCalendar />
         </div>
       </div>
+      <EmotionChatWidget />
     </div>
   );
 }
