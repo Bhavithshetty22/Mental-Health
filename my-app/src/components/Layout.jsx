@@ -37,7 +37,7 @@ function Layout() {
             className={`nav-link ${isActive('/talk-to-future') ? 'active' : ''}`}
           >
             <MessageCircle size={20} />
-            Talk To Future
+            
           </Link>
 
           <Link
