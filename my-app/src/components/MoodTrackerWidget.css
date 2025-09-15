@@ -14,12 +14,13 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
-.widget-header {
+.widget-header1 {
   margin-bottom: 1.5rem;
   text-align: center;
+ 
 }
 
-.widget-header h3 {
+.widget-header1 h3 {
   color: #374151;
   font-size: 1.25rem;
   font-weight: 600;

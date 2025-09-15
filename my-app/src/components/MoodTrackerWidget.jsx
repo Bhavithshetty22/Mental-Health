@@ -5,7 +5,7 @@ import './MoodTrackerWidget.css';
 function MoodTrackerWidget({ onGoClick }) {
   return (
     <div className="mood-tracker-widget">
-      <div className="widget-header">
+      <div className="widget-header1">
         <h3>How are you feeling today?</h3>
         <p>Track your daily mood and emotions</p>
       </div>

@@ -5,6 +5,7 @@ import MoodTrackerWidget from '../components/MoodTrackerWidget';
 import ProfileDynamic from '../components/ProfileDynamic';
 import './Dashboard.css';
 import EmotionChatWidget from '../components/EmotionalChatWidget';
+import GoogleFitnessWidget from '../components/GoogleFitWidget';
 
 function Dashboard() {
   const [count, setCount] = useState(0);
@@ -26,6 +27,7 @@ function Dashboard() {
         </div>
       </div>
       <EmotionChatWidget />
+      <GoogleFitnessWidget />
     </div>
   );
 }
