@@ -19,6 +19,7 @@
     "express-rate-limit": "^8.1.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.3",
     "lucide-react": "^0.544.0",
     "mongoose": "^8.18.1",
     "react": "^19.1.1",

@@ -4,6 +4,59 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Great+Vibes&display=swap');
 
+/* Add these near the bottom of your TalkToFuture.css or replace the relevant sections */
+
+/* Download controls (small buttons centered under letter) */
+.vintage-root .download-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 12px;
+  z-index: 4;
+}
+
+/* small buttons */
+.vintage-root .btn.small {
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  min-width: 54px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ghost variant for small */
+.vintage-root .btn.small.ghost {
+  background: transparent;
+  border: 1px solid rgba(20, 20, 20, 0.06);
+  color: #111827;
+}
+
+/* ensure letter-wrap stacks vertically and doesn't push buttons to the right */
+.vintage-root .letter-wrap {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column; /* stack letter + controls vertically */
+  gap: 12px;
+  align-items: center; /* center the letter and the controls */
+}
+
+/* ensure the parchment doesn't force horizontal overflow */
+.vintage-root .parchment {
+  width: 100%;
+  max-width: 760px;
+  box-sizing: border-box;
+}
+
+/* small-screen tweaks */
+@media (max-width: 680px) {
+  .vintage-root .download-controls { gap: 6px; }
+  .vintage-root .btn.small { padding: 6px 8px; font-size: 13px; min-width: 48px; }
+  .vintage-root .parchment { padding: 18px 16px; }
+}
+
+
 /* Scope variables and base styles to avoid leaking */
 .vintage-root{
   --v-bg-1: #efe6d6; /* light warm */
