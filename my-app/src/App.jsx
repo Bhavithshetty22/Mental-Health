@@ -1,3 +1,4 @@
+// src/App.js
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import "@fontsource/poppins";
@@ -9,6 +10,9 @@ import MoodTrackerPage from './pages/MoodTracker';
 import TalkToFuture from './pages/TalkToFuture';
 import Layout from './components/Layout';
 import DailyJournal from './pages/DailyJournal';
+
+// ADDED: import the Login/Signup page
+import LoginSignup from './pages/LoginSignup';
 
 function App() {
   return (
@@ -25,11 +29,13 @@ function App() {
 
             {/* Talk To Future route */}
             <Route path="talk-to-future" element={<TalkToFuture />} />
-             <Route path="daily-journal" element={<DailyJournal />} />
+            <Route path="daily-journal" element={<DailyJournal />} />
+
+            {/* Auth route: Settings button will take user here */}
+            <Route path="settings" element={<LoginSignup />} />
 
             {/* Add more routes as needed */}
             <Route path="analytics" element={<div>Analytics Page (Coming Soon)</div>} />
-            <Route path="settings" element={<div>Settings Page (Coming Soon)</div>} />
 
             {/* Catch-all redirect to dashboard */}
             <Route path="*" element={<Navigate to="/" replace />} />

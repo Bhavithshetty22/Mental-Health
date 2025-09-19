@@ -72,6 +72,20 @@
   background: #f8f9fa;
 }
 
+/* add to Layout.css */
+.btn-as-link {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem;
+  color: inherit;
+}
+.btn-as-link:focus { outline: none; }
+
+
 /* Responsive navigation */
 @media (max-width: 768px) {
   .main-navigation {
