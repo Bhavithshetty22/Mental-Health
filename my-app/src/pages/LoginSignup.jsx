@@ -1,7 +1,10 @@
+// src/pages/LoginSignup.jsx
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./GenAIAuth.css";
 
-export default function GenAIAuthPage() {
+export default function LoginSignup() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState("login"); // "login" or "signup"
 
   // login state
@@ -27,10 +30,13 @@ export default function GenAIAuthPage() {
       const raw = localStorage.getItem("user");
       if (raw) {
         setLoggedInUser(JSON.parse(raw));
+        // If user is already logged in, take them to dashboard
+        navigate("/", { replace: true });
       }
     } catch (e) {
       console.warn("Could not parse stored user", e);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const emailValid = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
@@ -56,14 +62,13 @@ export default function GenAIAuthPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");
 
-      // Save token + user and update UI state (no redirect)
+      // Save token + user and update UI
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       setLoggedInUser(data.user);
 
-      // optional: clear sensitive fields
-      setLoginPassword("");
-      setLoginEmailOrUsername("");
+      // navigate to dashboard (protected area)
+      navigate("/", { replace: true });
     } catch (err) {
       setLoginError(err.message || "Login failed");
     }
@@ -106,13 +111,8 @@ export default function GenAIAuthPage() {
       localStorage.setItem("user", JSON.stringify(data.user));
       setLoggedInUser(data.user);
 
-      // clear signup form fields
-      setFullName("");
-      setUsername("");
-      setSignupEmail("");
-      setSignupPassword("");
-      setConfirmPassword("");
-      setAcceptTerms(false);
+      // navigate to dashboard (protected area)
+      navigate("/", { replace: true });
     } catch (err) {
       setSignupErrors({ general: err.message || "Signup failed" });
     }
@@ -125,12 +125,14 @@ export default function GenAIAuthPage() {
     window.location.href = "/api/auth/google"; // backend route if implemented
   };
 
-  // Sign out - clear token and user state
+  // Sign out - clear token and user state (keeps component usable)
   const handleSignOut = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setLoggedInUser(null);
     setMode("login");
+    // navigate to login page explicitly
+    navigate("/settings", { replace: true });
   };
 
   // Display name preference: username -> name -> email
@@ -149,7 +151,6 @@ export default function GenAIAuthPage() {
           </div>
 
           <div className="mode-switch" aria-hidden={!!loggedInUser}>
-            {/* hide tab switch when logged in */}
             {!loggedInUser && (
               <>
                 <button className={`tab ${mode === "login" ? "active" : ""}`} onClick={() => setMode("login")}>
@@ -165,7 +166,6 @@ export default function GenAIAuthPage() {
 
         <div className="auth-body">
           {loggedInUser ? (
-            // ===== Logged-in view =====
             <div className="user-panel" role="status" aria-live="polite">
               <p style={{ margin: 0, fontSize: 14 }}>
                 <strong>Logged in as</strong>{" "}
@@ -178,12 +178,7 @@ export default function GenAIAuthPage() {
               <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
                 <button
                   className="primary"
-                  onClick={() => {
-                    // optional: navigate to dashboard if you have a router
-                    // window.location.href = '/';
-                    // For now, just show that user is logged in.
-                    alert(`Welcome back, ${displayName(loggedInUser)}!`);
-                  }}
+                  onClick={() => navigate("/", { replace: true })}
                 >
                   Continue
                 </button>
@@ -202,7 +197,6 @@ export default function GenAIAuthPage() {
               </div>
             </div>
           ) : (
-            // ===== Login / Signup forms =====
             <>
               <div className="oauth-row">
                 <button className="oauth-btn" onClick={handleGoogle}>
