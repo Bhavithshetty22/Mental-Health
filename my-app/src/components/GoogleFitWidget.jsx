@@ -381,18 +381,7 @@ const GoogleFitnessWidget = () => {
               `Data synced from Google Fit`}
           </div>
 
-          {/* Mood-Fitness Correlation */}
-          {correlation && (
-            <div className="correlation-card">
-              <div className="correlation-header">
-                <div className="correlation-indicator"></div>
-                <span className="correlation-title">Mood Insight</span>
-              </div>
-              <p className={`correlation-text ${correlation.color}`}>
-                {correlation.text}
-              </p>
-            </div>
-          )}
+         
 
           <div className="action-buttons">
             <button 
