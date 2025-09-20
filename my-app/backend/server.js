@@ -107,6 +107,11 @@ const limiter = rateLimit({
 
 app.use("/api/", limiter);
 
+// server.js (add near other app.use calls)
+const authRoutes = require("./routes/auth");
+app.use("/api/auth", authRoutes);
+
+
 // ===== Debug .env =====
 console.log("DEBUG MONGO_URI:", process.env.MONGO_URI ? "present" : "MISSING");
 console.log("DEBUG GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "present" : "MISSING");
