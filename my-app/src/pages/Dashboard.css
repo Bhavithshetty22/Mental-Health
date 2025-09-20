@@ -1,6 +1,14 @@
 /* Dashboard.css */
+.cont{
+  min-height: 100vh;
+  width: 100%;
+   background:
+    radial-gradient(circle at 10% 10%, rgba(0,0,0,0.02), transparent 8%),
+    linear-gradient(180deg, #fbf8f3 0%, #efe6d6 100%);
+}
+
 .maincontainer {
-  max-width: 1400px;
+  max-width: 1500px;
   margin: 0 auto;
   padding: 2rem;
   min-height: 100vh;
@@ -26,6 +34,13 @@
   align-items: flex-start;
 }
 
+.left-section {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .pfp {
   flex-shrink: 0;
 }
@@ -44,11 +59,67 @@
   transform: scale(1.05);
 }
 
+.moodandfit{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.welcome-text {
+  margin-top: 1.9rem;
+  max-width: 390px;
+}
+
+.welcome-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 2.1rem;
+  color: #2c3e50;
+  margin: 0 0 0.5rem 0;
+}
+
+.welcome-subtitle {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 1rem;
+  color: #7f8c8d;
+  margin: 0;
+  line-height: 1.4;
+}
+
 .othercontainer1boxes {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  gap: 20px;
+  grid-template-areas: 
+    "mood-tracker mood-calendar"
+    "google-fitness google-fitness";
+}
+
+/* Grid area classes for components */
+.mood-tracker-widget {
+  grid-area: mood-tracker;
+}
+
+.mood-calendar {
+  grid-area: mood-calendar;
+}
+
+.google-fitness-widget {
+  grid-area: google-fitness;
+  max-height: 300px; /* Limit height to prevent expansion */
+  overflow-y: auto; /* Allow scrolling if content is too long */
+}
+
+/* Ensure all widget containers have consistent styling */
+.mood-tracker-widget,
+.mood-calendar,
+.google-fitness-widget {
+  background: white;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 /* Responsive design */
@@ -59,12 +130,25 @@
     text-align: center;
   }
   
+  .left-section {
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
   .othercontainer1boxes {
     grid-template-columns: 1fr;
+    grid-template-areas: 
+      "mood-tracker"
+      "mood-calendar"
+      "google-fitness";
     width: 100%;
   }
   
   .logotext {
     font-size: 2rem;
+  }
+  
+  .welcome-text {
+    max-width: 100%;
   }
 }

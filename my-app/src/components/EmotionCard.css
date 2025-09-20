@@ -5,7 +5,7 @@
   background-color: #ffffff; /* White background */
   border: 1px solid #e2e8f0; /* Light border */
   border-radius: 1rem; /* 16px - more rounded */
-  padding: 1rem; /* 16px */
+  padding: 0.5rem; /* 16px */
   transition: all 0.3s ease;
   cursor: pointer;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
@@ -21,7 +21,7 @@
 /* Avatar Section */
 .emotion-card__avatar {
   width: 100%;
-  height: 5rem; /* 80px - slightly smaller */
+  height: 7rem; /* 80px - slightly smaller */
   border-radius: 0.75rem; /* 12px */
   display: flex;
   align-items: center;
@@ -29,16 +29,10 @@
   margin-bottom: 1rem; /* 16px */
   position: relative;
   overflow: hidden;
+  
 }
 
-.emotion-card__image-container {
-  width: 3.5rem; /* 56px - smaller image */
-  height: 3.5rem; /* 56px */
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
-}
+
 
 .emotion-card__image {
   width: 100%;
@@ -46,11 +40,7 @@
   object-fit: cover;
 }
 
-.emotion-card__overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(255, 255, 255, 0.1), transparent);
-}
+
 
 /* Content Section */
 .emotion-card__content {

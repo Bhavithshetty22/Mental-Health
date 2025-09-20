@@ -4,7 +4,7 @@
   background-color: white;
   border-radius: 1.5rem;
   padding: 1.5rem;
-  max-width: 28rem;
+  max-width: 550px;
   margin: 0 auto;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
@@ -31,6 +31,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .header-icon {
@@ -59,6 +60,7 @@
   width: 0.75rem;
   height: 0.75rem;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .status-indicator.connected {
@@ -78,6 +80,7 @@
   border-radius: 0.5rem;
   margin-bottom: 1rem;
   font-size: 0.875rem;
+  flex-shrink: 0;
 }
 
 /* Connect Section */
@@ -141,17 +144,19 @@
 /* Metrics Grid */
 .metrics-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem; /* Reduced gap to fit better */
+  flex-shrink: 0;
 }
 
 .metric-card {
-  padding: 1rem;
+  padding: 0.75rem; /* Reduced padding */
   border-radius: 0.75rem;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-height: 0; /* Prevent expansion */
 }
 
 .metric-card.steps {
@@ -187,26 +192,29 @@
 }
 
 .metric-icon {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem; /* Reduced margin */
+  flex-shrink: 0;
 }
 
 .metric-value {
-  font-size: 1.125rem;
+  font-size: 1rem; /* Slightly smaller font */
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.125rem; /* Reduced margin */
 }
 
 .metric-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem; /* Slightly smaller font */
   color: #6b7280;
+  line-height: 1.2;
 }
 
 /* Correlation Card */
 .correlation-card {
   background: linear-gradient(to right, #f0fdfa, #eff6ff);
   border-radius: 0.75rem;
-  padding: 1rem;
+  padding: 0.75rem; /* Reduced padding */
+  flex-shrink: 0;
 }
 
 .correlation-header {
@@ -221,6 +229,7 @@
   height: 0.5rem;
   background-color: #14b8a6;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .correlation-title {
@@ -230,8 +239,9 @@
 }
 
 .correlation-text {
-  font-size: 0.875rem;
+  font-size: 0.8rem; /* Slightly smaller font */
   margin: 0;
+  line-height: 1.3;
 }
 
 .correlation-text.correlation-positive {
@@ -250,6 +260,8 @@
 .action-buttons {
   display: flex;
   gap: 0.5rem;
+  flex-shrink: 0;
+  margin-top: auto; /* Push to bottom */
 }
 
 .details-button,
@@ -282,15 +294,33 @@
 }
 
 /* Responsive Design */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .fitness-widget {
-    margin: 0 1rem;
     padding: 1rem;
   }
   
   .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  
+  .metric-card {
+    padding: 0.5rem;
+  }
+  
+  .metric-value {
+    font-size: 0.9rem;
+  }
+  
+  .metric-label {
+    font-size: 0.65rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics-grid {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
   
   .action-buttons {
