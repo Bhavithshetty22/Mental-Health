@@ -1,0 +1,23 @@
+/* Community.css (page-level) */
+.community-page { max-width:1100px; margin:24px auto; padding:12px; font-family: Inter, system-ui, sans-serif; }
+.community-header { display:flex; gap:18px; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
+.community-header h1 { margin:0; font-size:24px; }
+.community-header .subtitle { margin:4px 0 0; color:#6b7280; font-size:13px; }
+.controls { display:flex; gap:8px; align-items:center; }
+.btn { padding:8px 12px; border-radius:8px; border:0; cursor:pointer; }
+.btn.primary { background:#2563eb; color:white; }
+.btn.ghost { background:transparent; border:1px solid #e5e7eb; color:#111827; }
+
+/* feed */
+.community-feed { display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:16px; margin-top:18px; }
+.community-post { background:white; border-radius:12px; padding:10px; box-shadow: 0 6px 18px rgba(2,6,23,0.06); display:flex; flex-direction:column; gap:8px; }
+.post-image img { width:100%; height:220px; object-fit:cover; border-radius:8px; }
+.post-text { white-space:pre-wrap; color:#0f172a; font-size:14px; }
+.post-footer { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:12px; color:#6b7280; }
+
+/* layout */
+.community-footer { margin-top:18px; display:flex; align-items:center; justify-content:center; gap:12px; color:#6b7280; }
+.loading, .empty { text-align:center; padding:24px; color:#6b7280; }
+
+/* small */
+.like-btn { background: transparent; border:1px solid #e5e7eb; padding:6px 8px; border-radius:8px; cursor:pointer; }

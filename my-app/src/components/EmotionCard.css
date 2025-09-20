@@ -1,7 +1,7 @@
 /* EmotionCard.css */
 .emotion-card {
   flex-shrink: 0;
-  width: 12rem; /* 192px */
+  width: 14rem; /* 192px */
   background-color: #ffffff; /* White background */
   border: 1px solid #e2e8f0; /* Light border */
   border-radius: 1rem; /* 16px - more rounded */
@@ -21,7 +21,7 @@
 /* Avatar Section */
 .emotion-card__avatar {
   width: 100%;
-  height: 7rem; /* 80px - slightly smaller */
+  height: 10rem; /* 80px - slightly smaller */
   border-radius: 0.75rem; /* 12px */
   display: flex;
   align-items: center;

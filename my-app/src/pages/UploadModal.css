@@ -1,0 +1,17 @@
+/* UploadModal.css */
+.upload-modal-backdrop {
+  position: fixed; inset: 0; display:flex; align-items:center; justify-content:center; background:rgba(2,6,23,0.45); z-index:9999;
+}
+.upload-modal {
+  width: 680px; max-width:94%; background:white; border-radius:12px; padding:16px; box-shadow:0 20px 60px rgba(2,6,23,0.3);
+}
+.upload-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.upload-header h2 { margin:0; }
+.close-btn { background:transparent; border:0; cursor:pointer; font-size:18px; }
+.upload-form label { display:block; margin-bottom:10px; font-size:13px; color:#374151; }
+.upload-form textarea, .upload-form input[type="url"], .upload-form input[type="file"] {
+  width:100%; padding:10px; border:1px solid #e6edf3; border-radius:8px; font-size:14px;
+}
+.divider { text-align:center; color:#9ca3af; margin:6px 0; font-size:12px; }
+.upload-modal .actions { display:flex; justify-content:flex-end; gap:8px; margin-top:8px; }
+.error { color:#b91c1c; font-size:13px; margin-top:6px; }
