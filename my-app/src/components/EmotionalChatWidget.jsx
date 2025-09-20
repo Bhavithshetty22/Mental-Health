@@ -35,7 +35,7 @@ const EmotionWidget = () => {
       description: "Spread happiness and celebrate life's moments",
       colorClass: "color-yellow-orange",
       bgColorClass: "bg-yellow-orange",
-      image: "https://images.unsplash.com/photo-1554151228-14d9def656e4?w=150&h=150&fit=crop&crop=face"
+      image: "/joybot.png"
     },
     {
       id: 2,
@@ -44,7 +44,7 @@ const EmotionWidget = () => {
       description: "Find inner peace and tranquil moments",
       colorClass: "color-blue-cyan",
       bgColorClass: "bg-blue-cyan",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
+      image: "/serenity.png"
     },
     {
       id: 3,
@@ -53,7 +53,7 @@ const EmotionWidget = () => {
       description: "Express frustration and work through anger",
       colorClass: "color-red-dark",
       bgColorClass: "bg-red-dark",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
+      image: "/thunderbolt.png"
     },
     {
       id: 4,
@@ -62,7 +62,7 @@ const EmotionWidget = () => {
       description: "Navigate through sadness with understanding",
       colorClass: "color-gray-blue",
       bgColorClass: "bg-gray-blue",
-      image: "https://images.unsplash.com/photo-1494790108755-2616c24e6425?w=150&h=150&fit=crop&crop=face"
+      image: "/sadness.png"
     },
     {
       id: 5,
@@ -71,7 +71,7 @@ const EmotionWidget = () => {
       description: "Work through anxiety and find calm",
       colorClass: "color-purple-indigo",
       bgColorClass: "bg-purple-indigo",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
+      image: "/anxious.png"
     },
     {
       id: 6,
