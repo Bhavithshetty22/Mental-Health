@@ -1,3 +1,4 @@
+// src/App.js
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import "@fontsource/poppins";
@@ -9,33 +10,38 @@ import MoodTrackerPage from './pages/MoodTracker';
 import TalkToFuture from './pages/TalkToFuture';
 import Layout from './components/Layout';
 import DailyJournal from './pages/DailyJournal';
-import AiTherapy from './pages/AiTherapy'
+import AiTherapy from './pages/AiTherapy';
+
+// Auth page (login/signup)
+import LoginSignup from './pages/LoginSignup';
+
+function isAuthenticated() {
+  return !!localStorage.getItem('token');
+}
 
 function App() {
+  const authed = isAuthenticated();
+
   return (
     <Router>
       <div className="App">
         <Routes>
-          {/* Main layout wrapper */}
-          <Route path="/" element={<Layout />}>
-            {/* Dashboard route */}
+          {/* Public auth routes */}
+          <Route path="/settings" element={<LoginSignup />} />
+          <Route path="/login" element={<LoginSignup />} />
+
+          {/* Protected layout - only accessible when authed */}
+          <Route path="/" element={authed ? <Layout /> : <Navigate to="/" replace />} >
             <Route index element={<Dashboard />} />
-
-            {/* Mood Tracker route */}
             <Route path="mood-tracker" element={<MoodTrackerPage />} />
-
-            {/* Talk To Future route */}
             <Route path="talk-to-future" element={<TalkToFuture />} />
-             <Route path="daily-journal" element={<DailyJournal />} />
-               <Route path="ai-therapy" element={<AiTherapy />} />
-
-            {/* Add more routes as needed */}
+            <Route path="daily-journal" element={<DailyJournal />} />
+            <Route path="ai-therapy" element={<AiTherapy />} />
             <Route path="analytics" element={<div>Analytics Page (Coming Soon)</div>} />
-            <Route path="settings" element={<div>Settings Page (Coming Soon)</div>} />
-
-            {/* Catch-all redirect to dashboard */}
-            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
+
+          {/* fallback */}
+          <Route path="*" element={<Navigate to={authed ? "/" : "/settings"} replace />} />
         </Routes>
       </div>
     </Router>
