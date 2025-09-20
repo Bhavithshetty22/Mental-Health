@@ -12,15 +12,15 @@ const EmotionCard = ({ bot, onTalkClick }) => {
     <div className="emotion-card">
       {/* Avatar Section */}
       <div className={`emotion-card__avatar ${bot.bgColorClass}`}>
-        <div className="emotion-card__image-container">
+       
           <img 
             src={bot.image}
             alt={`${bot.mood} emotion`}
             className="emotion-card__image"
             onError={handleImageError}
           />
-        </div>
-        <div className="emotion-card__overlay"></div>
+       
+      
       </div>
       
       {/* Content Section */}
@@ -30,12 +30,7 @@ const EmotionCard = ({ bot, onTalkClick }) => {
           <p className="emotion-card__description">{bot.description}</p>
         </div>
         
-        {/* Mood Tag */}
-        <div className="emotion-card__mood-container">
-          <span className={`emotion-card__mood-tag ${bot.colorClass}`}>
-            {bot.mood}
-          </span>
-        </div>
+      
         
         {/* Talk Button */}
         <button

@@ -1,11 +1,31 @@
 // src/components/Layout.jsx
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, BarChart3, Settings, Calendar, MessageCircle } from 'lucide-react';
+import { Home, BarChart3, Settings, Calendar, MessageCircle, LogOut } from 'lucide-react';
 import './Layout.css';
+import { useEffect, useState } from 'react';
 
 function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [loggedInUser, setLoggedInUser] = useState(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) {
+        setLoggedInUser(JSON.parse(raw));
+      }
+    } catch (e) {
+      console.warn("Could not parse stored user", e);
+    }
+  }, [location.pathname]); // re-check when route changes
+
+  const handleSignOut = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setLoggedInUser(null);
+    navigate("/settings"); // redirect to login/signup
+  };
 
   const isActive = (path) => {
     if (path === '/' && location.pathname === '/') return true;
@@ -15,12 +35,25 @@ function Layout() {
 
   return (
     <div className="layout">
-      {/* Optional: Navigation Header */}
       <nav className="main-navigation">
         <div className="nav-brand">
           <h2>MOODORA</h2>
         </div>
         <div className="nav-links">
+
+          {/* ✅ Signout button only when logged in */}
+          {loggedInUser && (
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="nav-link btn-as-link"
+              aria-label="Sign out"
+              style={{ color: "red" }}
+            >
+              <LogOut size={20} />
+            </button>
+          )}
+
           <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
             <Home size={20} />
           </Link>
@@ -40,14 +73,13 @@ function Layout() {
           </Link>
 
           <Link
-            to="/daily-journal"
-            className={`nav-link ${isActive('/daily-journal') ? 'active' : ''}`}
+            to="/AiTherapy"
+            className={`nav-link ${isActive('/AiTherapy') ? 'active' : ''}`}
           >
             <BarChart3 size={20} />
             <span className="nav-text">Daily Journal</span>
           </Link>
 
-          {/* Settings - use navigate to ensure it routes to /settings (LoginSignup) */}
           <button
             type="button"
             onClick={() => navigate('/settings')}
@@ -60,7 +92,6 @@ function Layout() {
         </div>
       </nav>
 
-      {/* Main content area */}
       <main className="main-content">
         <Outlet />
       </main>

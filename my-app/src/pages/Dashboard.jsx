@@ -17,17 +17,30 @@ function Dashboard() {
   };
 
   return (
+    <div className="cont">
     <div className="maincontainer">
       
       <div className="container1st">
-        <ProfileDynamic />
-        <div className="othercontainer1boxes">
-          <MoodTrackerWidget onGoClick={handleGoToMoodTracker} />
-          <MoodCalendar />
-        </div>
-      </div>
+  <div className="left-section">
+    <ProfileDynamic />
+    <div className="welcome-text">
+      <h2 className="welcome-title">Welcome Back Bhavith</h2>
+      <p className="welcome-subtitle">You are feeling sad today and its ok we can get through this talk to me anytime u want</p>
+    </div>
+  </div>
+  <div className="othercontainer1boxes">
+    <div className="moodandfit">
+      <MoodTrackerWidget onGoClick={handleGoToMoodTracker} />
+    <GoogleFitnessWidget />
+    </div>
+    
+    <MoodCalendar />
+   
+  </div>
+</div>
       <EmotionChatWidget />
-      <GoogleFitnessWidget />
+      
+    </div>
     </div>
   );
 }
