@@ -1,3 +1,4 @@
+
 // src/pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +8,7 @@ import ProfileDynamic from '../components/ProfileDynamic';
 import './Dashboard.css';
 import EmotionChatWidget from '../components/EmotionalChatWidget';
 import GoogleFitnessWidget from '../components/GoogleFitWidget';
+import WidgetTemplate from '../components/WidgetTemplate'; // Import your widget
 
 function Dashboard() {
   const [count, setCount] = useState(0);
@@ -36,11 +38,28 @@ function Dashboard() {
     navigate('/mood-tracker');
   };
 
+  // Handler functions for the three widgets
+  const handleJournalClick = () => {
+    navigate('/daily-journal');
+    // Or any other action you want
+  };
+
+  const handleMeditationClick = () => {
+    navigate('/ai-therapy');
+    // Or any other action you want
+  };
+
+  const handleAnalyticsClick = () => {
+    navigate('/talk-to-future');
+    // Or any other action you want
+  };
+
   return (
     <div className="cont">
       <div className="maincontainer">
         <div className="container1st">
           <div className="left-section">
+
             <ProfileDynamic />
             <div className="welcome-text">
               <h2 className="welcome-title">Welcome back {displayName()}</h2>
@@ -56,9 +75,37 @@ function Dashboard() {
               <MoodTrackerWidget onGoClick={handleGoToMoodTracker} />
               <GoogleFitnessWidget />
             </div>
-
             <MoodCalendar />
           </div>
+        </div>
+        
+        <div className='featuresgrid'>
+          <WidgetTemplate
+            theme="light"
+            title="Daily Journal"
+            description="Reflect on your day and track your thoughts and emotions through journaling."
+            buttonText="Start Writing"
+            imageUrl="/dailyjournal.png"
+            handleButtonClick={handleJournalClick}
+          />
+          
+          <WidgetTemplate
+            theme="light"
+            title="AI Therapist"
+            description="Find your inner peace with our curated meditation sessions and mindfulness exercises."
+            buttonText="Begin Session"
+            imageUrl="/aitherapist.png"
+            handleButtonClick={handleMeditationClick}
+          />
+          
+          <WidgetTemplate
+            theme="light"
+            title="Talk to your futute self"
+            description="Visualize your emotional patterns and gain insights into your mental health journey."
+            buttonText="Lets start"
+            imageUrl="/talktoyourfutureself.png"
+            handleButtonClick={handleAnalyticsClick}
+          />
         </div>
 
         <EmotionChatWidget />
