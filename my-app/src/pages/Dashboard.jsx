@@ -20,17 +20,17 @@ function Dashboard() {
 
   // Handler functions for the three widgets
   const handleJournalClick = () => {
-    navigate('/journal');
+    navigate('/daily-journal');
     // Or any other action you want
   };
 
   const handleMeditationClick = () => {
-    navigate('/meditation');
+    navigate('/ai-therapy');
     // Or any other action you want
   };
 
   const handleAnalyticsClick = () => {
-    navigate('/analytics');
+    navigate('/talk-to-future');
     // Or any other action you want
   };
 
