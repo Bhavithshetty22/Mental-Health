@@ -1,5 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Home, BarChart3, Settings, Calendar, MessageCircle } from 'lucide-react';
+import { BsJournalBookmarkFill } from "react-icons/bs";
+import { RiPsychotherapyLine } from "react-icons/ri";
 import './Layout.css';
 
 function Layout() {
@@ -41,19 +43,19 @@ function Layout() {
           </Link>
 
           <Link
-            to="/AiTherapy"
-            className={`nav-link ${isActive('/AiTherapy') ? 'active' : ''}`}
+            to="/daily-journal"
+            className={`nav-link ${isActive('/DailyJournal') ? 'active' : ''}`}
           >
-            <BarChart3 size={20} />
-            Daily Journal
+            <BsJournalBookmarkFill size={20} />
+      
             
           </Link>
 
           <Link
-            to="/settings"
-            className={`nav-link ${isActive('/settings') ? 'active' : ''}`}
+            to="/ai-therapy"
+            className={`nav-link ${isActive('/AiTherapy') ? 'active' : ''}`}
           >
-            <Settings size={20} />
+            <RiPsychotherapyLine size={20} />
             
           </Link>
         </div>
