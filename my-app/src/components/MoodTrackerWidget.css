@@ -7,6 +7,7 @@
   border: 1px solid #e5e7eb;
   transition: all 0.3s ease;
   height: fit-content;
+
 }
 
 .mood-tracker-widget:hover {
