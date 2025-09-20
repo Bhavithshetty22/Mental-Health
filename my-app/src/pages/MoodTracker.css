@@ -1,14 +1,12 @@
 /* MoodTrackerPage.css */
 
-body:has(.mood-tracker-page) {
-  background: white !important;
-}
 
 .mood-tracker-page {
   min-height: 100vh;
-  background: white;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(0,0,0,0.02), transparent 8%),
+    linear-gradient(180deg, #fbf8f3 0%, #efe6d6 100%);
   padding: 2rem 1rem;
-  /* Ensure the gradient covers the full viewport */
   position: relative;
   z-index: 1;
 }
@@ -21,7 +19,7 @@ body:has(.mood-tracker-page) {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgb(206, 204, 204);
+
   z-index: -1;
 }
 
@@ -70,10 +68,9 @@ body:has(.mood-tracker-page) {
 /* Header */
 .mood-tracker-header {
   text-align: center;
-  color: white;
+  color: #1a1a1a;
   margin-bottom: 3rem;
-  /* Added text shadow for better contrast */
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
 }
 
 .mood-tracker-title {
@@ -204,12 +201,11 @@ body:has(.mood-tracker-page) {
 }
 
 .mood-stats-section h2 {
-  color: white;
+  color: #1a1a1a;
   text-align: center;
   font-size: 1.75rem;
   margin-bottom: 1.5rem;
-  /* Added text shadow for better contrast against gradient background */
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
 }
 
 .mood-stats-grid {
@@ -264,12 +260,11 @@ body:has(.mood-tracker-page) {
 }
 
 .calendar-section h2 {
-  color: white;
+  color: #1a1a1a;
   text-align: center;
   font-size: 1.75rem;
   margin-bottom: 1.5rem;
-  /* Added text shadow for better contrast */
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
 }
 
 .calendar-placeholder {
