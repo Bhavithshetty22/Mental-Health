@@ -27,7 +27,7 @@ function App() {
             {/* Talk To Future route */}
             <Route path="talk-to-future" element={<TalkToFuture />} />
              <Route path="daily-journal" element={<DailyJournal />} />
-               <Route path="AiTherapy" element={<AiTherapy />} />
+               <Route path="ai-therapy" element={<AiTherapy />} />
 
             {/* Add more routes as needed */}
             <Route path="analytics" element={<div>Analytics Page (Coming Soon)</div>} />
