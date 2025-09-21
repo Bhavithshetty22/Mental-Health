@@ -9,10 +9,129 @@ const GoogleFitnessWidget = () => {
   const [error, setError] = useState(null);
   const [gisReady, setGisReady] = useState(false);
   const [accessToken, setAccessToken] = useState(null);
+  const [tokenExpiry, setTokenExpiry] = useState(null);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // Google Fit API configuration
   const GOOGLE_CLIENT_ID = import.meta.env?.VITE_GOOGLE_CLIENT_ID || '847083852436-c8gkmj53clud9jgo41htnjce8tnbh060.apps.googleusercontent.com';
   const SCOPES = 'https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/fitness.heart_rate.read https://www.googleapis.com/auth/fitness.sleep.read';
+
+  // Session management constants
+  const SESSION_STORAGE_KEY = 'googleFitSession';
+  const DEFAULT_SESSION_DURATION = 50 * 60 * 1000; // 50 minutes (conservative estimate)
+  const REFRESH_BUFFER = 5 * 60 * 1000; // Refresh 5 minutes before expiry (reduced from 10)
+
+  // Load saved session on component mount
+  useEffect(() => {
+    const loadSavedSession = () => {
+      try {
+        const savedSession = localStorage.getItem(SESSION_STORAGE_KEY);
+        if (savedSession) {
+          const sessionData = JSON.parse(savedSession);
+          const now = Date.now();
+          
+          console.log('Checking saved session:', {
+            expiry: new Date(sessionData.expiry),
+            now: new Date(now),
+            timeLeft: Math.floor((sessionData.expiry - now) / (1000 * 60))
+          });
+          
+          // Check if session is still valid (use actual expiry, not buffer)
+          if (sessionData.expiry && now < sessionData.expiry) {
+            console.log('Loading saved Google Fit session');
+            setAccessToken(sessionData.token);
+            setTokenExpiry(sessionData.expiry);
+            setIsConnected(true);
+            
+            // Auto-fetch data if session is valid
+            setTimeout(() => {
+              fetchFitnessData(sessionData.token);
+            }, 500);
+          } else {
+            console.log('Saved session expired, clearing');
+            localStorage.removeItem(SESSION_STORAGE_KEY);
+          }
+        } else {
+          console.log('No saved session found');
+        }
+      } catch (error) {
+        console.error('Error loading saved session:', error);
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+      }
+      
+      // Mark initial load as complete
+      setInitialLoadComplete(true);
+    };
+
+    loadSavedSession();
+  }, []);
+
+  // Save session to localStorage
+  const saveSession = (token, expiryTime) => {
+    try {
+      const sessionData = {
+        token: token,
+        expiry: expiryTime,
+        connectedAt: Date.now()
+      };
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionData));
+      console.log('Session saved to localStorage:', sessionData);
+    } catch (error) {
+      console.error('Error saving session:', error);
+    }
+  };
+
+  // Clear session
+  const clearSession = () => {
+    try {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      setAccessToken(null);
+      setTokenExpiry(null);
+      setIsConnected(false);
+      setFitnessData(null);
+      // Only show error if we had a session before
+      if (accessToken) {
+        setError('Session expired. Please reconnect to Google Fit.');
+      }
+    } catch (error) {
+      console.error('Error clearing session:', error);
+    }
+  };
+
+  // Check if a specific token is expired (can work without React state)
+  const isSpecificTokenExpired = (token, expiry) => {
+    if (!token || !expiry) return true;
+    const now = Date.now();
+    return now >= expiry;
+  };
+
+  // Check if current token is actually expired (relies on React state)
+  const isTokenExpired = () => {
+    if (!tokenExpiry || !accessToken) {
+      console.log('Token check: No token or expiry available in state');
+      return true;
+    }
+    
+    const now = Date.now();
+    const actuallyExpired = now >= tokenExpiry;
+    
+    if (actuallyExpired) {
+      console.log('Token actually expired:', {
+        expiry: new Date(tokenExpiry),
+        now: new Date(now),
+        timeLeft: Math.floor((tokenExpiry - now) / (1000 * 60))
+      });
+    }
+    
+    return actuallyExpired;
+  };
+
+  // Helper function to check if token needs refresh (different from expired)
+  const needsRefresh = () => {
+    if (!tokenExpiry || !accessToken) return false;
+    const now = Date.now();
+    return now >= (tokenExpiry - REFRESH_BUFFER);
+  };
 
   // Initialize Google Identity Services (new API)
   useEffect(() => {
@@ -60,8 +179,23 @@ const GoogleFitnessWidget = () => {
             }
             
             console.log('Access token received');
+            
+            // Calculate expiry time - use Google's actual expires_in value when available
+            const expiresInMs = response.expires_in ? (response.expires_in * 1000) : DEFAULT_SESSION_DURATION;
+            const expiryTime = Date.now() + expiresInMs; // Use full duration, don't artificially limit it
+            
+            console.log(`Token expires in ${Math.floor(expiresInMs / (1000 * 60))} minutes, expiry time:`, new Date(expiryTime));
+            
+            // Set state first, then save to localStorage
             setAccessToken(response.access_token);
+            setTokenExpiry(expiryTime);
             setIsConnected(true);
+            setLoading(false);
+            
+            // Save to localStorage
+            saveSession(response.access_token, expiryTime);
+            
+            // Fetch data with the token directly (don't rely on state)
             fetchFitnessData(response.access_token);
           },
           error_callback: (error) => {
@@ -77,12 +211,58 @@ const GoogleFitnessWidget = () => {
     }
   }, [gisReady, GOOGLE_CLIENT_ID, SCOPES]);
 
+  // Auto-refresh token when it's about to expire
+  useEffect(() => {
+    if (!isConnected || !tokenExpiry) return;
+
+    const timeUntilExpiry = tokenExpiry - Date.now();
+    const refreshTime = timeUntilExpiry - REFRESH_BUFFER;
+
+    if (refreshTime > 0 && refreshTime < (30 * 60 * 1000)) { // Only set timer if less than 30 mins away
+      console.log(`Setting refresh timer for ${Math.floor(refreshTime / (1000 * 60))} minutes`);
+      const refreshTimer = setTimeout(() => {
+        console.log('Auto-refreshing Google Fit token');
+        if (window.tokenClient && isConnected && !isTokenExpired()) {
+          // Try silent refresh first
+          try {
+            window.tokenClient.requestAccessToken({ prompt: '' });
+          } catch (error) {
+            console.log('Silent refresh failed, will require manual reconnection');
+            if (accessToken) {
+              setError('Session will expire soon. Please reconnect to Google Fit.');
+            }
+          }
+        }
+      }, refreshTime);
+
+      return () => clearTimeout(refreshTimer);
+    }
+  }, [isConnected, tokenExpiry]);
+
   // Fetch data using the new REST API with access token
   const fetchFitnessData = async (token = accessToken) => {
+    console.log('fetchFitnessData called with token:', token ? 'present' : 'missing');
+    
     if (!token) {
       setError('No access token available');
+      setLoading(false);
       return;
     }
+
+    // If using stored token, check if it's expired using state
+    // If using passed token (like during initial auth), skip expiry check
+    const usingStoredToken = (token === accessToken);
+    if (usingStoredToken && isTokenExpired()) {
+      console.log('Stored token expired, clearing session');
+      if (accessToken) {
+        setError('Session expired. Please reconnect to Google Fit.');
+      }
+      clearSession();
+      setLoading(false);
+      return;
+    }
+
+    console.log('Proceeding with data fetch, token valid');
 
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -106,6 +286,12 @@ const GoogleFitnessWidget = () => {
           });
 
           if (!response.ok) {
+            if (response.status === 401) {
+              // Token expired or invalid
+              console.log('Token invalid, clearing session');
+              clearSession();
+              throw new Error('Session expired. Please reconnect to Google Fit.');
+            }
             if (response.status === 403) {
               throw new Error('Access denied. Please ensure you have granted fitness permissions.');
             }
@@ -116,6 +302,9 @@ const GoogleFitnessWidget = () => {
           return data;
         } catch (error) {
           console.log(`Error fetching data from ${dataSourceId}:`, error.message);
+          if (error.message.includes('Session expired')) {
+            throw error; // Re-throw session expired errors
+          }
           return { point: [] };
         }
       };
@@ -199,7 +388,11 @@ const GoogleFitnessWidget = () => {
 
     } catch (error) {
       console.error('Error fetching fitness data:', error);
-      setError('Failed to fetch fitness data: ' + error.message);
+      if (error.message.includes('Session expired')) {
+        setError(error.message);
+      } else {
+        setError('Failed to fetch fitness data: ' + error.message);
+      }
       setLoading(false);
     }
   };
@@ -235,13 +428,12 @@ const GoogleFitnessWidget = () => {
         });
       }
       
-      setIsConnected(false);
-      setFitnessData(null);
-      setAccessToken(null);
+      clearSession();
       setError(null);
     } catch (error) {
       console.error('Error disconnecting:', error);
-      setError('Error disconnecting. Please try again.');
+      clearSession(); // Clear session anyway
+      setError('Disconnected (with warning: ' + error.message + ')');
     }
   };
 
@@ -251,7 +443,14 @@ const GoogleFitnessWidget = () => {
       return;
     }
     
+    if (isTokenExpired()) {
+      setError('Session expired. Please reconnect to Google Fit.');
+      clearSession();
+      return;
+    }
+    
     setLoading(true);
+    setError(null);
     await fetchFitnessData();
   };
 
@@ -276,7 +475,28 @@ const GoogleFitnessWidget = () => {
     return { text: correlationText, color: correlationColor };
   };
 
+  // Get session info for display
+  const getSessionInfo = () => {
+    if (!tokenExpiry) return null;
+    
+    const timeLeft = tokenExpiry - Date.now();
+    const minutesLeft = Math.floor(timeLeft / (1000 * 60));
+    
+    if (minutesLeft <= 0) {
+      return 'Session expired';
+    } else if (minutesLeft < 15) {
+      return `Expires in ${minutesLeft}min`;
+    } else if (minutesLeft < 60) {
+      return `${minutesLeft}min left`;
+    } else {
+      const hoursLeft = Math.floor(minutesLeft / 60);
+      const remainingMins = minutesLeft % 60;
+      return `${hoursLeft}h ${remainingMins}min left`;
+    }
+  };
+
   const correlation = getMoodCorrelation();
+  const sessionInfo = getSessionInfo();
 
   return (
     <div className="fitness-widget">
@@ -288,16 +508,43 @@ const GoogleFitnessWidget = () => {
           <div className="header-text">
             <h3 className="widget-title">Google Fitness</h3>
             <p className="widget-subtitle">
-              {isConnected ? 'Connected' : gisReady ? 'Ready to connect' : 'Loading...'}
+              {isConnected ? (
+                <>
+                  Connected
+                  {sessionInfo && (
+                    <span style={{ fontSize: '11px', opacity: 0.7, marginLeft: '8px' }}>
+                      • {sessionInfo}
+                    </span>
+                  )}
+                </>
+              ) : gisReady ? 'Ready to connect' : 'Loading...'}
             </p>
           </div>
         </div>
         <div className={`status-indicator ${isConnected ? 'connected' : gisReady ? 'ready' : 'loading'}`}></div>
       </div>
 
-      {error && (
+      {error && initialLoadComplete && (
         <div className="error-message">
           <p>{error}</p>
+          {error.includes('Session expired') && (
+            <button 
+              onClick={connectGoogleFit}
+              disabled={loading || !gisReady}
+              style={{
+                marginTop: '8px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                backgroundColor: '#4285f4',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              {loading ? 'Reconnecting...' : 'Reconnect Now'}
+            </button>
+          )}
           {error.includes('permissions') && (
             <details style={{ marginTop: '8px', fontSize: '12px', opacity: 0.8 }}>
               <summary>Troubleshooting</summary>
@@ -380,8 +627,6 @@ const GoogleFitnessWidget = () => {
               'No data available - check your Google Fit app' : 
               `Data synced from Google Fit`}
           </div>
-
-         
 
           <div className="action-buttons">
             <button 

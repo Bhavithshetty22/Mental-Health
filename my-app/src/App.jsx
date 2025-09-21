@@ -21,17 +21,22 @@ function isAuthenticated() {
 
 function App() {
   const authed = isAuthenticated();
-
+  
   return (
     <Router>
       <div className="App">
         <Routes>
           {/* Public auth routes */}
-          <Route path="/settings" element={<LoginSignup />} />
-          <Route path="/login" element={<LoginSignup />} />
-
+          <Route 
+            path="/login" 
+            element={authed ? <Navigate to="/" replace /> : <LoginSignup />} 
+          />
+          
           {/* Protected layout - only accessible when authed */}
-          <Route path="/" element={authed ? <Layout /> : <Navigate to="/" replace />} >
+          <Route 
+            path="/" 
+            element={authed ? <Layout /> : <Navigate to="/login" replace />}
+          >
             <Route index element={<Dashboard />} />
             <Route path="mood-tracker" element={<MoodTrackerPage />} />
             <Route path="talk-to-future" element={<TalkToFuture />} />
@@ -39,9 +44,12 @@ function App() {
             <Route path="ai-therapy" element={<AiTherapy />} />
             <Route path="analytics" element={<div>Analytics Page (Coming Soon)</div>} />
           </Route>
-
-          {/* fallback */}
-          <Route path="*" element={<Navigate to={authed ? "/" : "/settings"} replace />} />
+          
+          {/* Fallback route */}
+          <Route 
+            path="*" 
+            element={<Navigate to={authed ? "/" : "/login"} replace />} 
+          />
         </Routes>
       </div>
     </Router>
