@@ -25,9 +25,11 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  position: relative;
 }
 .nav-brand{
-  margin-left: 50%;
+ position: absolute;
+ left: 50%;
 }
 .nav-brand h2 {
   color: white;

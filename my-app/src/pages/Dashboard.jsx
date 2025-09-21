@@ -75,6 +75,7 @@ function Dashboard() {
               <MoodTrackerWidget onGoClick={handleGoToMoodTracker} />
               <GoogleFitnessWidget />
             </div>
+
             <MoodCalendar />
           </div>
         </div>
@@ -107,6 +108,7 @@ function Dashboard() {
             handleButtonClick={handleAnalyticsClick}
           />
         </div>
+
 
         <EmotionChatWidget />
       </div>

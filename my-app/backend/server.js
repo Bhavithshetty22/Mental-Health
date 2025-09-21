@@ -111,6 +111,8 @@ app.use("/api/", limiter);
 const authRoutes = require("./routes/auth");
 app.use("/api/auth", authRoutes);
 
+const communityRoutes = require("./routes/community");
+app.use("/api/community", communityRoutes);
 
 // ===== Debug .env =====
 console.log("DEBUG MONGO_URI:", process.env.MONGO_URI ? "present" : "MISSING");
