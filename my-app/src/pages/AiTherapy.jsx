@@ -33,6 +33,9 @@ const VoiceChatTherapy = () => {
   const processingTimeoutRef = useRef(null);
   const ttsTimeoutRef = useRef(null);
 
+  // Default ElevenLabs voice (Adam - calm, professional)
+  const defaultVoice = "pNInz6obpgDQGcFmaJgB";
+
   // Memoized constants
   const crisisKeywords = useMemo(
     () => [
@@ -191,31 +194,91 @@ const VoiceChatTherapy = () => {
     };
   }, []);
 
-  // Optimized crisis detection
-  const detectCrisis = useCallback(
-    (text) => {
-      const lowerText = text.toLowerCase();
-      const crisisFound = crisisKeywords.some((keyword) =>
-        lowerText.includes(keyword)
-      );
+  // ElevenLabs TTS function
+  const callElevenLabsTTS = useCallback(async (text) => {
+    return new Promise(async (resolve) => {
+      try {
+        const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
+        
+        if (!apiKey) {
+          console.warn("ElevenLabs API key not found, falling back to browser TTS");
+          await callBrowserTTS(text);
+          resolve();
+          return;
+        }
 
-      if (crisisFound && !crisisDetected) {
-        setCrisisDetected(true);
-        setShowCrisisModal(true);
+        if (!text?.trim()) {
+          resolve();
+          return;
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        const response = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${defaultVoice}`,
+          {
+            method: 'POST',
+            headers: {
+              'Accept': 'audio/mpeg',
+              'Content-Type': 'application/json',
+              'xi-api-key': apiKey
+            },
+            body: JSON.stringify({
+              text: text.trim(),
+              model_id: "eleven_monolingual_v1",
+              voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75,
+                style: 0.0,
+                use_speaker_boost: true
+              }
+            }),
+            signal: controller.signal
+          }
+        );
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`ElevenLabs API error: ${response.status}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+        const audioUrl = URL.createObjectURL(blob);
+        
+        if (audioRef.current) {
+          audioRef.current.src = audioUrl;
+          audioRef.current.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            resolve();
+          };
+          audioRef.current.onerror = () => {
+            URL.revokeObjectURL(audioUrl);
+            resolve();
+          };
+          audioRef.current.play().catch(() => resolve());
+        } else {
+          URL.revokeObjectURL(audioUrl);
+          resolve();
+        }
+
+      } catch (error) {
+        console.error("ElevenLabs TTS error:", error);
+        // Fallback to browser TTS
+        try {
+          await callBrowserTTS(text);
+          resolve();
+        } catch (browserError) {
+          console.error("Browser TTS fallback failed:", browserError);
+          resolve();
+        }
       }
-    },
-    [crisisKeywords, crisisDetected]
-  );
-
-  // Optimized conversation history management
-  const addToConversationHistory = useCallback((speaker, message) => {
-    const newEntry = `${speaker}: ${message.trim()}`;
-    setConversationHistory((prevHistory) => {
-      return prevHistory ? `${prevHistory}\n${newEntry}` : newEntry;
     });
   }, []);
 
-  // Optimized TTS function
+  // Browser TTS fallback
   const callBrowserTTS = useCallback(async (text) => {
     return new Promise((resolve) => {
       try {
@@ -259,7 +322,7 @@ const VoiceChatTherapy = () => {
 
           window.speechSynthesis.speak(utterance);
 
-          // Optimized timeout
+          // Timeout fallback
           ttsTimeoutRef.current = setTimeout(() => {
             if (!hasStarted) {
               window.speechSynthesis.cancel();
@@ -270,6 +333,30 @@ const VoiceChatTherapy = () => {
       } catch (error) {
         resolve();
       }
+    });
+  }, []);
+
+  // Optimized crisis detection
+  const detectCrisis = useCallback(
+    (text) => {
+      const lowerText = text.toLowerCase();
+      const crisisFound = crisisKeywords.some((keyword) =>
+        lowerText.includes(keyword)
+      );
+
+      if (crisisFound && !crisisDetected) {
+        setCrisisDetected(true);
+        setShowCrisisModal(true);
+      }
+    },
+    [crisisKeywords, crisisDetected]
+  );
+
+  // Optimized conversation history management
+  const addToConversationHistory = useCallback((speaker, message) => {
+    const newEntry = `${speaker}: ${message.trim()}`;
+    setConversationHistory((prevHistory) => {
+      return prevHistory ? `${prevHistory}\n${newEntry}` : newEntry;
     });
   }, []);
 
@@ -343,22 +430,23 @@ Respond as Alex the therapist to the user's most recent message.`;
     []
   );
 
-  // Optimized speech function
+  // Main speak function
   const speakText = useCallback(
     async (text) => {
       if (!text?.trim()) return;
 
       setIsPlaying(true);
       try {
-        await callBrowserTTS(text);
+        await callElevenLabsTTS(text);
       } catch (error) {
         console.warn("TTS failed:", error);
       } finally {
         setIsPlaying(false);
       }
     },
-    [callBrowserTTS]
+    [callElevenLabsTTS]
   );
+
   const suggestExercises = useCallback(() => {
     if (!conversationHistory) return;
 
@@ -399,6 +487,7 @@ Respond as Alex the therapist to the user's most recent message.`;
 
     setSuggestedExercises([...new Set(suggested)]);
   }, [conversationHistory, therapyExercises]);
+
   // Optimized conversation processing
   const processConversationAuto = useCallback(
     async (userMessage) => {
@@ -417,7 +506,7 @@ Respond as Alex the therapist to the user's most recent message.`;
         };
         setConversation((prev) => [...prev, userEntry]);
 
-        // Update conversation history (functional update to ensure sync)
+        // Update conversation history
         let updatedHistory = "";
         setConversationHistory((prevHistory) => {
           updatedHistory = prevHistory
@@ -426,7 +515,7 @@ Respond as Alex the therapist to the user's most recent message.`;
           return updatedHistory;
         });
 
-        // Wait for state update to settle before API call
+        // Wait for state update
         await new Promise((resolve) => setTimeout(resolve, 50));
 
         // Call Gemini with full conversation history
@@ -470,7 +559,6 @@ Respond as Alex the therapist to the user's most recent message.`;
     },
     [isProcessing, callGeminiAPI, speakText, suggestExercises]
   );
-  // Optimized exercise suggestions
 
   // Event handlers
   const startListening = useCallback(() => {
@@ -572,7 +660,7 @@ Time: ${sessionTime}
 Duration: ${Math.round(
       (new Date() - conversationStartTime.current) / (1000 * 60)
     )} minutes
-TTS Mode: Browser (Free Web Speech)
+TTS: ElevenLabs AI Voice
 
 CONVERSATION:
 ${conversationHistory}
@@ -587,7 +675,7 @@ ${
 }
 
 ---
-Generated by AI Therapy Assistant`;
+Generated by AI Therapy Assistant with ElevenLabs TTS`;
 
     const blob = new Blob([exportContent], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -612,6 +700,11 @@ Generated by AI Therapy Assistant`;
 
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
     }
 
     if (conversation.length > 0) {
@@ -653,50 +746,6 @@ Generated by AI Therapy Assistant`;
     if (audioRef.current?.src) {
       URL.revokeObjectURL(audioRef.current.src);
       audioRef.current.src = "";
-    }
-  }, []);
-
-  // Test functions
-  const forceWebTTS = useCallback((text) => {
-    try {
-      const synthesis = window.speechSynthesis;
-      if (!synthesis) {
-        alert("❌ Web Speech API not supported!");
-        return;
-      }
-
-      synthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.volume = 1;
-      utterance.rate = 1;
-      utterance.pitch = 1;
-
-      utterance.onstart = () => alert("🎉 TTS Started!");
-      utterance.onerror = (e) => alert("❌ TTS Error: " + e.error);
-
-      synthesis.speak(utterance);
-    } catch (error) {
-      alert("💥 TTS Failed: " + error.message);
-    }
-  }, []);
-
-  const checkSupport = useCallback(() => {
-    const info = {
-      speechSynthesis: !!window.speechSynthesis,
-      webkitSpeechSynthesis: !!window.webkitSpeechSynthesis,
-      browser: navigator.userAgent.split(" ").pop(),
-      voices: window.speechSynthesis
-        ? window.speechSynthesis.getVoices().length
-        : 0,
-    };
-
-    console.table(info);
-
-    if (window.speechSynthesis) {
-      const utterance = new SpeechSynthesisUtterance("Browser support test");
-      window.speechSynthesis.speak(utterance);
-    } else {
-      alert("❌ speechSynthesis NOT FOUND!");
     }
   }, []);
 
@@ -766,7 +815,10 @@ Generated by AI Therapy Assistant`;
       if (isListening) return { text: "Listening...", className: "" };
       if (isProcessing)
         return { text: "Processing your message...", className: "" };
-      if (isPlaying) return { text: "Speaking...", className: "" };
+      if (isPlaying) return { 
+        text: "Speaking with ElevenLabs AI voice...", 
+        className: "" 
+      };
       return { text: "Ready to listen", className: "" };
     };
 
