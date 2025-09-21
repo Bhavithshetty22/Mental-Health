@@ -1,22 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 
 import { 
-  Mic, 
-  MicOff, 
   Type, 
-  Volume2, 
   MessageSquare, 
   Moon, 
-  Sun, 
+  Sun,
   Send,
   X,
   Heart,
-  Lightbulb,
-  Square,
-  Play
+  Lightbulb
 } from 'lucide-react';
 
 import './DailyJournal.css';
+
 // ✅ Function defined OUTSIDE the component
 const enhancePromptWithGemini = async (journalText) => {
   try {
@@ -58,6 +54,7 @@ Output only the final artistic image prompt, nothing else.`,
     return `A warm and comforting scene with soft light, nature, and peaceful colors that inspire hope and healing.`; // ✅ fallback
   }
 };
+
 const getMoodEmoji = (mood) => {
   const emojis = {
     happy: "😊",
@@ -74,380 +71,142 @@ const getMoodEmoji = (mood) => {
   return emojis[mood?.toLowerCase()] || "🤔";
 };
 
-
-const makeImagePrompt = (journalText) => {
-  return `
-  An expressive illustration that captures the feeling: "${journalText}". 
-  Show it visually in an artistic, cinematic way that conveys the emotions of the text.
-  `;
-};
-
 const DailyJournal = () => {
-  const [inputMode, setInputMode] = useState("");
   const [textInput, setTextInput] = useState("");
-  const [voiceInput, setVoiceInput] = useState("");
   const [selectedOption, setSelectedOption] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
   const [output, setOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  
-  // Voice-related states
-  const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [voiceSupported, setVoiceSupported] = useState(false);
-  const [audioBlob, setAudioBlob] = useState(null);
   
   // Mood detection states
   const [isMoodDetecting, setIsMoodDetecting] = useState(false);
   const [moodResult, setMoodResult] = useState(null);
   const [showMoodPopup, setShowMoodPopup] = useState(false);
 
-  // Refs for voice functionality
-
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-
-  // Check for voice support on component mount
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const isSupported =
-  !!SpeechRecognition && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-
-    setVoiceSupported(isSupported);
-
-    if (isSupported) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event) => {
-        let finalTranscript = '';
-        let interimTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-
-        setTranscript(finalTranscript + interimTranscript);
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-        if (event.error === 'not-allowed') {
-          alert('Microphone access denied. Please allow microphone access and try again.');
-        }
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current = recognition;
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
-      }
-    };
-  }, []);
-
-  const [speechSupported, setSpeechSupported] = useState(false);
-  const recognitionRef = useRef(null);
-
-  useEffect(() => {
-    // Check if speech recognition is supported
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      setSpeechSupported(true);
-      
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
-      
-      recognitionRef.current.onresult = (event) => {
-        let finalTranscript = '';
-        let interimTranscript = '';
-        
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-        
-        setVoiceInput(prevInput => prevInput + finalTranscript);
-      };
-      
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsRecording(false);
-      };
-      
-      recognitionRef.current.onend = () => {
-        setIsRecording(false);
-      };
-    }
-  }, []);
-
   const [songs, setSongs] = useState([]);
   const [story, setStory] = useState("");
   const [poem, setPoem] = useState("");
-
-
-  const handleInputModeChange = (mode) => {
-    setInputMode(mode);
-    setTextInput("");
-
-    setVoiceInput("");
-    if (isRecording) {
-      recognitionRef.current?.stop();
-      setIsRecording(false);
-    }
-  };
-
-  const toggleRecording = () => {
-    if (!speechSupported) {
-      alert('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
-      return;
-    }
-    
-    if (isRecording) {
-      recognitionRef.current?.stop();
-      setIsRecording(false);
-    } else {
-      setVoiceInput("");
-      recognitionRef.current?.start();
-      setIsRecording(true);
-
-
-    }
-  };
 
   const toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle("dark");
   };
 
-// build YouTube search url fallback (same rules as backend)
-const buildYouTubeSearchUrl = (title = "", artist = "") => {
-  let q = `${title || ""} ${artist || ""}`.trim();
-  q = q.replace(/[\n\r]+/g, " ");
-  q = q.replace(/["'`‘’“”]/g, "");
-  q = q.replace(/[\/\\|]/g, " ");
-  q = q.replace(/\s+/g, " ").trim();
-  if (!q) q = "music";
-  return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
-};
+  // build YouTube search url fallback (same rules as backend)
+  const buildYouTubeSearchUrl = (title = "", artist = "") => {
+    let q = `${title || ""} ${artist || ""}`.trim();
+    q = q.replace(/[\n\r]+/g, " ");
+    q = q.replace(/["'`''""]/g, "");
+    q = q.replace(/[\/\\|]/g, " ");
+    q = q.replace(/\s+/g, " ").trim();
+    if (!q) q = "music";
+    return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+  };
 
-// Voice recognition functions
-const startListening = async () => {
-  if (!voiceSupported) {
-    alert('Voice input is not supported in your browser. Please use Chrome or Edge.');
-    return;
-  }
+  // Mood detection function
+  const detectMood = async () => {
+    const textToAnalyze = textInput.trim();
 
-  try {
-    await navigator.mediaDevices.getUserMedia({ audio: true });
-    setTranscript("");
-    setIsListening(true);
-    recognitionRef.current.start();
-  } catch (error) {
-    console.error('Error starting voice recognition:', error);
-    alert('Could not access microphone. Please check your permissions.');
-  }
-};
+    if (!textToAnalyze) {
+      alert("Please enter some text first!");
+      return;
+    }
 
-const stopListening = () => {
-  if (recognitionRef.current) {
-    recognitionRef.current.stop();
-  }
-  setIsListening(false);
-};
+    setIsMoodDetecting(true);
 
-const toggleListening = () => {
-  if (isListening) {
-    stopListening();
-  } else {
-    startListening();
-  }
-};
+    try {
+      const response = await fetch('http://localhost:5000/api/detect-mood', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: textToAnalyze }),
+      });
 
-// Audio recording functions
-const startRecording = async () => {
-  if (!voiceSupported) {
-    alert('Audio recording is not supported in your browser.');
-    return;
-  }
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mediaRecorder = new MediaRecorder(stream);
-    mediaRecorderRef.current = mediaRecorder;
-    audioChunksRef.current = [];
-
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunksRef.current.push(event.data);
-      }
-    };
-
-    mediaRecorder.onstop = () => {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-      setAudioBlob(audioBlob);
-      stream.getTracks().forEach(track => track.stop());
-    };
-
-    mediaRecorder.start();
-    setIsRecording(true);
-  } catch (error) {
-    console.error('Error starting audio recording:', error);
-    alert('Could not start recording. Please check your microphone permissions.');
-  }
-};
-
-const stopRecording = () => {
-  if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-    mediaRecorderRef.current.stop();
-  }
-  setIsRecording(false);
-};
-
-
-
-const playRecording = () => {
-  if (audioBlob) {
-    const audio = new Audio(URL.createObjectURL(audioBlob));
-    audio.play();
-  }
-};
-
-// Mood detection function
-const detectMood = async () => {
-  let textToAnalyze = "";
-
-  if (inputMode === "text") {
-    textToAnalyze = textInput.trim();
-  } else if (inputMode === "voice") {
-    textToAnalyze = transcript.trim();
-  }
-
-  if (!textToAnalyze) {
-    alert("Please enter some text or record your voice first!");
-    return;
-  }
-
-  setIsMoodDetecting(true);
-
-  try {
-    const response = await fetch('http://localhost:5000/api/detect-mood', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: textToAnalyze }),
-    });
-
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-    const data = await response.json();
-    setMoodResult(data);
-    setShowMoodPopup(true);
-  } catch (error) {
-    console.error('Error detecting mood:', error);
-    alert('Failed to detect mood. Please make sure the server is running.');
-  } finally {
-    setIsMoodDetecting(false);
-  }
-};
-
-const closeMoodPopup = () => setShowMoodPopup(false);
-
-// Generate Output (keep Stability + songs + poem logic)
-const generateOutput = async () => {
-  const currentInput = inputMode === "text" ? textInput : voiceInput;
-  if (!currentInput.trim() && !isRecording) return;
-  if (!selectedOption) return;
-
-  setIsGenerating(true);
-  setOutput("");
-  setSongs([]);
-  setStory("");
-  setPoem("");
-
-  try {
-    if (selectedOption === "image") {
-      const visualPrompt = await enhancePromptWithGemini(currentInput);
-
-      const formData = new FormData();
-      formData.append("prompt", visualPrompt);
-      formData.append("aspect_ratio", "1:1");
-
-      const response = await fetch(
-        "https://api.stability.ai/v2beta/stable-image/generate/core",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_STABILITY_API_KEY}`,
-            Accept: "application/json",
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      if (data?.image) {
-        setOutput({
-          type: "image",
-          content: `data:image/png;base64,${data.image}`,
-          prompt: visualPrompt,
-        });
-      } else {
-        setOutput({ type: "text", content: "❌ No image returned." });
-      }
-    } else if (selectedOption === "song") {
-      const resp = await fetch("http://localhost:5000/api/songs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: currentInput }),
-      });
-      const data = await resp.json();
-      setSongs(Array.isArray(data.songs) ? data.songs : []);
-    } else if (selectedOption === "poem") {
-      const resp = await fetch("http://localhost:5000/api/creative", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: currentInput }),
-      });
-      const data = await resp.json();
-      setStory(data.story || "");
-      setPoem(data.poem || "");
+      setMoodResult(data);
+      setShowMoodPopup(true);
+    } catch (error) {
+      console.error('Error detecting mood:', error);
+      alert('Failed to detect mood. Please make sure the server is running.');
+    } finally {
+      setIsMoodDetecting(false);
     }
-  } catch (err) {
-    console.error("generateOutput error:", err);
-    setOutput({
-      type: "text",
-      content: "⚠️ Something went wrong. Please try again.",
-    });
-  } finally {
-    setIsGenerating(false);
-  }
-};
+  };
+
+  const closeMoodPopup = () => setShowMoodPopup(false);
+
+  // Generate Output (keep Stability + songs + poem logic)
+  const generateOutput = async () => {
+    if (!textInput.trim()) return;
+    if (!selectedOption) return;
+
+    setIsGenerating(true);
+    setOutput("");
+    setSongs([]);
+    setStory("");
+    setPoem("");
+
+    try {
+      if (selectedOption === "image") {
+        const visualPrompt = await enhancePromptWithGemini(textInput);
+
+        const formData = new FormData();
+        formData.append("prompt", visualPrompt);
+        formData.append("aspect_ratio", "1:1");
+
+        const response = await fetch(
+          "https://api.stability.ai/v2beta/stable-image/generate/core",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${import.meta.env.VITE_STABILITY_API_KEY}`,
+              Accept: "application/json",
+            },
+            body: formData,
+          }
+        );
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        if (data?.image) {
+          setOutput({
+            type: "image",
+            content: `data:image/png;base64,${data.image}`,
+            prompt: visualPrompt,
+          });
+        } else {
+          setOutput({ type: "text", content: "❌ No image returned." });
+        }
+      } else if (selectedOption === "song") {
+        const resp = await fetch("http://localhost:5000/api/songs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: textInput }),
+        });
+        const data = await resp.json();
+        setSongs(Array.isArray(data.songs) ? data.songs : []);
+      } else if (selectedOption === "poem") {
+        const resp = await fetch("http://localhost:5000/api/creative", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: textInput }),
+        });
+        const data = await resp.json();
+        setStory(data.story || "");
+        setPoem(data.poem || "");
+      }
+    } catch (err) {
+      console.error("generateOutput error:", err);
+      setOutput({
+        type: "text",
+        content: "⚠️ Something went wrong. Please try again.",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className={`app ${isDark ? "dark" : ""}`}>
@@ -468,131 +227,23 @@ const generateOutput = async () => {
                 </div>
 
                 <div className="input-toggle">
-                  <button
-                    className={`toggle-btn ${inputMode === "text" ? "active" : ""}`}
-                    onClick={() => handleInputModeChange("text")}
-                  >
+                  <button className="toggle-btn active">
                     <Type className="icon-sm" />
                     <span>Text</span>
-                  </button>
-                  <button
-                    className={`toggle-btn ${inputMode === "voice" ? "active" : ""}`}
-                    onClick={() => handleInputModeChange("voice")}
-                  >
-                    <Volume2 className="icon-sm" />
-                    <span>Voice</span>
-                    {!voiceSupported && <span className="voice-warning">*</span>}
                   </button>
                 </div>
 
                 <div className="input-area">
-                  {inputMode === "text" && (
-                    <div className="text-input-container">
-                      <textarea
-                        value={textInput}
-                        onChange={(e) => setTextInput(e.target.value)}
-                        placeholder="Write about your day, thoughts, or feelings..."
-                        className="textarea"
-                      />
-                      <button
-                        className="send-btn"
-                        onClick={detectMood}
-                        disabled={!textInput.trim() || isMoodDetecting}
-                      >
-                        {isMoodDetecting ? (
-                          <div className="loading-spinner"></div>
-                        ) : (
-                          <Send className="icon-sm" />
-                        )}
-                      </button>
-                    </div>
-                  )}
-
-                  {inputMode === "voice" && (
-                    <div className="voice-input">
-                      {!voiceSupported && (
-                        <div className="voice-not-supported">
-                          <p>Voice input is not supported in your browser. Please use Chrome, Edge, or Safari for the best experience.</p>
-                        </div>
-                      )}
-                      
-                      <div className="voice-center">
-                        {/* Speech Recognition */}
-                        <div className="mic-container">
-                          <button
-
-                            className={`mic-btn ${isListening ? "listening" : ""}`}
-                            onClick={toggleListening}
-                            disabled={!voiceSupported}
-
-                          >
-                            {isListening ? <MicOff className="icon" /> : <Mic className="icon" />}
-                          </button>
-                          {isListening && <div className="pulse-ring"></div>}
-                        </div>
-                        <p className="voice-text">
-
-                          {isListening ? "Listening... Click to stop" : "Tap to start speaking"}
-                        </p>
-
-                        {/* Audio Recording */}
-                        <div className="recording-controls">
-                          <button
-                            className={`record-btn ${isRecording ? "recording" : ""}`}
-                            onClick={toggleRecording}
-                            disabled={!voiceSupported}
-                          >
-                            {isRecording ? (
-                              <>
-                                <Square className="icon-sm" />
-                                <span>Stop Recording</span>
-                              </>
-                            ) : (
-                              <>
-                                <Mic className="icon-sm" />
-                                <span>Record Audio</span>
-                              </>
-                            )}
-                          </button>
-                          
-                          {audioBlob && (
-                            <button
-                              className="play-btn"
-                              onClick={playRecording}
-                            >
-                              <Play className="icon-sm" />
-                              <span>Play</span>
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Transcript Display */}
-                        {transcript && (
-                          <div className="transcript-display">
-                            <h4>Transcript:</h4>
-                            <p>{transcript}</p>
-                          </div>
-                        )}
-
-                        {/* Voice Mood Analysis Button */}
-                        <button
-                          className="voice-mood-btn"
-                          onClick={detectMood}
-                          disabled={(!transcript.trim() && !audioBlob) || isMoodDetecting}
-                        >
-                          {isMoodDetecting ? (
-                            <>
-                              <div className="loading-spinner"></div>
-                              <span>Analyzing...</span>
-                            </>
-                          ) : (
-                            "Analyze Mood"
-                          )}
-                        </button>
-
-                      </div>
-                    </div>
-                  )}
+                  <div className="text-input-container">
+                    <textarea
+                      value={textInput}
+                      onChange={(e) => setTextInput(e.target.value)}
+                      placeholder="Write about your day, thoughts, or feelings..."
+                      className="textarea"
+                    />
+                   
+                     
+                  </div>
                 </div>
 
                 <select
@@ -609,15 +260,7 @@ const generateOutput = async () => {
                 <button
                   className="generate-btn"
                   onClick={generateOutput}
-
-                  disabled={
-                    (inputMode === "text" && !textInput.trim()) || 
-                    (inputMode === "voice" && !voiceInput.trim()) || 
-                    !selectedOption || 
-                    isGenerating ||
-                    !inputMode
-                  }
-
+                  disabled={!textInput.trim() || !selectedOption || isGenerating}
                 >
                   {isGenerating ? "Generating..." : "Generate"}
                 </button>
@@ -708,9 +351,7 @@ const generateOutput = async () => {
                         </div>
                       ) : (
                         <div className="output-text">
-                          
-  {output.content || output}
-
+                          {output.content || output}
                         </div>
                       )}
                       <div className="action-buttons">
@@ -723,7 +364,7 @@ const generateOutput = async () => {
                       <div className="empty-icon"><MessageSquare className="icon" /></div>
                       <div className="empty-content">
                         <h3 className="empty-title">Ready to create</h3>
-                        <p className="empty-text">Choose an input method to get started</p>
+                        <p className="empty-text">Enter your thoughts to get started</p>
                       </div>
                     </div>
                   )}
@@ -734,93 +375,8 @@ const generateOutput = async () => {
         </div>
       </div>
 
-      {/* Mood Detection Popup */}
-      {showMoodPopup && moodResult && (
-        <div className="mood-popup-overlay">
-          <div className="mood-popup">
-            <div className="mood-popup-header">
-              <h3 className="mood-popup-title">
-                Mood Detected {getMoodEmoji(moodResult.detectedMood)}
-              </h3>
-              <button
-                className="mood-popup-close"
-                onClick={closeMoodPopup}
-              >
-                <X className="icon-sm" />
-              </button>
-            </div>
-            
-            <div className="mood-popup-content">
-              <div className="mood-detection-result">
-                <div className="detected-mood">
-                  <div className="mood-main">
-                    <span className="mood-emoji">{getMoodEmoji(moodResult.detectedMood)}</span>
-                    <div className="mood-info">
-                      <h4 className="mood-label">{moodResult.detectedMood}</h4>
-                      <p className="mood-confidence">
-                        Confidence: {Math.round(moodResult.confidence * 100)}%
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mood-message">
-                  <Heart className="icon-sm mood-heart" />
-                  <p>{moodResult.suggestions.message}</p>
-                </div>
-
-                <div className="mood-suggestions">
-                  <div className="suggestions-header">
-                    <Lightbulb className="icon-sm" />
-                    <h4>Suggestions for you:</h4>
-                  </div>
-                  <ul className="suggestions-list">
-                    {moodResult.suggestions.tips.map((tip, index) => (
-                      <li key={index} className="suggestion-item">
-                        {tip}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {moodResult.allPredictions && moodResult.allPredictions.length > 1 && (
-                  <div className="all-predictions">
-                    <h4>All detected emotions:</h4>
-                    <div className="predictions-grid">
-                      {moodResult.allPredictions
-                        .sort((a, b) => b.score - a.score)
-                        .slice(0, 3)
-                        .map((prediction, index) => (
-                          <div key={index} className="prediction-item">
-                            <span className="prediction-emoji">
-                              {getMoodEmoji(prediction.label)}
-                            </span>
-                            <span className="prediction-label">{prediction.label}</span>
-                            <span className="prediction-score">
-                              {Math.round(prediction.score * 100)}%
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="mood-popup-actions">
-              <button className="mood-action-btn secondary" onClick={closeMoodPopup}>
-                Close
-              </button>
-              <button className="mood-action-btn primary" onClick={() => {
-                closeMoodPopup();
-                // You can add logic here to save the mood or do something with it
-              }}>
-                Save Mood
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
+         
     </div>
   );
 };
