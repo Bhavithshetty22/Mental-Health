@@ -20,7 +20,7 @@ export default function TalkToFuture() {
 
     setLoading(true);
     try {
-      const url = "http://localhost:5000/api/generate";
+      const url = `${import.meta.env.VITE_API_BASE}/api/generate`;
       const resp = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

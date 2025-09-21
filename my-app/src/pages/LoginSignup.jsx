@@ -39,7 +39,7 @@ export default function LoginSignup() {
     }
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -85,7 +85,7 @@ export default function LoginSignup() {
     setIsSigningUp(true);
 
     try {
-      const res = await fetch("/api/auth/signup", {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
