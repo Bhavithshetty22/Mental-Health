@@ -98,7 +98,7 @@ const EmotionWidget = () => {
       description: "Process aversion and difficult feelings",
       colorClass: "color-green-dark",
       bgColorClass: "bg-green-dark",
-      image: "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=150&h=150&fit=crop&crop=face"
+      image: "disgustia.png"
     },
     {
       id: 9,
@@ -116,7 +116,7 @@ const EmotionWidget = () => {
       description: "Transform envy into motivation and growth",
       colorClass: "color-lime-green",
       bgColorClass: "bg-lime-green",
-      image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=150&h=150&fit=crop&crop=face"
+      image: "motivation.png"
     },
     {
       id: 11,
@@ -125,7 +125,7 @@ const EmotionWidget = () => {
       description: "Celebrate achievements and build self-worth",
       colorClass: "color-amber-yellow",
       bgColorClass: "bg-amber-yellow",
-      image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&h=150&fit=crop&crop=face"
+      image: "pride.png"
     },
     {
       id: 12,
