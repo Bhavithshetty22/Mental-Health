@@ -10,6 +10,7 @@ function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [loggedInUser, setLoggedInUser] = useState(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   // read localStorage on mount and whenever pathname changes
   useEffect(() => {
@@ -38,13 +39,16 @@ function Layout() {
   }, []);
 
   const handleSignOut = () => {
+    setIsSigningOut(true);
+    
+    // Clear localStorage
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setLoggedInUser(null);
-    // optional: notify other parts of app
-    window.dispatchEvent(new Event("storage")); // lightweight hint
-    // navigate to login/signup or home
-    navigate("/settings"); // your Login/Signup route
+    
+    // Use window.location to ensure clean redirect to login
+    // This prevents any routing conflicts and ensures a fresh start
+    window.location.href = "/login";
   };
 
   const isActive = (path) => {
@@ -57,45 +61,63 @@ function Layout() {
   return (
     <div className="layout">
       <nav className="main-navigation">
-         {loggedInUser && (
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className={`nav-link btn-as-link`}
-              aria-label="Sign out"
-              title="Sign out"
-            >
-              <LogOut size={18} />
-            </button>
-          )}
+        {loggedInUser && (
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className={`nav-link btn-as-link ${isSigningOut ? 'signing-out' : ''}`}
+            aria-label="Sign out"
+            title="Sign out"
+            disabled={isSigningOut}
+            style={{ opacity: isSigningOut ? 0.6 : 1 }}
+          >
+            <LogOut size={18} />
+          </button>
+        )}
+        
         <div className="nav-brand">
           <h2>MOODORA</h2>
         </div>
 
         <div className="nav-links">
-          {/* Sign out button at left-most if logged in */}
-         
-
-          <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`} aria-label="Home">
+          <Link 
+            to="/" 
+            className={`nav-link ${isActive('/') ? 'active' : ''}`} 
+            aria-label="Home"
+          >
             <Home size={20} />
           </Link>
 
-          <Link to="/mood-tracker" className={`nav-link ${isActive('/mood-tracker') ? 'active' : ''}`} aria-label="Mood tracker">
+          <Link 
+            to="/mood-tracker" 
+            className={`nav-link ${isActive('/mood-tracker') ? 'active' : ''}`} 
+            aria-label="Mood tracker"
+          >
             <Calendar size={20} />
           </Link>
 
-          <Link to="/talk-to-future" className={`nav-link ${isActive('/talk-to-future') ? 'active' : ''}`} aria-label="Talk to future">
+          <Link 
+            to="/talk-to-future" 
+            className={`nav-link ${isActive('/talk-to-future') ? 'active' : ''}`} 
+            aria-label="Talk to future"
+          >
             <MessageCircle size={20} />
           </Link>
 
-          <Link to="/daily-journal" className={`nav-link ${isActive('/daily-journal') ? 'active' : ''}`} aria-label="Daily journal">
+          <Link 
+            to="/daily-journal" 
+            className={`nav-link ${isActive('/daily-journal') ? 'active' : ''}`} 
+            aria-label="Daily journal"
+          >
             <BsJournalBookmarkFill size={20} />
-         
           </Link>
 
-          <Link to="/ai-therapy" className={`nav-link ${isActive('/ai-therapy') ? 'active' : ''}`} aria-label="AI therapy">
+          <Link 
+            to="/ai-therapy" 
+            className={`nav-link ${isActive('/ai-therapy') ? 'active' : ''}`} 
+            aria-label="AI therapy"
+          >
             <RiPsychotherapyLine size={20} />
-         
           </Link>
         </div>
       </nav>
