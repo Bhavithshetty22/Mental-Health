@@ -1,0 +1,127 @@
+/* Add this to your Dashboard.css */
+
+.featuresgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+  margin: 32px 0;
+  padding: 0 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .featuresgrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 24px 0;
+  }
+}
+
+/* Basic Widget Card Styles (add to Widget.css) */
+.widget-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  min-height: 180px;
+}
+
+.widget-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.widget-card--light {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  color: #333;
+}
+
+.widget-card--dark {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  color: #ecf0f1;
+}
+
+.widget-card__content {
+  flex: 1;
+  padding-right: 24px;
+}
+
+.widget-card__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  line-height: 1.2;
+}
+
+.widget-card__description {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0 0 20px 0;
+  opacity: 0.8;
+}
+
+.widget-card__button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.widget-card__button--light {
+  background: #007bff;
+  color: white;
+}
+
+.widget-card__button--light:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.widget-card__button--dark {
+  background: #e74c3c;
+  color: white;
+}
+
+.widget-card__button--dark:hover {
+  background: #c0392b;
+  transform: translateY(-1px);
+}
+
+.widget-card__image-container {
+  flex-shrink: 0;
+  width: 170px;
+  height: 170px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.widget-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Responsive widget adjustments */
+@media (max-width: 600px) {
+  .widget-card {
+    flex-direction: column;
+    text-align: center;
+    min-height: auto;
+  }
+  
+  .widget-card__content {
+    padding-right: 0;
+    margin-bottom: 16px;
+  }
+  
+  .widget-card__image-container {
+    width: 100px;
+    height: 100px;
+  }
+}
