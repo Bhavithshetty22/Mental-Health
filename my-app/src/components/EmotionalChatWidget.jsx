@@ -80,7 +80,7 @@ const EmotionWidget = () => {
       description: "Face fears and build courage together",
       colorClass: "color-gray-dark",
       bgColorClass: "bg-gray-dark",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face"
+      image: "/fear.png"
     },
     {
       id: 7,
@@ -89,7 +89,7 @@ const EmotionWidget = () => {
       description: "Explore amazement and unexpected discoveries",
       colorClass: "color-pink-rose",
       bgColorClass: "bg-pink-rose",
-      image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face"
+      image: "amazement.png"
     },
     {
       id: 8,

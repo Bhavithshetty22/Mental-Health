@@ -209,12 +209,7 @@ const DailyJournal = () => {
   };
 
   return (
-    <div className={`app ${isDark ? "dark" : ""}`}>
-      <div className="theme-toggle">
-        <button onClick={toggleTheme} className="theme-btn">
-          {isDark ? <Sun className="icon" /> : <Moon className="icon" />}
-        </button>
-      </div>
+    
 
       <div className="container">
         <div className="grid">
@@ -376,8 +371,7 @@ const DailyJournal = () => {
       </div>
 
       
-         
-    </div>
+ 
   );
 };
 
