@@ -115,7 +115,7 @@ const DailyJournal = () => {
     setIsMoodDetecting(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/detect-mood', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE}/api/detect-mood`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: textToAnalyze }),
@@ -180,7 +180,7 @@ const DailyJournal = () => {
           setOutput({ type: "text", content: "❌ No image returned." });
         }
       } else if (selectedOption === "song") {
-        const resp = await fetch("http://localhost:5000/api/songs", {
+        const resp = await fetch(`${import.meta.env.VITE_API_BASE}/api/songs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: textInput }),
@@ -188,7 +188,7 @@ const DailyJournal = () => {
         const data = await resp.json();
         setSongs(Array.isArray(data.songs) ? data.songs : []);
       } else if (selectedOption === "poem") {
-        const resp = await fetch("http://localhost:5000/api/creative", {
+        const resp = await fetch(`${import.meta.env.VITE_API_BASE}/api/creative`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: textInput }),
