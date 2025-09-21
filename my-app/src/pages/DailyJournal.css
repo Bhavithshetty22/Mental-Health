@@ -1,7 +1,9 @@
 
 .app {
   min-height: 100vh;
-  background-color: white;
+   background:
+    radial-gradient(circle at 10% 10%, rgba(0,0,0,0.02), transparent 8%),
+    linear-gradient(180deg, #fbf8f3 0%, #efe6d6 100%);
   transition: all 0.2s ease;
 }
 
@@ -74,6 +76,7 @@
   max-width: 1152px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
+ 
 }
 
 .grid {
