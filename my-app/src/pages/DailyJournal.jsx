@@ -1,20 +1,16 @@
-// src/pages/DailyJournal.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Mic,
-  MicOff,
-  Type,
-  Volume2,
-  MessageSquare,
-  Moon,
+import React, { useState } from 'react';
+
+import { 
+  Type, 
+  MessageSquare, 
+  Moon, 
   Sun,
   Send,
   X,
   Heart,
-  Lightbulb,
-  Square,
-  Play
+  Lightbulb
 } from 'lucide-react';
+
 import './DailyJournal.css';
 
 // Use environment variable or fallback
@@ -58,9 +54,10 @@ Output only the final artistic image prompt, nothing else.`,
     return data?.candidates?.[0]?.content?.parts?.[0]?.text || journalText;
   } catch (error) {
     console.error("Gemini enhancement failed:", error);
-    return `A warm and comforting scene with soft light, nature, and peaceful colors that inspire hope and healing.`; // fallback
+    return `A warm and comforting scene with soft light, nature, and peaceful colors that inspire hope and healing.`; // ✅ fallback
   }
 };
+
 const getMoodEmoji = (mood) => {
   const emojis = {
     happy: "😊",
@@ -85,239 +82,60 @@ const makeImagePrompt = (journalText) => {
 };
 
 const DailyJournal = () => {
-  const [inputMode, setInputMode] = useState("");
   const [textInput, setTextInput] = useState("");
-  const [voiceInput, setVoiceInput] = useState("");
   const [selectedOption, setSelectedOption] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
   const [output, setOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState(false);
-
-  // Voice-related states
-  const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [voiceSupported, setVoiceSupported] = useState(false);
-  const [audioBlob, setAudioBlob] = useState(null);
-
+  
   // Mood detection states
   const [isMoodDetecting, setIsMoodDetecting] = useState(false);
   const [moodResult, setMoodResult] = useState(null);
   const [showMoodPopup, setShowMoodPopup] = useState(false);
 
-  // Refs for voice functionality
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const recognitionRef = useRef(null);
-
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const isSupported =
-      !!SpeechRecognition && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-    setVoiceSupported(isSupported);
-
-    if (isSupported) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event) => {
-        let finalTranscript = '';
-        let interimTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcriptPart = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcriptPart;
-          } else {
-            interimTranscript += transcriptPart;
-          }
-        }
-
-        setTranscript(finalTranscript + interimTranscript);
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-        if (event.error === 'not-allowed') {
-          alert('Microphone access denied. Please allow microphone access and try again.');
-        }
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current = recognition;
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      if (mediaRecorderRef.current) {
-        try { mediaRecorderRef.current.stop(); } catch {}
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      setSpeechSupported(true);
-
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
-      recognitionRef.current.onresult = (event) => {
-        let finalTranscript = '';
-        let interimTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcriptPart = event.results[i][0].transcript;
-          if (event.results[i].isFinal) finalTranscript += transcriptPart;
-          else interimTranscript += transcriptPart;
-        }
-        setVoiceInput(prevInput => prevInput + finalTranscript);
-      };
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsRecording(false);
-      };
-      recognitionRef.current.onend = () => setIsRecording(false);
-    }
-  }, []);
-
   const [songs, setSongs] = useState([]);
   const [story, setStory] = useState("");
   const [poem, setPoem] = useState("");
 
-  const handleInputModeChange = (mode) => {
-    setInputMode(mode);
-    setTextInput("");
-    setVoiceInput("");
-    if (isRecording) {
-      recognitionRef.current?.stop();
-      setIsRecording(false);
-    }
-  };
-
-  const toggleRecording = () => {
-    if (!speechSupported) {
-      alert('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
-      return;
-    }
-    if (isRecording) {
-      recognitionRef.current?.stop();
-      setIsRecording(false);
-    } else {
-      setVoiceInput("");
-      recognitionRef.current?.start();
-      setIsRecording(true);
-    }
-  };
+  // --- NEW: uploading state for community shares
+  const [uploading, setUploading] = useState(false);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle("dark");
   };
 
+  // build YouTube search url fallback (same rules as backend)
   const buildYouTubeSearchUrl = (title = "", artist = "") => {
     let q = `${title || ""} ${artist || ""}`.trim();
     q = q.replace(/[\n\r]+/g, " ");
-    q = q.replace(/["'`‘’“”]/g, "");
+    q = q.replace(/["'`''""]/g, "");
     q = q.replace(/[\/\\|]/g, " ");
     q = q.replace(/\s+/g, " ").trim();
     if (!q) q = "music";
     return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
   };
 
-  const startListening = async () => {
-    if (!voiceSupported) {
-      alert('Voice input is not supported in your browser. Please use Chrome or Edge.');
-      return;
-    }
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-      setTranscript("");
-      setIsListening(true);
-      recognitionRef.current.start();
-    } catch (error) {
-      console.error('Error starting voice recognition:', error);
-      alert('Could not access microphone. Please check your permissions.');
-    }
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current) recognitionRef.current.stop();
-    setIsListening(false);
-  };
-
-  const toggleListening = () => {
-    if (isListening) stopListening();
-    else startListening();
-  };
-
-  const startRecording = async () => {
-    if (!voiceSupported) {
-      alert('Audio recording is not supported in your browser.');
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
-      };
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        setAudioBlob(audioBlob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error('Error starting audio recording:', error);
-      alert('Could not start recording. Please check your microphone permissions.');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-    }
-    setIsRecording(false);
-  };
-
-  const playRecording = () => {
-    if (audioBlob) {
-      const audio = new Audio(URL.createObjectURL(audioBlob));
-      audio.play();
-    }
-  };
-
-  // Mood detection
+  // Mood detection function
   const detectMood = async () => {
-    let textToAnalyze = "";
-    if (inputMode === "text") textToAnalyze = textInput.trim();
-    else if (inputMode === "voice") textToAnalyze = transcript.trim();
+    const textToAnalyze = textInput.trim();
+
     if (!textToAnalyze) {
-      alert("Please enter some text or record your voice first!");
+      alert("Please enter some text first!");
       return;
     }
+
     setIsMoodDetecting(true);
+
     try {
-      const response = await fetch(`${API_BASE}/api/detect-mood`, {
+      const response = await fetch('http://localhost:5000/api/detect-mood', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: textToAnalyze }),
       });
-      if (!response.ok) throw new Error('Mood detection failed');
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
       const data = await response.json();
       setMoodResult(data);
       setShowMoodPopup(true);
@@ -331,10 +149,9 @@ const DailyJournal = () => {
 
   const closeMoodPopup = () => setShowMoodPopup(false);
 
-  // Generate Output
+  // Generate Output (keep Stability + songs + poem logic)
   const generateOutput = async () => {
-    const currentInput = inputMode === "text" ? textInput : voiceInput || transcript;
-    if (!currentInput?.trim()) return;
+    if (!textInput.trim()) return;
     if (!selectedOption) return;
 
     setIsGenerating(true);
@@ -345,41 +162,60 @@ const DailyJournal = () => {
 
     try {
       if (selectedOption === "image") {
-        const visualPrompt = await enhancePromptWithGemini(currentInput);
-        // Example: call your image generation backend (stability.ai etc.)
-        const resp = await fetch(`${API_BASE}/api/generate-image`, { // adjust endpoint to your backend
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: visualPrompt }),
-        });
-        if (!resp.ok) throw new Error('Image generation failed');
-        const data = await resp.json();
-        // Expect data.image to be data URL or base64 — adapt as necessary
-        const imageDataUrl = data.image?.startsWith('data:') ? data.image : `data:image/png;base64,${data.image}`;
-        setOutput({ type: "image", content: imageDataUrl, prompt: visualPrompt });
+        const visualPrompt = await enhancePromptWithGemini(textInput);
+
+        const formData = new FormData();
+        formData.append("prompt", visualPrompt);
+        formData.append("aspect_ratio", "1:1");
+
+        const response = await fetch(
+          "https://api.stability.ai/v2beta/stable-image/generate/core",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${import.meta.env.VITE_STABILITY_API_KEY}`,
+              Accept: "application/json",
+            },
+            body: formData,
+          }
+        );
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        if (data?.image) {
+          setOutput({
+            type: "image",
+            content: `data:image/png;base64,${data.image}`,
+            prompt: visualPrompt,
+          });
+        } else {
+          setOutput({ type: "text", content: "❌ No image returned." });
+        }
       } else if (selectedOption === "song") {
-        const resp = await fetch(`${API_BASE}/api/songs`, {
+        const resp = await fetch("http://localhost:5000/api/songs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: currentInput }),
+          body: JSON.stringify({ text: textInput }),
         });
-        if (!resp.ok) throw new Error('Song generation failed');
         const data = await resp.json();
         setSongs(Array.isArray(data.songs) ? data.songs : []);
       } else if (selectedOption === "poem") {
-        const resp = await fetch(`${API_BASE}/api/creative`, {
+        const resp = await fetch("http://localhost:5000/api/creative", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: currentInput }),
+          body: JSON.stringify({ text: textInput }),
         });
-        if (!resp.ok) throw new Error('Creative generation failed');
         const data = await resp.json();
         setStory(data.story || "");
         setPoem(data.poem || "");
       }
     } catch (err) {
       console.error("generateOutput error:", err);
-      setOutput({ type: "text", content: "⚠️ Something went wrong. Please try again." });
+      setOutput({
+        type: "text",
+        content: "⚠️ Something went wrong. Please try again.",
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -388,7 +224,6 @@ const DailyJournal = () => {
   // -------------------------
   // Upload to Community helper
   // -------------------------
-  const [uploading, setUploading] = useState(false);
   const uploadToCommunity = async ({ title = "", content = "", image = null, type = "text" }) => {
     setUploading(true);
     try {
@@ -419,12 +254,7 @@ const DailyJournal = () => {
   };
 
   return (
-    <div className={`app ${isDark ? "dark" : ""}`}>
-      <div className="theme-toggle">
-        <button onClick={toggleTheme} className="theme-btn">
-          {isDark ? <Sun className="icon" /> : <Moon className="icon" />}
-        </button>
-      </div>
+    
 
       <div className="container">
         <div className="grid">
@@ -437,121 +267,23 @@ const DailyJournal = () => {
                 </div>
 
                 <div className="input-toggle">
-                  <button
-                    className={`toggle-btn ${inputMode === "text" ? "active" : ""}`}
-                    onClick={() => handleInputModeChange("text")}
-                  >
+                  <button className="toggle-btn active">
                     <Type className="icon-sm" />
                     <span>Text</span>
-                  </button>
-                  <button
-                    className={`toggle-btn ${inputMode === "voice" ? "active" : ""}`}
-                    onClick={() => handleInputModeChange("voice")}
-                  >
-                    <Volume2 className="icon-sm" />
-                    <span>Voice</span>
-                    {!voiceSupported && <span className="voice-warning">*</span>}
                   </button>
                 </div>
 
                 <div className="input-area">
-                  {inputMode === "text" && (
-                    <div className="text-input-container">
-                      <textarea
-                        value={textInput}
-                        onChange={(e) => setTextInput(e.target.value)}
-                        placeholder="Write about your day, thoughts, or feelings..."
-                        className="textarea"
-                      />
-                      <button
-                        className="send-btn"
-                        onClick={detectMood}
-                        disabled={!textInput.trim() || isMoodDetecting}
-                        title="Detect mood"
-                      >
-                        {isMoodDetecting ? (
-                          <div className="loading-spinner"></div>
-                        ) : (
-                          <Send className="icon-sm" />
-                        )}
-                      </button>
-                    </div>
-                  )}
-
-                  {inputMode === "voice" && (
-                    <div className="voice-input">
-                      {!voiceSupported && (
-                        <div className="voice-not-supported">
-                          <p>Voice input is not supported in your browser. Please use Chrome, Edge, or Safari for the best experience.</p>
-                        </div>
-                      )}
-
-                      <div className="voice-center">
-                        <div className="mic-container">
-                          <button
-                            className={`mic-btn ${isListening ? "listening" : ""}`}
-                            onClick={toggleListening}
-                            disabled={!voiceSupported}
-                          >
-                            {isListening ? <MicOff className="icon" /> : <Mic className="icon" />}
-                          </button>
-                          {isListening && <div className="pulse-ring"></div>}
-                        </div>
-                        <p className="voice-text">
-                          {isListening ? "Listening... Click to stop" : "Tap to start speaking"}
-                        </p>
-
-                        <div className="recording-controls">
-                          <button
-                            className={`record-btn ${isRecording ? "recording" : ""}`}
-                            onClick={toggleRecording}
-                            disabled={!voiceSupported}
-                          >
-                            {isRecording ? (
-                              <>
-                                <Square className="icon-sm" />
-                                <span>Stop Recording</span>
-                              </>
-                            ) : (
-                              <>
-                                <Mic className="icon-sm" />
-                                <span>Record Audio</span>
-                              </>
-                            )}
-                          </button>
-
-                          {audioBlob && (
-                            <button className="play-btn" onClick={playRecording}>
-                              <Play className="icon-sm" />
-                              <span>Play</span>
-                            </button>
-                          )}
-                        </div>
-
-                        {transcript && (
-                          <div className="transcript-display">
-                            <h4>Transcript:</h4>
-                            <p>{transcript}</p>
-                          </div>
-                        )}
-
-                        <button
-                          className="voice-mood-btn"
-                          onClick={detectMood}
-                          disabled={(!transcript.trim() && !audioBlob) || isMoodDetecting}
-                        >
-                          {isMoodDetecting ? (
-                            <>
-                              <div className="loading-spinner"></div>
-                              <span>Analyzing...</span>
-                            </>
-                          ) : (
-                            "Analyze Mood"
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <div className="text-input-container">
+                    <textarea
+                      value={textInput}
+                      onChange={(e) => setTextInput(e.target.value)}
+                      placeholder="Write about your day, thoughts, or feelings..."
+                      className="textarea"
+                    />
+                   
+                     
+                  </div>
                 </div>
 
                 <select
@@ -568,13 +300,7 @@ const DailyJournal = () => {
                 <button
                   className="generate-btn"
                   onClick={generateOutput}
-                  disabled={
-                    (inputMode === "text" && !textInput.trim()) ||
-                    (inputMode === "voice" && !voiceInput.trim() && !transcript.trim()) ||
-                    !selectedOption ||
-                    isGenerating ||
-                    !inputMode
-                  }
+                  disabled={!textInput.trim() || !selectedOption || isGenerating}
                 >
                   {isGenerating ? "Generating..." : "Generate"}
                 </button>
@@ -603,7 +329,11 @@ const DailyJournal = () => {
                         {songs.map((s, idx) => {
                           const title = s.title || "Untitled";
                           const artist = s.artist || "";
-                          const url = s.url && s.url.length > 0 ? s.url : buildYouTubeSearchUrl(title, artist);
+                          // Use YouTube URL or fallback to YouTube search
+                          const url =
+                            s.url && s.url.length > 0
+                              ? s.url
+                              : buildYouTubeSearchUrl(title, artist);
 
                           return (
                             <div className="song-card" key={idx}>
@@ -650,6 +380,8 @@ const DailyJournal = () => {
                           <div className="creative-card">
                             <h3 className="creative-title">Short Inspiration</h3>
                             <div className="creative-body">{story}</div>
+
+                            {/* Share story button */}
                             <div style={{ marginTop: 8 }}>
                               <button
                                 className="btn primary"
@@ -672,6 +404,8 @@ const DailyJournal = () => {
                           <div className="creative-card">
                             <h3 className="creative-title">Poem</h3>
                             <pre className="creative-poem">{poem}</pre>
+
+                            {/* Share poem button */}
                             <div style={{ marginTop: 8 }}>
                               <button
                                 className="btn primary"
@@ -705,6 +439,8 @@ const DailyJournal = () => {
                         <div className="image-output">
                           <img src={output.content} alt="Generated artwork" className="generated-image" />
                           <p className="image-prompt">Based on: "{output.prompt}"</p>
+
+                          {/* Share generated image */}
                           <div className="action-buttons" style={{ marginTop: 8 }}>
                             <button
                               className="btn primary"
@@ -740,15 +476,20 @@ const DailyJournal = () => {
                               {uploading ? "Sharing…" : "Share to Community"}
                             </button>
                           </div>
+
                         </div>
                       )}
+                      <div className="action-buttons">
+                        <button className="save-btn">Save</button>
+                        <button className="share-btn">Share</button>
+                      </div>
                     </div>
                   ) : (
                     <div className="empty-state">
                       <div className="empty-icon"><MessageSquare className="icon" /></div>
                       <div className="empty-content">
                         <h3 className="empty-title">Ready to create</h3>
-                        <p className="empty-text">Choose an input method to get started</p>
+                        <p className="empty-text">Enter your thoughts to get started</p>
                       </div>
                     </div>
                   )}
@@ -757,7 +498,7 @@ const DailyJournal = () => {
             </div>
           </div>
         </div>
-      </div> {/* container */}
+      
 
       {/* Mood Detection Popup */}
       {showMoodPopup && moodResult && (
