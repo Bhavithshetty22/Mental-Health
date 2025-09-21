@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './ProfileDynamic.css';
 
+// Use the same API base as your MoodTracker
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+
 const MoodProfile = ({ userId = null, selectedDate = null }) => {
   const [currentMood, setCurrentMood] = useState('okay');
   const [loading, setLoading] = useState(true);
@@ -11,7 +14,7 @@ const MoodProfile = ({ userId = null, selectedDate = null }) => {
     good: '/happy.png', 
     okay: '/okay.png',
     bad: '/bad.png',
-    terrible: 'terrible.png'
+    terrible: '/terrible.png' // Fixed missing slash
   };
 
   // Get today's date key to match your API format (YYYY-M-D)
@@ -20,12 +23,38 @@ const MoodProfile = ({ userId = null, selectedDate = null }) => {
     return `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
   };
 
-  // Fetch mood from database
+  // Fetch mood from database with authentication
   const fetchMoodFromDatabase = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/moods');
       
+      // Get the auth token from localStorage (same as MoodTracker)
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        console.log('No auth token found, using default mood');
+        setCurrentMood('okay');
+        setLoading(false);
+        return;
+      }
+
+      // Make authenticated request (same as MoodTracker)
+      const response = await fetch(`${API_BASE}/api/moods`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      // Handle auth errors
+      if (response.status === 401 || response.status === 403) {
+        console.warn('Authentication failed in MoodProfile');
+        setCurrentMood('okay');
+        setLoading(false);
+        return;
+      }
+
       if (response.ok) {
         const data = await response.json();
         console.log('Fetched mood data:', data);
@@ -48,7 +77,7 @@ const MoodProfile = ({ userId = null, selectedDate = null }) => {
           }
         }
       } else {
-        console.error('Failed to fetch mood data');
+        console.error('Failed to fetch mood data:', response.status);
         setCurrentMood('okay');
       }
     } catch (error) {

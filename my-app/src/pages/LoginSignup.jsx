@@ -1,5 +1,5 @@
 // src/pages/LoginSignup.jsx
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./GenAIAuth.css";
 
@@ -12,6 +12,7 @@ export default function LoginSignup() {
   const [loginPassword, setLoginPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // signup state
   const [fullName, setFullName] = useState("");
@@ -21,23 +22,7 @@ export default function LoginSignup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [signupErrors, setSignupErrors] = useState({});
-
-  // logged in user state (from localStorage)
-  const [loggedInUser, setLoggedInUser] = useState(null);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("user");
-      if (raw) {
-        setLoggedInUser(JSON.parse(raw));
-        // If user is already logged in, take them to dashboard
-        navigate("/", { replace: true });
-      }
-    } catch (e) {
-      console.warn("Could not parse stored user", e);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [isSigningUp, setIsSigningUp] = useState(false);
 
   const emailValid = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   const passwordValid = (p) => /(?=.{8,})(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/.test(p);
@@ -45,8 +30,11 @@ export default function LoginSignup() {
   const handleLoginSubmit = async (ev) => {
     ev.preventDefault();
     setLoginError("");
+    setIsLoggingIn(true);
+    
     if (!loginEmailOrUsername.trim() || !loginPassword) {
       setLoginError("Enter email/username and password.");
+      setIsLoggingIn(false);
       return;
     }
 
@@ -62,15 +50,16 @@ export default function LoginSignup() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");
 
-      // Save token + user and update UI
+      // Save token + user
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      setLoggedInUser(data.user);
 
-      // navigate to dashboard (protected area)
-      navigate("/", { replace: true });
+      // Force a page reload to trigger the App.js authentication check
+      // This ensures the routing updates properly
+      window.location.href = "/";
     } catch (err) {
       setLoginError(err.message || "Login failed");
+      setIsLoggingIn(false);
     }
   };
 
@@ -93,6 +82,8 @@ export default function LoginSignup() {
     setSignupErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
+    setIsSigningUp(true);
+
     try {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
@@ -109,12 +100,12 @@ export default function LoginSignup() {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      setLoggedInUser(data.user);
 
-      // navigate to dashboard (protected area)
-      navigate("/", { replace: true });
+      // Force a page reload to trigger the App.js authentication check
+      window.location.href = "/";
     } catch (err) {
       setSignupErrors({ general: err.message || "Signup failed" });
+      setIsSigningUp(false);
     }
   };
 
@@ -125,170 +116,224 @@ export default function LoginSignup() {
     window.location.href = "/api/auth/google"; // backend route if implemented
   };
 
-  // Sign out - clear token and user state (keeps component usable)
-  const handleSignOut = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setLoggedInUser(null);
-    setMode("login");
-    // navigate to login page explicitly
-    navigate("/settings", { replace: true });
-  };
-
-  // Display name preference: username -> name -> email
-  const displayName = (user) => {
-    if (!user) return "";
-    return user.username || user.name || user.email || "(unknown)";
-  };
-
   return (
     <div className="genai-auth-root">
       <div className="auth-card">
         <header className="auth-header">
           <div>
             <h1 className="brand">MoodOra</h1>
-            <p className="subtitle">Create and manage prompts, models & experiments</p>
+            <p className="subtitle">Your personal mood and wellness companion</p>
           </div>
 
-          <div className="mode-switch" aria-hidden={!!loggedInUser}>
-            {!loggedInUser && (
-              <>
-                <button className={`tab ${mode === "login" ? "active" : ""}`} onClick={() => setMode("login")}>
-                  Login
-                </button>
-                <button className={`tab ${mode === "signup" ? "active" : ""}`} onClick={() => setMode("signup")}>
-                  Signup
-                </button>
-              </>
-            )}
+          <div className="mode-switch">
+            <button 
+              className={`tab ${mode === "login" ? "active" : ""}`} 
+              onClick={() => setMode("login")}
+              disabled={isLoggingIn || isSigningUp}
+            >
+              Login
+            </button>
+            <button 
+              className={`tab ${mode === "signup" ? "active" : ""}`} 
+              onClick={() => setMode("signup")}
+              disabled={isLoggingIn || isSigningUp}
+            >
+              Signup
+            </button>
           </div>
         </header>
 
         <div className="auth-body">
-          {loggedInUser ? (
-            <div className="user-panel" role="status" aria-live="polite">
-              <p style={{ margin: 0, fontSize: 14 }}>
-                <strong>Logged in as</strong>{" "}
-                <span className="user-name">{displayName(loggedInUser)}</span>
-              </p>
-              <p style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>
-                {loggedInUser.email && <><small>{loggedInUser.email}</small></>}
-              </p>
+          <div className="oauth-row">
+            <button 
+              className="oauth-btn" 
+              onClick={handleGoogle}
+              disabled={isLoggingIn || isSigningUp}
+            >
+              <svg viewBox="0 0 48 48" className="g-icon" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#EA4335" d="M24 9.5c3.9 0 7.1 1.4 9.4 3.3l7-7C36.6 2 30.9 0 24 0 14.7 0 6.9 5 3 12.1l8.2 6.4C13.8 14 18.5 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.6H24v9h12.6c-.6 3.2-2.6 5.9-5.4 7.6l8.2 6.4C43.6 38.9 46.5 32.3 46.5 24.5z" />
+                <path fill="#FBBC05" d="M11.2 28.5c-.6-1.7-1-3.5-1-5.4s.4-3.7 1-5.4L3 11.3C1.1 14.9 0 19.2 0 24s1.1 9.1 3 12.7l8.2-6.2z" />
+                <path fill="#34A853" d="M24 48c6.6 0 12.2-2.2 16.2-6l-8.2-6.4c-2.3 1.6-5.2 2.5-8 2.5-5.5 0-10.2-4.5-11.6-10.4L3 36.7C6.9 43 14.7 48 24 48z" />
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+          </div>
 
-              <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-                <button
-                  className="primary"
-                  onClick={() => navigate("/", { replace: true })}
-                >
-                  Continue
-                </button>
+          <div className="or-row">
+            <span>or use your email</span>
+          </div>
 
-                <button
-                  className="link-btn"
-                  onClick={handleSignOut}
-                  style={{ alignSelf: "center", padding: "8px 10px", borderRadius: 8 }}
-                >
-                  Sign out
+          {mode === "login" ? (
+            <form className="form" onSubmit={handleLoginSubmit} noValidate>
+              <label className="form-group">
+                <span className="label">Email or Username</span>
+                <input 
+                  className="input" 
+                  type="text" 
+                  value={loginEmailOrUsername} 
+                  onChange={(e) => setLoginEmailOrUsername(e.target.value)} 
+                  placeholder="you@example.com"
+                  disabled={isLoggingIn}
+                />
+              </label>
+
+              <label className="form-group">
+                <span className="label">Password</span>
+                <div className="input-with-btn">
+                  <input 
+                    className="input" 
+                    type={showPasswordLogin ? "text" : "password"} 
+                    value={loginPassword} 
+                    onChange={(e) => setLoginPassword(e.target.value)} 
+                    placeholder="Your password"
+                    disabled={isLoggingIn}
+                  />
+                  <button 
+                    type="button" 
+                    className="link-btn" 
+                    onClick={() => setShowPasswordLogin(s => !s)}
+                    disabled={isLoggingIn}
+                  >
+                    {showPasswordLogin ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </label>
+
+              <div className="row-between">
+                <label className="small">
+                  <input 
+                    type="checkbox" 
+                    checked={rememberMe} 
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    disabled={isLoggingIn}
+                  /> 
+                  Remember me
+                </label>
+                <button type="button" className="link-btn" disabled={isLoggingIn}>
+                  Forgot?
                 </button>
               </div>
 
-              <div style={{ marginTop: 14 }} className="footer-note">
-                To confirm your session, token is stored in localStorage (browser). Signing out clears it.
-              </div>
-            </div>
+              {loginError && <div className="error">{loginError}</div>}
+
+              <button 
+                className="primary" 
+                type="submit" 
+                disabled={isLoggingIn}
+                style={{ opacity: isLoggingIn ? 0.7 : 1 }}
+              >
+                {isLoggingIn ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
           ) : (
-            <>
-              <div className="oauth-row">
-                <button className="oauth-btn" onClick={handleGoogle}>
-                  <svg viewBox="0 0 48 48" className="g-icon" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="#EA4335" d="M24 9.5c3.9 0 7.1 1.4 9.4 3.3l7-7C36.6 2 30.9 0 24 0 14.7 0 6.9 5 3 12.1l8.2 6.4C13.8 14 18.5 9.5 24 9.5z" />
-                    <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.6H24v9h12.6c-.6 3.2-2.6 5.9-5.4 7.6l8.2 6.4C43.6 38.9 46.5 32.3 46.5 24.5z" />
-                    <path fill="#FBBC05" d="M11.2 28.5c-.6-1.7-1-3.5-1-5.4s.4-3.7 1-5.4L3 11.3C1.1 14.9 0 19.2 0 24s1.1 9.1 3 12.7l8.2-6.2z" />
-                    <path fill="#34A853" d="M24 48c6.6 0 12.2-2.2 16.2-6l-8.2-6.4c-2.3 1.6-5.2 2.5-8 2.5-5.5 0-10.2-4.5-11.6-10.4L3 36.7C6.9 43 14.7 48 24 48z" />
-                  </svg>
-                  <span>Continue with Google</span>
-                </button>
-              </div>
+            <form className="form" onSubmit={handleSignupSubmit} noValidate>
+              {signupErrors.general && <div className="error">{signupErrors.general}</div>}
 
-              <div className="or-row">
-                <span>or use your email</span>
-              </div>
+              <label className="form-group">
+                <span className="label">Full Name</span>
+                <input 
+                  className="input" 
+                  type="text" 
+                  value={fullName} 
+                  onChange={(e) => setFullName(e.target.value)} 
+                  placeholder="Your full name"
+                  disabled={isSigningUp}
+                />
+                {signupErrors.fullName && <div className="error">{signupErrors.fullName}</div>}
+              </label>
 
-              {mode === "login" ? (
-                <form className="form" onSubmit={handleLoginSubmit} noValidate>
-                  <label className="form-group">
-                    <span className="label">Email or Username</span>
-                    <input className="input" type="text" value={loginEmailOrUsername} onChange={(e) => setLoginEmailOrUsername(e.target.value)} placeholder="you@example.com" />
-                  </label>
+              <label className="form-group">
+                <span className="label">Username (optional)</span>
+                <input 
+                  className="input" 
+                  type="text" 
+                  value={username} 
+                  onChange={(e) => setUsername(e.target.value)} 
+                  placeholder="your_handle"
+                  disabled={isSigningUp}
+                />
+              </label>
 
-                  <label className="form-group">
-                    <span className="label">Password</span>
-                    <div className="input-with-btn">
-                      <input className="input" type={showPasswordLogin ? "text" : "password"} value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} placeholder="Your password" />
-                      <button type="button" className="link-btn" onClick={() => setShowPasswordLogin(s => !s)}>{showPasswordLogin ? "Hide" : "Show"}</button>
-                    </div>
-                  </label>
+              <label className="form-group">
+                <span className="label">Email</span>
+                <input 
+                  className="input" 
+                  type="email" 
+                  value={signupEmail} 
+                  onChange={(e) => setSignupEmail(e.target.value)} 
+                  placeholder="you@example.com"
+                  disabled={isSigningUp}
+                />
+                {signupErrors.email && <div className="error">{signupErrors.email}</div>}
+              </label>
 
-                  <div className="row-between">
-                    <label className="small">
-                      <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} /> Remember me
-                    </label>
-                    <button type="button" className="link-btn">Forgot?</button>
-                  </div>
+              <label className="form-group">
+                <span className="label">Password</span>
+                <div className="input-with-btn">
+                  <input 
+                    className="input" 
+                    type={showPasswordSignup ? "text" : "password"} 
+                    value={signupPassword} 
+                    onChange={(e) => setSignupPassword(e.target.value)} 
+                    placeholder="Create a strong password"
+                    disabled={isSigningUp}
+                  />
+                  <button 
+                    type="button" 
+                    className="link-btn" 
+                    onClick={() => setShowPasswordSignup(s => !s)}
+                    disabled={isSigningUp}
+                  >
+                    {showPasswordSignup ? "Hide" : "Show"}
+                  </button>
+                </div>
+                {signupErrors.password ? 
+                  <div className="error">{signupErrors.password}</div> : 
+                  <div className="hint">Minimum 8 chars, uppercase, lowercase, number & special char</div>
+                }
+              </label>
 
-                  {loginError && <div className="error">{loginError}</div>}
+              <label className="form-group">
+                <span className="label">Confirm Password</span>
+                <input 
+                  className="input" 
+                  type="password" 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  placeholder="Repeat password"
+                  disabled={isSigningUp}
+                />
+                {signupErrors.confirmPassword && <div className="error">{signupErrors.confirmPassword}</div>}
+              </label>
 
-                  <button className="primary" type="submit">Sign in</button>
-                </form>
-              ) : (
-                <form className="form" onSubmit={handleSignupSubmit} noValidate>
-                  {signupErrors.general && <div className="error">{signupErrors.general}</div>}
+              <label className="checkbox-row">
+                <input 
+                  type="checkbox" 
+                  checked={acceptTerms} 
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  disabled={isSigningUp}
+                />
+                <span>
+                  I accept the <button type="button" className="link-btn" disabled={isSigningUp}>Terms</button> & <button type="button" className="link-btn" disabled={isSigningUp}>Privacy Policy</button>
+                </span>
+              </label>
+              {signupErrors.acceptTerms && <div className="error">{signupErrors.acceptTerms}</div>}
 
-                  <label className="form-group">
-                    <span className="label">Full Name</span>
-                    <input className="input" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your full name" />
-                    {signupErrors.fullName && <div className="error">{signupErrors.fullName}</div>}
-                  </label>
-
-                  <label className="form-group">
-                    <span className="label">Username (optional)</span>
-                    <input className="input" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="your_handle" />
-                  </label>
-
-                  <label className="form-group">
-                    <span className="label">Email</span>
-                    <input className="input" type="email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} placeholder="you@example.com" />
-                    {signupErrors.email && <div className="error">{signupErrors.email}</div>}
-                  </label>
-
-                  <label className="form-group">
-                    <span className="label">Password</span>
-                    <div className="input-with-btn">
-                      <input className="input" type={showPasswordSignup ? "text" : "password"} value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} placeholder="Create a strong password" />
-                      <button type="button" className="link-btn" onClick={() => setShowPasswordSignup(s => !s)}>{showPasswordSignup ? "Hide" : "Show"}</button>
-                    </div>
-                    {signupErrors.password ? <div className="error">{signupErrors.password}</div> : <div className="hint">Minimum 8 chars, uppercase, lowercase, number & special char</div>}
-                  </label>
-
-                  <label className="form-group">
-                    <span className="label">Confirm Password</span>
-                    <input className="input" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repeat password" />
-                    {signupErrors.confirmPassword && <div className="error">{signupErrors.confirmPassword}</div>}
-                  </label>
-
-                  <label className="checkbox-row">
-                    <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
-                    <span>I accept the <button type="button" className="link-btn">Terms</button> & <button type="button" className="link-btn">Privacy Policy</button></span>
-                  </label>
-                  {signupErrors.acceptTerms && <div className="error">{signupErrors.acceptTerms}</div>}
-
-                  <button className="primary" type="submit">Create account</button>
-                </form>
-              )}
-
-              <div className="footer-note">By continuing you agree to our Terms & Privacy Policy.</div>
-            </>
+              <button 
+                className="primary" 
+                type="submit" 
+                disabled={isSigningUp}
+                style={{ opacity: isSigningUp ? 0.7 : 1 }}
+              >
+                {isSigningUp ? "Creating account..." : "Create account"}
+              </button>
+            </form>
           )}
+
+          <div className="footer-note">
+            By continuing you agree to our Terms & Privacy Policy.
+          </div>
         </div>
       </div>
     </div>
