@@ -145,25 +145,10 @@ export default function LoginSignup() {
 
         <div className="auth-body">
           <div className="oauth-row">
-            <button 
-              className="oauth-btn" 
-              onClick={handleGoogle}
-              disabled={isLoggingIn || isSigningUp}
-            >
-              <svg viewBox="0 0 48 48" className="g-icon" xmlns="http://www.w3.org/2000/svg">
-                <path fill="#EA4335" d="M24 9.5c3.9 0 7.1 1.4 9.4 3.3l7-7C36.6 2 30.9 0 24 0 14.7 0 6.9 5 3 12.1l8.2 6.4C13.8 14 18.5 9.5 24 9.5z" />
-                <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.6H24v9h12.6c-.6 3.2-2.6 5.9-5.4 7.6l8.2 6.4C43.6 38.9 46.5 32.3 46.5 24.5z" />
-                <path fill="#FBBC05" d="M11.2 28.5c-.6-1.7-1-3.5-1-5.4s.4-3.7 1-5.4L3 11.3C1.1 14.9 0 19.2 0 24s1.1 9.1 3 12.7l8.2-6.2z" />
-                <path fill="#34A853" d="M24 48c6.6 0 12.2-2.2 16.2-6l-8.2-6.4c-2.3 1.6-5.2 2.5-8 2.5-5.5 0-10.2-4.5-11.6-10.4L3 36.7C6.9 43 14.7 48 24 48z" />
-              </svg>
-              <span>Continue with Google</span>
-            </button>
+            
           </div>
 
-          <div className="or-row">
-            <span>or use your email</span>
-          </div>
-
+          
           {mode === "login" ? (
             <form className="form" onSubmit={handleLoginSubmit} noValidate>
               <label className="form-group">
