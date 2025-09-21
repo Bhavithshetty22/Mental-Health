@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import "./Community.css";
 import UploadModal from "../components/UploadModal";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000"
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
 export default function CommunityPage() {
   const [posts, setPosts] = useState([]);
@@ -16,10 +16,12 @@ export default function CommunityPage() {
       const resp = await fetch(`${API_BASE}/api/community`);
       if (!resp.ok) throw new Error("Failed to load posts");
       const data = await resp.json();
-      // posts are shown in reverse chronological order
-      setPosts(Array.isArray(data.posts) ? data.posts.reverse() : []);
+      // produce newest-first safely (don't mutate original array)
+      const list = Array.isArray(data.posts) ? [...data.posts].reverse() : [];
+      setPosts(list);
     } catch (err) {
       console.error("Could not fetch community posts", err);
+      setPosts([]);
     } finally {
       setLoading(false);
     }
@@ -29,11 +31,22 @@ export default function CommunityPage() {
     fetchPosts();
   }, []);
 
+  // small helper: display-friendly date
+  const formatDate = (iso) => {
+    try {
+      return new Date(iso).toLocaleString();
+    } catch {
+      return iso;
+    }
+  };
+
   return (
     <div className="community-page">
       <header className="community-header">
-        <h1>Community</h1>
-        <p>Share a poem, story, or AI creation. Posts are anonymous and like counts are hidden.</p>
+        <div>
+          <h1>Community</h1>
+          <p className="subtitle">Share a poem, story, or AI creation. Posts are anonymous and like counts are hidden.</p>
+        </div>
 
         <div className="community-actions">
           <button className="btn primary" onClick={() => setShowUpload(true)}>
@@ -42,34 +55,45 @@ export default function CommunityPage() {
         </div>
       </header>
 
-      <main className="community-list">
+      <main className="community-feed">
         {loading ? (
-          <div className="loading">Loading posts…</div>
+          <div className="empty loading">Loading posts…</div>
         ) : posts.length === 0 ? (
           <div className="empty">No posts yet — be the first to share something kind.</div>
         ) : (
-          posts.map((p) => (
-            <article key={p._id} className="community-post">
-              {p.title && <h3 className="post-title">{p.title}</h3>}
-              {p.content && <div className="post-content" style={{ whiteSpace: "pre-wrap" }}>{p.content}</div>}
-              {p.image && (
-                <div className="post-image">
-                  <img src={p.image} alt="user upload" />
+          posts.map((p) => {
+            const hasImage = !!p.image;
+            return (
+              <article key={p._id} className={`community-post ${hasImage ? "with-image" : "text-only"}`}>
+                {hasImage && (
+                  <div className="post-image">
+                    {/* lazy loading for performance; object-fit via CSS */}
+                    <img src={p.image} alt={p.title ? p.title : "Community image"} loading="lazy" />
+                  </div>
+                )}
+
+                <div className="post-body">
+                  {p.title && <h3 className="post-title">{p.title}</h3>}
+                  {p.content && <div className="post-text">{p.content}</div>}
                 </div>
-              )}
-              <div className="post-meta">
-                <span>{new Date(p.createdAt).toLocaleString()}</span>
-                <span aria-hidden style={{ opacity: 0.6 }}> • anonymous</span>
-              </div>
-            </article>
-          ))
+
+                <div className="post-footer">
+                  <span className="post-date">{formatDate(p.createdAt)}</span>
+                  <span className="post-anon">• anonymous</span>
+                </div>
+              </article>
+            );
+          })
         )}
       </main>
 
       {showUpload && (
         <UploadModal
           onClose={() => setShowUpload(false)}
-          onUploaded={() => { fetchPosts(); }}
+          onUploaded={() => {
+            fetchPosts();
+            setShowUpload(false);
+          }}
         />
       )}
     </div>
