@@ -1,7 +1,6 @@
 
 // src/pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
-
 import { useNavigate } from 'react-router-dom';
 import MoodCalendar from '../components/MoodCalendar';
 import MoodTrackerWidget from '../components/MoodTrackerWidget';
@@ -70,7 +69,6 @@ function Dashboard() {
               </p>
             </div>
           </div>
-
 
           <div className="othercontainer1boxes">
             <div className="moodandfit">

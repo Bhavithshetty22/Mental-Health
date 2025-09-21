@@ -1,6 +1,6 @@
 // src/components/Layout.jsx
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Calendar, MessageCircle, LogOut } from 'lucide-react';
+import { Home, Calendar, MessageCircle, LogOut, Globe } from 'lucide-react';
 import { BsJournalBookmarkFill } from "react-icons/bs";
 import { RiPsychotherapyLine } from "react-icons/ri";
 import './Layout.css';
@@ -61,6 +61,7 @@ function Layout() {
   return (
     <div className="layout">
       <nav className="main-navigation">
+
         {loggedInUser && (
           <button
             type="button"
@@ -74,17 +75,18 @@ function Layout() {
             <LogOut size={18} />
           </button>
         )}
-        
         <div className="nav-brand">
           <h2>MOODORA</h2>
         </div>
 
         <div className="nav-links">
+
           <Link 
             to="/" 
             className={`nav-link ${isActive('/') ? 'active' : ''}`} 
             aria-label="Home"
           >
+
             <Home size={20} />
           </Link>
 
@@ -104,11 +106,14 @@ function Layout() {
             <MessageCircle size={20} />
           </Link>
 
-          <Link 
-            to="/daily-journal" 
-            className={`nav-link ${isActive('/daily-journal') ? 'active' : ''}`} 
-            aria-label="Daily journal"
-          >
+
+          {/* Community tab (globe) */}
+          <Link to="/community" className={`nav-link ${isActive('/community') ? 'active' : ''}`} aria-label="Community">
+            <Globe size={20} />
+          </Link>
+
+          <Link to="/daily-journal" className={`nav-link ${isActive('/daily-journal') ? 'active' : ''}`} aria-label="Daily journal">
+
             <BsJournalBookmarkFill size={20} />
           </Link>
 
