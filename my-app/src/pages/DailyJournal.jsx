@@ -1,13 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-
-import { 
-  Mic, 
-  MicOff, 
-  Type, 
-  Volume2, 
-  MessageSquare, 
-  Moon, 
-  Sun, 
+// src/pages/DailyJournal.jsx
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Mic,
+  MicOff,
+  Type,
+  Volume2,
+  MessageSquare,
+  Moon,
+  Sun,
   Send,
   X,
   Heart,
@@ -15,8 +15,11 @@ import {
   Square,
   Play
 } from 'lucide-react';
-
 import './DailyJournal.css';
+
+// Use environment variable or fallback
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+
 // ✅ Function defined OUTSIDE the component
 const enhancePromptWithGemini = async (journalText) => {
   try {
@@ -55,7 +58,7 @@ Output only the final artistic image prompt, nothing else.`,
     return data?.candidates?.[0]?.content?.parts?.[0]?.text || journalText;
   } catch (error) {
     console.error("Gemini enhancement failed:", error);
-    return `A warm and comforting scene with soft light, nature, and peaceful colors that inspire hope and healing.`; // ✅ fallback
+    return `A warm and comforting scene with soft light, nature, and peaceful colors that inspire hope and healing.`; // fallback
   }
 };
 const getMoodEmoji = (mood) => {
@@ -74,7 +77,6 @@ const getMoodEmoji = (mood) => {
   return emojis[mood?.toLowerCase()] || "🤔";
 };
 
-
 const makeImagePrompt = (journalText) => {
   return `
   An expressive illustration that captures the feeling: "${journalText}". 
@@ -91,29 +93,28 @@ const DailyJournal = () => {
   const [output, setOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  
+  const [speechSupported, setSpeechSupported] = useState(false);
+
   // Voice-related states
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
-  
+
   // Mood detection states
   const [isMoodDetecting, setIsMoodDetecting] = useState(false);
   const [moodResult, setMoodResult] = useState(null);
   const [showMoodPopup, setShowMoodPopup] = useState(false);
 
   // Refs for voice functionality
-
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const recognitionRef = useRef(null);
 
-  // Check for voice support on component mount
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const isSupported =
-  !!SpeechRecognition && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-
+      !!SpeechRecognition && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
     setVoiceSupported(isSupported);
 
     if (isSupported) {
@@ -127,11 +128,11 @@ const DailyJournal = () => {
         let interimTranscript = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
+          const transcriptPart = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscript += transcript;
+            finalTranscript += transcriptPart;
           } else {
-            interimTranscript += transcript;
+            interimTranscript += transcriptPart;
           }
         }
 
@@ -158,50 +159,35 @@ const DailyJournal = () => {
         recognitionRef.current.stop();
       }
       if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
+        try { mediaRecorderRef.current.stop(); } catch {}
       }
     };
   }, []);
 
-  const [speechSupported, setSpeechSupported] = useState(false);
-  const recognitionRef = useRef(null);
-
   useEffect(() => {
-    // Check if speech recognition is supported
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       setSpeechSupported(true);
-      
+
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
-      
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
-      
       recognitionRef.current.onresult = (event) => {
         let finalTranscript = '';
         let interimTranscript = '';
-        
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
+          const transcriptPart = event.results[i][0].transcript;
+          if (event.results[i].isFinal) finalTranscript += transcriptPart;
+          else interimTranscript += transcriptPart;
         }
-        
         setVoiceInput(prevInput => prevInput + finalTranscript);
       };
-      
       recognitionRef.current.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
         setIsRecording(false);
       };
-      
-      recognitionRef.current.onend = () => {
-        setIsRecording(false);
-      };
+      recognitionRef.current.onend = () => setIsRecording(false);
     }
   }, []);
 
@@ -209,11 +195,9 @@ const DailyJournal = () => {
   const [story, setStory] = useState("");
   const [poem, setPoem] = useState("");
 
-
   const handleInputModeChange = (mode) => {
     setInputMode(mode);
     setTextInput("");
-
     setVoiceInput("");
     if (isRecording) {
       recognitionRef.current?.stop();
@@ -226,7 +210,6 @@ const DailyJournal = () => {
       alert('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
       return;
     }
-    
     if (isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
@@ -234,8 +217,6 @@ const DailyJournal = () => {
       setVoiceInput("");
       recognitionRef.current?.start();
       setIsRecording(true);
-
-
     }
   };
 
@@ -244,210 +225,198 @@ const DailyJournal = () => {
     document.documentElement.classList.toggle("dark");
   };
 
-// build YouTube search url fallback (same rules as backend)
-const buildYouTubeSearchUrl = (title = "", artist = "") => {
-  let q = `${title || ""} ${artist || ""}`.trim();
-  q = q.replace(/[\n\r]+/g, " ");
-  q = q.replace(/["'`‘’“”]/g, "");
-  q = q.replace(/[\/\\|]/g, " ");
-  q = q.replace(/\s+/g, " ").trim();
-  if (!q) q = "music";
-  return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
-};
+  const buildYouTubeSearchUrl = (title = "", artist = "") => {
+    let q = `${title || ""} ${artist || ""}`.trim();
+    q = q.replace(/[\n\r]+/g, " ");
+    q = q.replace(/["'`‘’“”]/g, "");
+    q = q.replace(/[\/\\|]/g, " ");
+    q = q.replace(/\s+/g, " ").trim();
+    if (!q) q = "music";
+    return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+  };
 
-// Voice recognition functions
-const startListening = async () => {
-  if (!voiceSupported) {
-    alert('Voice input is not supported in your browser. Please use Chrome or Edge.');
-    return;
-  }
-
-  try {
-    await navigator.mediaDevices.getUserMedia({ audio: true });
-    setTranscript("");
-    setIsListening(true);
-    recognitionRef.current.start();
-  } catch (error) {
-    console.error('Error starting voice recognition:', error);
-    alert('Could not access microphone. Please check your permissions.');
-  }
-};
-
-const stopListening = () => {
-  if (recognitionRef.current) {
-    recognitionRef.current.stop();
-  }
-  setIsListening(false);
-};
-
-const toggleListening = () => {
-  if (isListening) {
-    stopListening();
-  } else {
-    startListening();
-  }
-};
-
-// Audio recording functions
-const startRecording = async () => {
-  if (!voiceSupported) {
-    alert('Audio recording is not supported in your browser.');
-    return;
-  }
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mediaRecorder = new MediaRecorder(stream);
-    mediaRecorderRef.current = mediaRecorder;
-    audioChunksRef.current = [];
-
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunksRef.current.push(event.data);
-      }
-    };
-
-    mediaRecorder.onstop = () => {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-      setAudioBlob(audioBlob);
-      stream.getTracks().forEach(track => track.stop());
-    };
-
-    mediaRecorder.start();
-    setIsRecording(true);
-  } catch (error) {
-    console.error('Error starting audio recording:', error);
-    alert('Could not start recording. Please check your microphone permissions.');
-  }
-};
-
-const stopRecording = () => {
-  if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-    mediaRecorderRef.current.stop();
-  }
-  setIsRecording(false);
-};
-
-
-
-const playRecording = () => {
-  if (audioBlob) {
-    const audio = new Audio(URL.createObjectURL(audioBlob));
-    audio.play();
-  }
-};
-
-// Mood detection function
-const detectMood = async () => {
-  let textToAnalyze = "";
-
-  if (inputMode === "text") {
-    textToAnalyze = textInput.trim();
-  } else if (inputMode === "voice") {
-    textToAnalyze = transcript.trim();
-  }
-
-  if (!textToAnalyze) {
-    alert("Please enter some text or record your voice first!");
-    return;
-  }
-
-  setIsMoodDetecting(true);
-
-  try {
-    const response = await fetch('http://localhost:5000/api/detect-mood', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: textToAnalyze }),
-    });
-
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-    const data = await response.json();
-    setMoodResult(data);
-    setShowMoodPopup(true);
-  } catch (error) {
-    console.error('Error detecting mood:', error);
-    alert('Failed to detect mood. Please make sure the server is running.');
-  } finally {
-    setIsMoodDetecting(false);
-  }
-};
-
-const closeMoodPopup = () => setShowMoodPopup(false);
-
-// Generate Output (keep Stability + songs + poem logic)
-const generateOutput = async () => {
-  const currentInput = inputMode === "text" ? textInput : voiceInput;
-  if (!currentInput.trim() && !isRecording) return;
-  if (!selectedOption) return;
-
-  setIsGenerating(true);
-  setOutput("");
-  setSongs([]);
-  setStory("");
-  setPoem("");
-
-  try {
-    if (selectedOption === "image") {
-      const visualPrompt = await enhancePromptWithGemini(currentInput);
-
-      const formData = new FormData();
-      formData.append("prompt", visualPrompt);
-      formData.append("aspect_ratio", "1:1");
-
-      const response = await fetch(
-        "https://api.stability.ai/v2beta/stable-image/generate/core",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_STABILITY_API_KEY}`,
-            Accept: "application/json",
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const data = await response.json();
-      if (data?.image) {
-        setOutput({
-          type: "image",
-          content: `data:image/png;base64,${data.image}`,
-          prompt: visualPrompt,
-        });
-      } else {
-        setOutput({ type: "text", content: "❌ No image returned." });
-      }
-    } else if (selectedOption === "song") {
-      const resp = await fetch("http://localhost:5000/api/songs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: currentInput }),
-      });
-      const data = await resp.json();
-      setSongs(Array.isArray(data.songs) ? data.songs : []);
-    } else if (selectedOption === "poem") {
-      const resp = await fetch("http://localhost:5000/api/creative", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: currentInput }),
-      });
-      const data = await resp.json();
-      setStory(data.story || "");
-      setPoem(data.poem || "");
+  const startListening = async () => {
+    if (!voiceSupported) {
+      alert('Voice input is not supported in your browser. Please use Chrome or Edge.');
+      return;
     }
-  } catch (err) {
-    console.error("generateOutput error:", err);
-    setOutput({
-      type: "text",
-      content: "⚠️ Something went wrong. Please try again.",
-    });
-  } finally {
-    setIsGenerating(false);
-  }
-};
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      setTranscript("");
+      setIsListening(true);
+      recognitionRef.current.start();
+    } catch (error) {
+      console.error('Error starting voice recognition:', error);
+      alert('Could not access microphone. Please check your permissions.');
+    }
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current) recognitionRef.current.stop();
+    setIsListening(false);
+  };
+
+  const toggleListening = () => {
+    if (isListening) stopListening();
+    else startListening();
+  };
+
+  const startRecording = async () => {
+    if (!voiceSupported) {
+      alert('Audio recording is not supported in your browser.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        setAudioBlob(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting audio recording:', error);
+      alert('Could not start recording. Please check your microphone permissions.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+  };
+
+  const playRecording = () => {
+    if (audioBlob) {
+      const audio = new Audio(URL.createObjectURL(audioBlob));
+      audio.play();
+    }
+  };
+
+  // Mood detection
+  const detectMood = async () => {
+    let textToAnalyze = "";
+    if (inputMode === "text") textToAnalyze = textInput.trim();
+    else if (inputMode === "voice") textToAnalyze = transcript.trim();
+    if (!textToAnalyze) {
+      alert("Please enter some text or record your voice first!");
+      return;
+    }
+    setIsMoodDetecting(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/detect-mood`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: textToAnalyze }),
+      });
+      if (!response.ok) throw new Error('Mood detection failed');
+      const data = await response.json();
+      setMoodResult(data);
+      setShowMoodPopup(true);
+    } catch (error) {
+      console.error('Error detecting mood:', error);
+      alert('Failed to detect mood. Please make sure the server is running.');
+    } finally {
+      setIsMoodDetecting(false);
+    }
+  };
+
+  const closeMoodPopup = () => setShowMoodPopup(false);
+
+  // Generate Output
+  const generateOutput = async () => {
+    const currentInput = inputMode === "text" ? textInput : voiceInput || transcript;
+    if (!currentInput?.trim()) return;
+    if (!selectedOption) return;
+
+    setIsGenerating(true);
+    setOutput("");
+    setSongs([]);
+    setStory("");
+    setPoem("");
+
+    try {
+      if (selectedOption === "image") {
+        const visualPrompt = await enhancePromptWithGemini(currentInput);
+        // Example: call your image generation backend (stability.ai etc.)
+        const resp = await fetch(`${API_BASE}/api/generate-image`, { // adjust endpoint to your backend
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: visualPrompt }),
+        });
+        if (!resp.ok) throw new Error('Image generation failed');
+        const data = await resp.json();
+        // Expect data.image to be data URL or base64 — adapt as necessary
+        const imageDataUrl = data.image?.startsWith('data:') ? data.image : `data:image/png;base64,${data.image}`;
+        setOutput({ type: "image", content: imageDataUrl, prompt: visualPrompt });
+      } else if (selectedOption === "song") {
+        const resp = await fetch(`${API_BASE}/api/songs`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: currentInput }),
+        });
+        if (!resp.ok) throw new Error('Song generation failed');
+        const data = await resp.json();
+        setSongs(Array.isArray(data.songs) ? data.songs : []);
+      } else if (selectedOption === "poem") {
+        const resp = await fetch(`${API_BASE}/api/creative`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: currentInput }),
+        });
+        if (!resp.ok) throw new Error('Creative generation failed');
+        const data = await resp.json();
+        setStory(data.story || "");
+        setPoem(data.poem || "");
+      }
+    } catch (err) {
+      console.error("generateOutput error:", err);
+      setOutput({ type: "text", content: "⚠️ Something went wrong. Please try again." });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // -------------------------
+  // Upload to Community helper
+  // -------------------------
+  const [uploading, setUploading] = useState(false);
+  const uploadToCommunity = async ({ title = "", content = "", image = null, type = "text" }) => {
+    setUploading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const body = { title: title || "", content: content || "", image: image || null, type };
+      const resp = await fetch(`${API_BASE}/api/community`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || err.message || `Status ${resp.status}`);
+      }
+      const data = await resp.json();
+      alert("Shared to community!");
+      return data;
+    } catch (err) {
+      console.error("Upload to community failed:", err);
+      alert("Failed to share: " + (err.message || "Unknown error"));
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className={`app ${isDark ? "dark" : ""}`}>
@@ -498,6 +467,7 @@ const generateOutput = async () => {
                         className="send-btn"
                         onClick={detectMood}
                         disabled={!textInput.trim() || isMoodDetecting}
+                        title="Detect mood"
                       >
                         {isMoodDetecting ? (
                           <div className="loading-spinner"></div>
@@ -515,27 +485,22 @@ const generateOutput = async () => {
                           <p>Voice input is not supported in your browser. Please use Chrome, Edge, or Safari for the best experience.</p>
                         </div>
                       )}
-                      
+
                       <div className="voice-center">
-                        {/* Speech Recognition */}
                         <div className="mic-container">
                           <button
-
                             className={`mic-btn ${isListening ? "listening" : ""}`}
                             onClick={toggleListening}
                             disabled={!voiceSupported}
-
                           >
                             {isListening ? <MicOff className="icon" /> : <Mic className="icon" />}
                           </button>
                           {isListening && <div className="pulse-ring"></div>}
                         </div>
                         <p className="voice-text">
-
                           {isListening ? "Listening... Click to stop" : "Tap to start speaking"}
                         </p>
 
-                        {/* Audio Recording */}
                         <div className="recording-controls">
                           <button
                             className={`record-btn ${isRecording ? "recording" : ""}`}
@@ -554,19 +519,15 @@ const generateOutput = async () => {
                               </>
                             )}
                           </button>
-                          
+
                           {audioBlob && (
-                            <button
-                              className="play-btn"
-                              onClick={playRecording}
-                            >
+                            <button className="play-btn" onClick={playRecording}>
                               <Play className="icon-sm" />
                               <span>Play</span>
                             </button>
                           )}
                         </div>
 
-                        {/* Transcript Display */}
                         {transcript && (
                           <div className="transcript-display">
                             <h4>Transcript:</h4>
@@ -574,7 +535,6 @@ const generateOutput = async () => {
                           </div>
                         )}
 
-                        {/* Voice Mood Analysis Button */}
                         <button
                           className="voice-mood-btn"
                           onClick={detectMood}
@@ -589,7 +549,6 @@ const generateOutput = async () => {
                             "Analyze Mood"
                           )}
                         </button>
-
                       </div>
                     </div>
                   )}
@@ -609,15 +568,13 @@ const generateOutput = async () => {
                 <button
                   className="generate-btn"
                   onClick={generateOutput}
-
                   disabled={
-                    (inputMode === "text" && !textInput.trim()) || 
-                    (inputMode === "voice" && !voiceInput.trim()) || 
-                    !selectedOption || 
+                    (inputMode === "text" && !textInput.trim()) ||
+                    (inputMode === "voice" && !voiceInput.trim() && !transcript.trim()) ||
+                    !selectedOption ||
                     isGenerating ||
                     !inputMode
                   }
-
                 >
                   {isGenerating ? "Generating..." : "Generate"}
                 </button>
@@ -646,11 +603,7 @@ const generateOutput = async () => {
                         {songs.map((s, idx) => {
                           const title = s.title || "Untitled";
                           const artist = s.artist || "";
-                          // Use YouTube URL or fallback to YouTube search
-                          const url =
-                            s.url && s.url.length > 0
-                              ? s.url
-                              : buildYouTubeSearchUrl(title, artist);
+                          const url = s.url && s.url.length > 0 ? s.url : buildYouTubeSearchUrl(title, artist);
 
                           return (
                             <div className="song-card" key={idx}>
@@ -660,6 +613,23 @@ const generateOutput = async () => {
                               </a>
                               <div style={{ marginTop: 8, fontSize: 12, color: "#666", wordBreak: "break-all" }}>{url}</div>
                               {s.reason && <div className="song-reason">{s.reason}</div>}
+
+                              {/* Share the song suggestion to community */}
+                              <div style={{ marginTop: 8 }}>
+                                <button
+                                  className="btn primary"
+                                  onClick={() =>
+                                    uploadToCommunity({
+                                      title: `Song suggestion: ${title}`,
+                                      content: `Song: ${title}\nArtist: ${artist}\nLink: ${url}`,
+                                      type: "text"
+                                    })
+                                  }
+                                  disabled={uploading}
+                                >
+                                  {uploading ? "Sharing…" : "Share to Community"}
+                                </button>
+                              </div>
                             </div>
                           );
                         })}
@@ -680,6 +650,21 @@ const generateOutput = async () => {
                           <div className="creative-card">
                             <h3 className="creative-title">Short Inspiration</h3>
                             <div className="creative-body">{story}</div>
+                            <div style={{ marginTop: 8 }}>
+                              <button
+                                className="btn primary"
+                                onClick={() =>
+                                  uploadToCommunity({
+                                    title: "Short Inspiration",
+                                    content: story,
+                                    type: "text"
+                                  })
+                                }
+                                disabled={uploading}
+                              >
+                                {uploading ? "Sharing…" : "Share to Community"}
+                              </button>
+                            </div>
                           </div>
                         )}
 
@@ -687,6 +672,21 @@ const generateOutput = async () => {
                           <div className="creative-card">
                             <h3 className="creative-title">Poem</h3>
                             <pre className="creative-poem">{poem}</pre>
+                            <div style={{ marginTop: 8 }}>
+                              <button
+                                className="btn primary"
+                                onClick={() =>
+                                  uploadToCommunity({
+                                    title: "Poem",
+                                    content: poem,
+                                    type: "text"
+                                  })
+                                }
+                                disabled={uploading}
+                              >
+                                {uploading ? "Sharing…" : "Share to Community"}
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -705,18 +705,43 @@ const generateOutput = async () => {
                         <div className="image-output">
                           <img src={output.content} alt="Generated artwork" className="generated-image" />
                           <p className="image-prompt">Based on: "{output.prompt}"</p>
+                          <div className="action-buttons" style={{ marginTop: 8 }}>
+                            <button
+                              className="btn primary"
+                              onClick={() =>
+                                uploadToCommunity({
+                                  title: "Generated image",
+                                  content: output.prompt || "",
+                                  image: output.content,
+                                  type: "image"
+                                })
+                              }
+                              disabled={uploading}
+                            >
+                              {uploading ? "Sharing…" : "Share to Community"}
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div className="output-text">
-                          
-  {output.content || output}
-
+                          {output.content || output}
+                          <div style={{ marginTop: 8 }}>
+                            <button
+                              className="btn primary"
+                              onClick={() =>
+                                uploadToCommunity({
+                                  title: "Generated content",
+                                  content: typeof output.content === "string" ? output.content : JSON.stringify(output),
+                                  type: "text"
+                                })
+                              }
+                              disabled={uploading}
+                            >
+                              {uploading ? "Sharing…" : "Share to Community"}
+                            </button>
+                          </div>
                         </div>
                       )}
-                      <div className="action-buttons">
-                        <button className="save-btn">Save</button>
-                        <button className="share-btn">Share</button>
-                      </div>
                     </div>
                   ) : (
                     <div className="empty-state">
@@ -732,7 +757,7 @@ const generateOutput = async () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> {/* container */}
 
       {/* Mood Detection Popup */}
       {showMoodPopup && moodResult && (
@@ -742,14 +767,11 @@ const generateOutput = async () => {
               <h3 className="mood-popup-title">
                 Mood Detected {getMoodEmoji(moodResult.detectedMood)}
               </h3>
-              <button
-                className="mood-popup-close"
-                onClick={closeMoodPopup}
-              >
+              <button className="mood-popup-close" onClick={closeMoodPopup}>
                 <X className="icon-sm" />
               </button>
             </div>
-            
+
             <div className="mood-popup-content">
               <div className="mood-detection-result">
                 <div className="detected-mood">
@@ -757,9 +779,7 @@ const generateOutput = async () => {
                     <span className="mood-emoji">{getMoodEmoji(moodResult.detectedMood)}</span>
                     <div className="mood-info">
                       <h4 className="mood-label">{moodResult.detectedMood}</h4>
-                      <p className="mood-confidence">
-                        Confidence: {Math.round(moodResult.confidence * 100)}%
-                      </p>
+                      <p className="mood-confidence">Confidence: {Math.round(moodResult.confidence * 100)}%</p>
                     </div>
                   </div>
                 </div>
@@ -776,9 +796,7 @@ const generateOutput = async () => {
                   </div>
                   <ul className="suggestions-list">
                     {moodResult.suggestions.tips.map((tip, index) => (
-                      <li key={index} className="suggestion-item">
-                        {tip}
-                      </li>
+                      <li key={index} className="suggestion-item">{tip}</li>
                     ))}
                   </ul>
                 </div>
@@ -792,13 +810,9 @@ const generateOutput = async () => {
                         .slice(0, 3)
                         .map((prediction, index) => (
                           <div key={index} className="prediction-item">
-                            <span className="prediction-emoji">
-                              {getMoodEmoji(prediction.label)}
-                            </span>
+                            <span className="prediction-emoji">{getMoodEmoji(prediction.label)}</span>
                             <span className="prediction-label">{prediction.label}</span>
-                            <span className="prediction-score">
-                              {Math.round(prediction.score * 100)}%
-                            </span>
+                            <span className="prediction-score">{Math.round(prediction.score * 100)}%</span>
                           </div>
                         ))}
                     </div>
@@ -808,13 +822,8 @@ const generateOutput = async () => {
             </div>
 
             <div className="mood-popup-actions">
-              <button className="mood-action-btn secondary" onClick={closeMoodPopup}>
-                Close
-              </button>
-              <button className="mood-action-btn primary" onClick={() => {
-                closeMoodPopup();
-                // You can add logic here to save the mood or do something with it
-              }}>
+              <button className="mood-action-btn secondary" onClick={closeMoodPopup}>Close</button>
+              <button className="mood-action-btn primary" onClick={() => { closeMoodPopup(); /* optionally save mood */ }}>
                 Save Mood
               </button>
             </div>
