@@ -1,161 +1,240 @@
-/* src/pages/GenAIAuth.css - scoped + centered */
+/* src/pages/GenAIAuth.css */
 .genai-auth-root {
-  --bg: #0f1112;
-  --muted: #9aa4a6;
-  --primary: #1f6feb;
-  --text: #e6eef1;
-  --error: #ff6b6b;
-
-  position: relative;
+  display: flex;
+  min-height: 100vh;
   width: 100%;
-  min-height: 100vh; /* center relative to viewport */
+  background-color: #e8e8e8;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Left side - Illustration */
+.genai-auth-root .auth-illustration {
+  flex: 1;
+ background: url('/login.jpg') no-repeat center center;
+  background-size: cover;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  box-sizing: border-box;
-  font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: radial-gradient(1200px 400px at 10% 10%, rgba(124, 92, 255, 0.02), transparent);
-  color: var(--text);
-}
-
-/* card */
-.genai-auth-root .auth-card {
-  width: 100%;
-  max-width: 460px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  box-shadow: 0 18px 40px rgba(2, 6, 8, 0.55);
+  padding: 40px;
+  position: relative;
   overflow: hidden;
 }
 
-/* header */
-.genai-auth-root .auth-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 18px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-}
-.genai-auth-root .brand {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-.genai-auth-root .subtitle {
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-/* tabs */
-.genai-auth-root .mode-switch { display:flex; gap:8px; }
-.genai-auth-root .tab {
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--muted);
-  border: 1px solid transparent;
-  cursor: pointer;
-}
-.genai-auth-root .tab.active {
-  background: rgba(255,255,255,0.03);
-  color: var(--text);
-  border-color: rgba(255,255,255,0.04);
-}
-
-/* body */
-.genai-auth-root .auth-body { padding: 18px; }
-
-/* oauth */
-.genai-auth-root .oauth-row { display:flex; justify-content:center; margin-bottom:12px; }
-.genai-auth-root .oauth-btn {
+.genai-auth-root .illustration-content {
+  position: relative;
   width: 100%;
-  display:flex;
-  gap:10px;
-  align-items:center;
-  justify-content:center;
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,0.03);
-  background: transparent;
-  cursor: pointer;
+  max-width: 500px;
+  aspect-ratio: 1;
+  background: radial-gradient(circle at center, rgba(255, 182, 193, 0.15), transparent 70%);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
-.genai-auth-root .g-icon { width:20px; height:20px; }
 
-/* forms */
-.genai-auth-root .or-row { text-align:center; color:var(--muted); font-size:12px; margin:10px 0; }
-.genai-auth-root .form { display:flex; flex-direction:column; gap:12px; }
-.genai-auth-root .form-group { display:flex; flex-direction:column; gap:8px; }
-.genai-auth-root .label { color: var(--muted); font-size:13px; }
-.genai-auth-root .input {
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.03);
-  background: rgba(255,255,255,0.01);
-  color: var(--text);
-  outline: none;
-  font-size: 14px;
+
+
+.genai-auth-root .brain-glow {
+  width: 60%;
+  height: 70%;
+  background: linear-gradient(180deg, #ff6b9d 0%, #c44569 100%);
+  border-radius: 50% 50% 45% 45%;
+  opacity: 0.3;
+  filter: blur(40px);
+  animation: float 6s ease-in-out infinite;
 }
-.genai-auth-root .input:focus { box-shadow: 0 6px 18px rgba(0,0,0,0.45); border-color: rgba(31,111,235,0.12); }
 
-.genai-auth-root .input-with-btn { display:flex; gap:8px; align-items:center; }
-.genai-auth-root .link-btn { background:transparent; border:none; color:var(--primary); cursor:pointer; padding:6px; font-size:13px; }
-.genai-auth-root .row-between { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--muted); }
+.genai-auth-root .brain-emoji {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 120px;
+  opacity: 0.1;
+}
 
-.genai-auth-root .checkbox-row { display:flex; gap:10px; align-items:center; color:var(--muted); font-size:13px; }
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
 
-.genai-auth-root .primary {
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  padding: 12px 14px;
-  border-radius: 10px;
-  cursor: pointer;
+/* Right side - Form container */
+.genai-auth-root .auth-form-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.genai-auth-root .auth-form-wrapper {
+  width: 100%;
+  max-width: 600px;
+}
+
+/* Logo */
+.genai-auth-root .auth-logo {
+  font-size: 56px;
   font-weight: 600;
-  font-size: 14px;
+  text-align: center;
+  margin: 0 0 40px 0;
+  color: #2c3e50;
+  letter-spacing: 1px;
 }
-.genai-auth-root .primary:hover { transform: translateY(-1px); }
 
-.genai-auth-root .hint { font-size:12px; color:var(--muted); }
-.genai-auth-root .footer-note { margin-top:12px; font-size:12px; color:var(--muted); text-align:center; }
-.genai-auth-root .error { color: var(--error); font-size:13px; }
-/* small UI for logged-in panel */
-.genai-auth-root .user-panel {
+/* Form */
+.genai-auth-root .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 6px 0;
 }
 
-.genai-auth-root .user-panel .user-name {
-  color: var(--text);
-  background: rgba(255,255,255,0.03);
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-weight: 600;
-  margin-left: 6px;
+.genai-auth-root .form-field {
+  margin-bottom: 20px;
 }
 
-.genai-auth-root .user-panel .primary {
-  padding: 10px 14px;
+.genai-auth-root .field-label {
+  display: block;
   font-size: 14px;
+  margin-bottom: 8px;
+  color: #555;
+  font-weight: 400;
 }
 
-.genai-auth-root .user-panel .link-btn {
-  color: var(--muted);
-  padding: 8px 10px;
+.genai-auth-root .field-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  border: none;
+  background-color: #d0d0d0;
+  border-radius: 8px;
+  outline: none;
+  box-sizing: border-box;
+  color: #333;
+  font-family: inherit;
 }
 
-/* Make sure small layout doesn't overflow */
-.genai-auth-root .auth-body { word-break: break-word; }
+.genai-auth-root .field-input:focus {
+  background-color: #c8c8c8;
+}
 
-/* responsive */
-@media (max-width:480px) {
-  .genai-auth-root .auth-card { margin: 0 10px; max-width: 92%; }
-  .genai-auth-root .auth-body { padding: 14px; }
+.genai-auth-root .field-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Error messages */
+.genai-auth-root .field-error {
+  color: #e74c3c;
+  font-size: 13px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.genai-auth-root .field-error-inline {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Checkbox */
+.genai-auth-root .checkbox-field {
+  margin-bottom: 20px;
+}
+
+.genai-auth-root .checkbox-label {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+}
+
+.genai-auth-root .checkbox-label input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+/* Submit button */
+.genai-auth-root .submit-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  background-color: #34495e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  font-family: inherit;
+  transition: background-color 0.2s;
+}
+
+.genai-auth-root .submit-btn:hover:not(:disabled) {
+  background-color: #2c3e50;
+}
+
+.genai-auth-root .submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Mode switch */
+.genai-auth-root .switch-mode {
+
+  font-size: 14px;
+  color: #666;
+}
+
+.genai-auth-root .switch-link {
+  background: none;
+  border: none;
+  color: #3498db;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.genai-auth-root .switch-link:hover:not(:disabled) {
+  color: #2980b9;
+}
+
+.genai-auth-root .switch-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .genai-auth-root {
+    flex-direction: column;
+  }
+  
+  .genai-auth-root .auth-illustration {
+    min-height: 300px;
+    padding: 30px;
+  }
+  
+  .genai-auth-root .illustration-content {
+    max-width: 300px;
+  }
+  
+  .genai-auth-root .brain-emoji {
+    font-size: 80px;
+  }
+  
+  .genai-auth-root .auth-form-container {
+    padding: 30px 20px;
+  }
+  
+  .genai-auth-root .auth-logo {
+    font-size: 28px;
+    margin-bottom: 30px;
+  }
 }

@@ -10,7 +10,6 @@ export default function LoginSignup() {
   // login state
   const [loginEmailOrUsername, setLoginEmailOrUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -55,7 +54,6 @@ export default function LoginSignup() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       // Force a page reload to trigger the App.js authentication check
-      // This ensures the routing updates properly
       window.location.href = "/";
     } catch (err) {
       setLoginError(err.message || "Login failed");
@@ -109,216 +107,163 @@ export default function LoginSignup() {
     }
   };
 
-  const [showPasswordLogin, setShowPasswordLogin] = useState(false);
-  const [showPasswordSignup, setShowPasswordSignup] = useState(false);
-
-  const handleGoogle = () => {
-    window.location.href = "/api/auth/google"; // backend route if implemented
-  };
-
   return (
     <div className="genai-auth-root">
-      <div className="auth-card">
-        <header className="auth-header">
-          <div>
-            <h1 className="brand">MoodOra</h1>
-            <p className="subtitle">Your personal mood and wellness companion</p>
-          </div>
+      {/* Left side - Illustration */}
+      <div className="auth-illustration">
+        <div className="illustration-content">
+    
+        </div>
+      </div>
 
-          <div className="mode-switch">
-            <button 
-              className={`tab ${mode === "login" ? "active" : ""}`} 
-              onClick={() => setMode("login")}
-              disabled={isLoggingIn || isSigningUp}
-            >
-              Login
-            </button>
-            <button 
-              className={`tab ${mode === "signup" ? "active" : ""}`} 
-              onClick={() => setMode("signup")}
-              disabled={isLoggingIn || isSigningUp}
-            >
-              Signup
-            </button>
-          </div>
-        </header>
+      {/* Right side - Form */}
+      <div className="auth-form-container">
+        <div className="auth-form-wrapper">
+          <h1 className="auth-logo">MOODORA</h1>
 
-        <div className="auth-body">
-          <div className="oauth-row">
-            
-          </div>
-
-          
           {mode === "login" ? (
-            <form className="form" onSubmit={handleLoginSubmit} noValidate>
-              <label className="form-group">
-                <span className="label">Email or Username</span>
+            <form className="auth-form" onSubmit={handleLoginSubmit} noValidate>
+              <div className="form-field">
+                <label className="field-label">Email</label>
                 <input 
-                  className="input" 
+                  className="field-input" 
                   type="text" 
                   value={loginEmailOrUsername} 
                   onChange={(e) => setLoginEmailOrUsername(e.target.value)} 
-                  placeholder="you@example.com"
                   disabled={isLoggingIn}
                 />
-              </label>
-
-              <label className="form-group">
-                <span className="label">Password</span>
-                <div className="input-with-btn">
-                  <input 
-                    className="input" 
-                    type={showPasswordLogin ? "text" : "password"} 
-                    value={loginPassword} 
-                    onChange={(e) => setLoginPassword(e.target.value)} 
-                    placeholder="Your password"
-                    disabled={isLoggingIn}
-                  />
-                  <button 
-                    type="button" 
-                    className="link-btn" 
-                    onClick={() => setShowPasswordLogin(s => !s)}
-                    disabled={isLoggingIn}
-                  >
-                    {showPasswordLogin ? "Hide" : "Show"}
-                  </button>
-                </div>
-              </label>
-
-              <div className="row-between">
-                <label className="small">
-                  <input 
-                    type="checkbox" 
-                    checked={rememberMe} 
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    disabled={isLoggingIn}
-                  /> 
-                  Remember me
-                </label>
-                <button type="button" className="link-btn" disabled={isLoggingIn}>
-                  Forgot?
-                </button>
               </div>
 
-              {loginError && <div className="error">{loginError}</div>}
+              <div className="form-field">
+                <label className="field-label">Password</label>
+                <input 
+                  className="field-input" 
+                  type="password" 
+                  value={loginPassword} 
+                  onChange={(e) => setLoginPassword(e.target.value)} 
+                  disabled={isLoggingIn}
+                />
+              </div>
+
+              {loginError && <div className="field-error">{loginError}</div>}
 
               <button 
-                className="primary" 
+                className="submit-btn" 
                 type="submit" 
                 disabled={isLoggingIn}
-                style={{ opacity: isLoggingIn ? 0.7 : 1 }}
               >
-                {isLoggingIn ? "Signing in..." : "Sign in"}
+                {isLoggingIn ? "Logging in..." : "Login"}
               </button>
+
+              <div className="switch-mode">
+                don't have an account?{' '}
+                <button 
+                  type="button" 
+                  className="switch-link" 
+                  onClick={() => setMode("signup")}
+                  disabled={isLoggingIn}
+                >
+                  Sign up
+                </button>
+              </div>
             </form>
           ) : (
-            <form className="form" onSubmit={handleSignupSubmit} noValidate>
-              {signupErrors.general && <div className="error">{signupErrors.general}</div>}
+            <form className="auth-form" onSubmit={handleSignupSubmit} noValidate>
+              {signupErrors.general && <div className="field-error">{signupErrors.general}</div>}
 
-              <label className="form-group">
-                <span className="label">Full Name</span>
+              <div className="form-field">
+                <label className="field-label">Full Name</label>
                 <input 
-                  className="input" 
+                  className="field-input" 
                   type="text" 
                   value={fullName} 
                   onChange={(e) => setFullName(e.target.value)} 
-                  placeholder="Your full name"
                   disabled={isSigningUp}
                 />
-                {signupErrors.fullName && <div className="error">{signupErrors.fullName}</div>}
-              </label>
+                {signupErrors.fullName && <div className="field-error-inline">{signupErrors.fullName}</div>}
+              </div>
 
-              <label className="form-group">
-                <span className="label">Username (optional)</span>
+              <div className="form-field">
+                <label className="field-label">Username (optional)</label>
                 <input 
-                  className="input" 
+                  className="field-input" 
                   type="text" 
                   value={username} 
                   onChange={(e) => setUsername(e.target.value)} 
-                  placeholder="your_handle"
                   disabled={isSigningUp}
                 />
-              </label>
+              </div>
 
-              <label className="form-group">
-                <span className="label">Email</span>
+              <div className="form-field">
+                <label className="field-label">Email</label>
                 <input 
-                  className="input" 
+                  className="field-input" 
                   type="email" 
                   value={signupEmail} 
                   onChange={(e) => setSignupEmail(e.target.value)} 
-                  placeholder="you@example.com"
                   disabled={isSigningUp}
                 />
-                {signupErrors.email && <div className="error">{signupErrors.email}</div>}
-              </label>
+                {signupErrors.email && <div className="field-error-inline">{signupErrors.email}</div>}
+              </div>
 
-              <label className="form-group">
-                <span className="label">Password</span>
-                <div className="input-with-btn">
-                  <input 
-                    className="input" 
-                    type={showPasswordSignup ? "text" : "password"} 
-                    value={signupPassword} 
-                    onChange={(e) => setSignupPassword(e.target.value)} 
-                    placeholder="Create a strong password"
-                    disabled={isSigningUp}
-                  />
-                  <button 
-                    type="button" 
-                    className="link-btn" 
-                    onClick={() => setShowPasswordSignup(s => !s)}
-                    disabled={isSigningUp}
-                  >
-                    {showPasswordSignup ? "Hide" : "Show"}
-                  </button>
-                </div>
-                {signupErrors.password ? 
-                  <div className="error">{signupErrors.password}</div> : 
-                  <div className="hint">Minimum 8 chars, uppercase, lowercase, number & special char</div>
-                }
-              </label>
-
-              <label className="form-group">
-                <span className="label">Confirm Password</span>
+              <div className="form-field">
+                <label className="field-label">Password</label>
                 <input 
-                  className="input" 
+                  className="field-input" 
+                  type="password" 
+                  value={signupPassword} 
+                  onChange={(e) => setSignupPassword(e.target.value)} 
+                  disabled={isSigningUp}
+                />
+                {signupErrors.password && <div className="field-error-inline">{signupErrors.password}</div>}
+              </div>
+
+              <div className="form-field">
+                <label className="field-label">Confirm Password</label>
+                <input 
+                  className="field-input" 
                   type="password" 
                   value={confirmPassword} 
                   onChange={(e) => setConfirmPassword(e.target.value)} 
-                  placeholder="Repeat password"
                   disabled={isSigningUp}
                 />
-                {signupErrors.confirmPassword && <div className="error">{signupErrors.confirmPassword}</div>}
-              </label>
+                {signupErrors.confirmPassword && <div className="field-error-inline">{signupErrors.confirmPassword}</div>}
+              </div>
 
-              <label className="checkbox-row">
-                <input 
-                  type="checkbox" 
-                  checked={acceptTerms} 
-                  onChange={(e) => setAcceptTerms(e.target.checked)}
-                  disabled={isSigningUp}
-                />
-                <span>
-                  I accept the <button type="button" className="link-btn" disabled={isSigningUp}>Terms</button> & <button type="button" className="link-btn" disabled={isSigningUp}>Privacy Policy</button>
-                </span>
-              </label>
-              {signupErrors.acceptTerms && <div className="error">{signupErrors.acceptTerms}</div>}
+              <div className="checkbox-field">
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={acceptTerms} 
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                    disabled={isSigningUp}
+                  />
+                  <span>I accept the Terms & Privacy Policy</span>
+                </label>
+                {signupErrors.acceptTerms && <div className="field-error-inline">{signupErrors.acceptTerms}</div>}
+              </div>
 
               <button 
-                className="primary" 
+                className="submit-btn" 
                 type="submit" 
                 disabled={isSigningUp}
-                style={{ opacity: isSigningUp ? 0.7 : 1 }}
               >
-                {isSigningUp ? "Creating account..." : "Create account"}
+                {isSigningUp ? "Creating account..." : "Sign up"}
               </button>
+
+              <div className="switch-mode">
+                Already have an account?{' '}
+                <button 
+                  type="button" 
+                  className="switch-link" 
+                  onClick={() => setMode("login")}
+                  disabled={isSigningUp}
+                >
+                  Login
+                </button>
+              </div>
             </form>
           )}
-
-          <div className="footer-note">
-            By continuing you agree to our Terms & Privacy Policy.
-          </div>
         </div>
       </div>
     </div>
