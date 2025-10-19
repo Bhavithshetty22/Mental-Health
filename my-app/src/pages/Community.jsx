@@ -1,74 +1,107 @@
-// src/pages/Community.jsx
-import React, { useEffect, useState } from "react";
-import "./Community.css";
-import UploadModal from "../components/UploadModal";
+"use client"
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+import { useEffect, useState } from "react"
+import "./Community.css"
+import UploadModal from "../components/UploadModal.jsx"
+
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000"
 
 export default function CommunityPage() {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showUpload, setShowUpload] = useState(false);
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showUpload, setShowUpload] = useState(false)
 
   const fetchPosts = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const resp = await fetch(`${API_BASE}/api/community`);
-      if (!resp.ok) throw new Error("Failed to load posts");
-      const data = await resp.json();
-      // produce newest-first safely (don't mutate original array)
-      const list = Array.isArray(data.posts) ? [...data.posts].reverse() : [];
-      setPosts(list);
+      const resp = await fetch(`${API_BASE}/api/community`)
+      if (!resp.ok) throw new Error("Failed to load posts")
+      const data = await resp.json()
+      const list = Array.isArray(data.posts) ? [...data.posts].reverse() : []
+      setPosts(list)
     } catch (err) {
-      console.error("Could not fetch community posts", err);
-      setPosts([]);
+      console.error("Could not fetch community posts", err)
+      setPosts([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    fetchPosts()
+  }, [])
 
-  // small helper: display-friendly date
   const formatDate = (iso) => {
     try {
-      return new Date(iso).toLocaleString();
+      const date = new Date(iso)
+      const now = new Date()
+      const diffMs = now - date
+      const diffMins = Math.floor(diffMs / 60000)
+      const diffHours = Math.floor(diffMs / 3600000)
+      const diffDays = Math.floor(diffMs / 86400000)
+
+      if (diffMins < 1) return "just now"
+      if (diffMins < 60) return `${diffMins}m ago`
+      if (diffHours < 24) return `${diffHours}h ago`
+      if (diffDays < 7) return `${diffDays}d ago`
+
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+      })
     } catch {
-      return iso;
+      return iso
     }
-  };
+  }
 
   return (
     <div className="community-page">
       <header className="community-header">
-        <div>
-          <h1>Community</h1>
-          <p className="subtitle">Share a poem, story, or AI creation. Posts are anonymous and like counts are hidden.</p>
+        <div className="header-content">
+          <h1>Community </h1>
+          <p className="subtitle">Share a poem, story, or creation. Posts are anonymous and like counts are hidden.</p>
         </div>
 
         <div className="community-actions">
-          <button className="btn primary" onClick={() => setShowUpload(true)}>
-            ➕ Share something
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowUpload(true)}
+            aria-label="Share something with the community"
+          >
+            <span>✨</span>
+            Share something
           </button>
         </div>
       </header>
 
       <main className="community-feed">
         {loading ? (
-          <div className="empty loading">Loading posts…</div>
+          <div className="empty-state loading">
+            <div className="spinner"></div>
+            <p>Loading posts…</p>
+          </div>
         ) : posts.length === 0 ? (
-          <div className="empty">No posts yet — be the first to share something kind.</div>
+          <div className="empty-state">
+            <div className="empty-icon">📝</div>
+            <p>No posts yet — be the first to share something kind.</p>
+          </div>
         ) : (
-          posts.map((p) => {
-            const hasImage = !!p.image;
+          posts.map((p, idx) => {
+            const hasImage = !!p.image
             return (
-              <article key={p._id} className={`community-post ${hasImage ? "with-image" : "text-only"}`}>
+              <article
+                key={p._id}
+                className={`community-post ${hasImage ? "with-image" : "text-only"}`}
+                style={{ animationDelay: `${idx * 0.05}s` }}
+              >
                 {hasImage && (
                   <div className="post-image">
-                    {/* lazy loading for performance; object-fit via CSS */}
-                    <img src={p.image} alt={p.title ? p.title : "Community image"} loading="lazy" />
+                    <img
+                      src={p.image || "/placeholder.svg"}
+                      alt={p.title ? p.title : "Community image"}
+                      loading="lazy"
+                    />
                   </div>
                 )}
 
@@ -82,7 +115,7 @@ export default function CommunityPage() {
                   <span className="post-anon">• anonymous</span>
                 </div>
               </article>
-            );
+            )
           })
         )}
       </main>
@@ -91,11 +124,11 @@ export default function CommunityPage() {
         <UploadModal
           onClose={() => setShowUpload(false)}
           onUploaded={() => {
-            fetchPosts();
-            setShowUpload(false);
+            fetchPosts()
+            setShowUpload(false)
           }}
         />
       )}
     </div>
-  );
+  )
 }
