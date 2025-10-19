@@ -30,7 +30,7 @@ app.use(
         CLIENT_ORIGIN,
         'http://localhost:3000',
         'http://localhost:5173',
-        'https://mental-health-five-beige.vercel.app',
+        //'https://mental-health-five-beige.vercel.app',
         'http://localhost:8080'
       ];
       

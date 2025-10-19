@@ -103,14 +103,18 @@ const MoodProfile = ({ userId = null, selectedDate = null }) => {
   }
 
   return (
-    <div 
-      className={`mood-profile-div mood-${currentMood}`}
-      style={{
-        backgroundImage: `url(${moodImages[currentMood] || moodImages.okay})`
-      }}
-    >
-      
+    <div className="mood-profile-div">
+      <div className='mood-text-for-box'>
+        <h1 className='mood-welcome-text'>Hello Bhavith!</h1>
+        <p className='mood-welcome-para'>It's good to see you again</p>
+      </div>
+      {/*<img 
+        src={moodImages[currentMood] || moodImages['okay']} 
+        alt={`Mood: ${currentMood}`} 
+        className="mood-image1"
+      />*/}
     </div>
+
   );
 };
 

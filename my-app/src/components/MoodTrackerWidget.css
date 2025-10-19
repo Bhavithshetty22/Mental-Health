@@ -1,12 +1,14 @@
 /* MoodTrackerWidget.css */
-.mood-tracker-widget {
-  background: white;
+.mood-tracker-widget1 {
+  background: #5E936C;
   border-radius: 1rem;
   padding: 1.5rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   border: 1px solid #e5e7eb;
   transition: all 0.3s ease;
   height: fit-content;
+  width: 420px;
+  color: white;
 
 }
 
@@ -22,7 +24,7 @@
 }
 
 .widget-header1 h3 {
-  color: #374151;
+  color: white;
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
@@ -30,7 +32,7 @@
 }
 
 .widget-header p {
-  color: #6b7280;
+  color: white;
   font-size: 0.875rem;
   margin: 0;
 }
@@ -65,7 +67,7 @@
 }
 
 .mood-hint {
-  color: #6b7280;
+  color: white;
   font-size: 0.875rem;
   margin: 0;
 }
@@ -75,7 +77,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: #3E5F44;
   color: white;
   border: none;
   border-radius: 0.75rem;
@@ -88,7 +90,7 @@
 }
 
 .go-button:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  background: linear-gradient(135deg, #3E5F44 0%, #3E5F44 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }

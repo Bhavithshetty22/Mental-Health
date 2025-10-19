@@ -57,7 +57,7 @@ function Dashboard() {
   return (
     <div className="cont">
       <div className="maincontainer">
-        <div className="container1st">
+         {/*<div className="container1st">
           <div className="left-section">
 
             <ProfileDynamic />
@@ -110,7 +110,18 @@ function Dashboard() {
         </div>
 
 
-        <EmotionChatWidget />
+        <EmotionChatWidget />*/}
+        <div className="topdashboarddiv">
+          <ProfileDynamic/>
+          <div className='righttopdashboarddiv'>
+            <MoodTrackerWidget/>
+            <div className='thesquareicons'>
+              <div className="profileicon"></div>
+              <div className="notifications"></div>
+            </div>
+          </div>
+          
+        </div>
       </div>
     </div>
   );
