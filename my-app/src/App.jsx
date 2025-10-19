@@ -17,6 +17,7 @@ import LoginSignup from './pages/LoginSignup';
 
 // Community page (make sure this file exists)
 import CommunityPage from './pages/Community';
+import Profile from './pages/profile';
 
 function isAuthenticated() {
   return !!localStorage.getItem('token');
@@ -47,6 +48,7 @@ function App() {
             <Route path="community" element={<CommunityPage />} />
             <Route path="daily-journal" element={<DailyJournal />} />
             <Route path="ai-therapy" element={<AiTherapy />} />
+            <Route path="profile" element={<Profile />} />
             <Route path="analytics" element={<div>Analytics Page (Coming Soon)</div>} />
           </Route>
           
