@@ -210,6 +210,11 @@
   flex-direction: column;
   gap: 20px;
 }
+.graphsdiv{
+display: flex;
+flex-direction: column;
+gap: 15px;
+}
 .recent{
   height: 100px;
   background-color: #5E936C;
