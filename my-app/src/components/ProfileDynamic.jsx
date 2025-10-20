@@ -10,11 +10,7 @@ const MoodProfile = ({ userId = null, selectedDate = null }) => {
 
   // Add your image URLs here for each mood
   const moodImages = {
-    amazing: '/amazing.png',
-    good: '/happy.png', 
-    okay: '/okay.png',
-    bad: '/bad.png',
-    terrible: '/terrible.png' // Fixed missing slash
+   
   };
 
   // Get today's date key to match your API format (YYYY-M-D)
@@ -93,14 +89,7 @@ const MoodProfile = ({ userId = null, selectedDate = null }) => {
     fetchMoodFromDatabase();
   }, [selectedDate]);
 
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="mood-profile-div mood-loading">
-        <div className="loading-spinner"></div>
-      </div>
-    );
-  }
+  
 
   return (
     <div className="mood-profile-div">
@@ -108,11 +97,11 @@ const MoodProfile = ({ userId = null, selectedDate = null }) => {
         <h1 className='mood-welcome-text'>Hello Bhavith!</h1>
         <p className='mood-welcome-para'>It's good to see you again</p>
       </div>
-      {/*<img 
+     <img 
         src={moodImages[currentMood] || moodImages['okay']} 
         alt={`Mood: ${currentMood}`} 
         className="mood-image1"
-      />*/}
+        />
     </div>
 
   );

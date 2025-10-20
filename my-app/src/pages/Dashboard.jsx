@@ -7,6 +7,7 @@ import MoodTrackerWidget from '../components/MoodTrackerWidget';
 import ProfileDynamic from '../components/ProfileDynamic';
 import './Dashboard.css';
 import EmotionChatWidget from '../components/EmotionalChatWidget';
+import AiChatInterface from './AiChatInterface';
 import GoogleFitnessWidget from '../components/GoogleFitWidget';
 import WidgetTemplate from '../components/WidgetTemplate'; // Import your widget
 
@@ -26,7 +27,7 @@ function Dashboard() {
       console.warn('Failed to parse user from localStorage', err);
     }
   }, []);
-
+const [selectedBot, setSelectedBot] = useState(null);
   const displayName = () => {
     if (!user) return 'Guest';
     // prefer name, then username, then email
@@ -114,7 +115,7 @@ function Dashboard() {
         <div className="topdashboarddiv">
           <ProfileDynamic/>
           <div className='righttopdashboarddiv'>
-            <MoodTrackerWidget/>
+           <MoodTrackerWidget onGoClick={handleGoToMoodTracker} />
             <div className='thesquareicons'>
               <div className="profileicon"></div>
               <div className="notifications"></div>
@@ -122,6 +123,14 @@ function Dashboard() {
           </div>
           
         </div>
+        <EmotionChatWidget onBotSelect={setSelectedBot}/>
+        {selectedBot && (
+          <AiChatInterface
+            selectedBot={selectedBot} 
+            onClose={() => setSelectedBot(null)}
+            apiKey={import.meta.env.VITE_GEMINI_API_KEY}
+          />
+        )}
       </div>
     </div>
   );
