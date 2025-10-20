@@ -1,9 +1,9 @@
 /* MoodCalendar.css */
 
-.mood-calendar1 {
-  max-width: 45%s;
-  margin: 0 auto;
+.mood-calendar1{
 
+  margin: 0 auto;
+  background-color: white;
   border-radius: 1rem;
   max-height: 550px;
   padding: 2.7rem;
