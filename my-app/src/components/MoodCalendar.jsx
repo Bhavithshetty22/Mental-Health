@@ -146,7 +146,7 @@ const MoodCalendar = () => {
   }).length;
 
   return (
-    <div className="mood-calendar">
+    <div className="mood-calendar1">
       {/* Header */}
       <div className="mood-calendar__header">
         <div className="mood-calendar__header-left">
@@ -230,11 +230,7 @@ const MoodCalendar = () => {
       </div>
 
       {/* Stats */}
-      <div className="mood-calendar__stats">
-        <div className="mood-calendar__stats-text">
-          This month: {trackedDaysThisMonth} days tracked {loading && <span> • Loading...</span>}
-        </div>
-      </div>
+      
     </div>
   );
 };

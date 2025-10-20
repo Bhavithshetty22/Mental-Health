@@ -73,6 +73,16 @@ const DashboardEmotionBots = ({ onBotSelect }) => {
       colorClass: "color-gray-dark",
       bgColorClass: "bg-gray-dark",
       image: "/fear.png"
+    },
+    {
+      id: 8,
+      name: "CalmBot",
+      mood: "Calm",
+      color: "#6B9080",
+      description: "Maintain tranquility and mindfulness",
+      colorClass: "color-blue-light",
+      bgColorClass: "bg-blue-light",
+      image: "/calmbot.png"
     }
   ];
 
@@ -87,11 +97,11 @@ const DashboardEmotionBots = ({ onBotSelect }) => {
     <div style={{ 
       borderRadius: '12px',
       padding: '24px',
-      maxWidth:'55%'
+      minWidth:'55%'
     }}>
       {/* Header */}
       <h2 style={{
-        fontSize: '20px',
+        fontSize: '25px',
         fontWeight: '600',
         color: '#1e293b',
         marginBottom: '20px',
