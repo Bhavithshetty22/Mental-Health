@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { Calendar, TrendingUp, BarChart3, Plus } from "lucide-react"
 import MoodCalendar from '../components/MoodCalendar'
+import MoodTrackerGraph from '../components/MoodTrackerGraph'
 import "./MoodTracker.css"
 
 // Vite: use import.meta.env and a VITE_ prefixed var
@@ -19,7 +20,8 @@ const MoodTrackerPage = () => {
   const [saving, setSaving] = useState(false)
   const [todayMood, setTodayMood] = useState(null)
   const [sliderValue, setSliderValue] = useState(50)
-  const hasFetched = useRef(false) // Ref to track if data has been fetched
+  const [viewType, setViewType] = useState('weekly')
+  const hasFetched = useRef(false)
 
   const moodTypes = {
     terrible: { color: "#ef4444", face: "😢", label: "Terrible", description: "Really struggling today", range: [0, 20] },
@@ -42,26 +44,21 @@ const MoodTrackerPage = () => {
     return 50
   }
 
-  // Get today's date key to match API format (YYYY-M-D)
   const getTodayKey = () => {
     const today = new Date()
     return `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`
   }
 
-  // Helper: get token and redirect if missing
   const getTokenOrRedirect = () => {
     const token = localStorage.getItem("token")
     if (!token) {
-      // not signed in -> go to login/signup
       navigate("/settings")
       return null
     }
     return token
   }
 
-  // Load moods from API (with fix for multiple calls)
   const loadMoods = async (forceRefresh = false) => {
-    // Prevent multiple calls unless forced refresh
     if (hasFetched.current && !forceRefresh) return
     hasFetched.current = true
 
@@ -69,7 +66,6 @@ const MoodTrackerPage = () => {
       setLoading(true)
       const token = localStorage.getItem("token")
       if (!token) {
-        // redirect to login
         navigate("/settings")
         return
       }
@@ -82,7 +78,6 @@ const MoodTrackerPage = () => {
         },
       })
 
-      // auth error handling
       if (response.status === 401 || response.status === 403) {
         console.warn("Not authenticated - redirecting to login")
         localStorage.removeItem("token")
@@ -103,7 +98,6 @@ const MoodTrackerPage = () => {
       if (data.success) {
         setUserMoods(data.moods || {})
 
-        // Check if today's mood is set
         const todayKey = getTodayKey()
         const todayMoodData = data.moods?.[todayKey]
         if (todayMoodData) {
@@ -113,26 +107,23 @@ const MoodTrackerPage = () => {
       }
     } catch (error) {
       console.error("Error loading moods:", error)
-      hasFetched.current = false // Reset on error to allow retry
+      hasFetched.current = false
     } finally {
       setLoading(false)
     }
   }
 
-  // Manual refresh function
   const handleRefreshMoods = () => {
-    hasFetched.current = false // Reset the flag to allow fetching again
-    loadMoods(true) // Force refresh
+    hasFetched.current = false
+    loadMoods(true)
   }
 
-  // Save mood to API with correct date format
   const saveMood = async (date, moodType, notes = "") => {
     try {
       setSaving(true)
       const token = getTokenOrRedirect()
       if (!token) return false
 
-      // Use API format: YYYY-M-D
       const apiDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
 
       const response = await fetch(`${API_BASE}/api/moods`, {
@@ -165,7 +156,6 @@ const MoodTrackerPage = () => {
       const result = await response.json()
       console.log("Save result:", result)
 
-      // Update local state
       const displayKey = apiDate
       setUserMoods((prev) => ({
         ...prev,
@@ -178,7 +168,6 @@ const MoodTrackerPage = () => {
 
       if (apiDate === getTodayKey()) setTodayMood(moodType)
 
-      // optionally refresh server data to ensure sync
       await loadMoods(true)
       return true
     } catch (error) {
@@ -225,9 +214,7 @@ const MoodTrackerPage = () => {
     }
   }
 
-  // Load moods on component mount (only once)
   useEffect(() => {
-    // If not logged in, redirect to /settings (login)
     const token = localStorage.getItem("token")
     if (!token) {
       navigate("/settings")
@@ -325,6 +312,45 @@ const MoodTrackerPage = () => {
             </div>
           </section>
         )}
+
+        <section className="mood-graph-section" style={{ marginBottom: '32px' }}>
+          <div style={{ marginBottom: '16px', display: 'flex', gap: '8px' }}>
+            <button 
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: '1px solid #6B9080',
+                backgroundColor: viewType === 'weekly' ? '#6B9080' : 'white',
+                color: viewType === 'weekly' ? 'white' : '#64748b',
+                fontSize: '13px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+              onClick={() => setViewType('weekly')}
+            >
+              Weekly
+            </button>
+            <button 
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                backgroundColor: viewType === 'monthly' ? '#6B9080' : 'white',
+                color: viewType === 'monthly' ? 'white' : '#64748b',
+                fontSize: '13px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+              onClick={() => setViewType('monthly')}
+            >
+              Monthly
+            </button>
+          </div>
+          <MoodTrackerGraph 
+            userMoods={userMoods} 
+            viewType={viewType}
+          />
+        </section>
 
         <section className="calendar-section">
           <h2>Mood Calendar</h2>

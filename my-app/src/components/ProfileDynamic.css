@@ -1,55 +1,39 @@
 .mood-profile-div {
-  width: 400px;
-  height: 400px;
+  width: 55%;
+  height: 300px;
   border-radius: 20px;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  background-color: #5E936C;
+ 
   transition: all 0.5s ease-in-out;
   display: flex;
+  align-items: center;
+  justify-content: space-around;
+
+}
+.mood-text-for-box{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   justify-content: center;
+  padding: 20px;
+  color: white;
+  
+}
+.mood-welcome-text{
+  font-size:2.8rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.mood-welcome-para{
+  font-size: 1.2rem;
+  max-width: 500px;
+  margin-top: -20px;
+}
+.mood-image1{
+  height: 300px;
+  width: 300px;
+  border-radius: 20px;
+  object-fit: cover;
 }
 
-.mood-profile-div:hover {
-  transform: scale(1.02);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-}
 
-/* Mood-specific background images */
-.mood-happy {
-  background-image: url('/happy.png');
-}
-
-.mood-sad {
-  background-image: url('https://picsum.photos/400/400?random=2&grayscale');
-}
-
-.mood-excited {
-  background-image: url('https://picsum.photos/400/400?random=3&blur=1');
-}
-
-.mood-calm {
-  background-image: url('https://picsum.photos/400/400?random=4');
-}
-
-.mood-angry {
-  background-image: url('https://picsum.photos/400/400?random=5&blur=2');
-}
-
-.mood-romantic {
-  background-image: url('https://picsum.photos/400/400?random=6&blur=1');
-}
-
-.mood-mysterious {
-  background-image: url('https://picsum.photos/400/400?random=7&grayscale&blur=1');
-}
-
-.mood-energetic {
-  background-image: url('https://picsum.photos/400/400?random=8');
-}
-
-/* Fallback for unknown moods */
-.mood-profile-div:not([class*="mood-"]) {
-  background-image: url('https://picsum.photos/400/400?random=1&blur=1');
-}

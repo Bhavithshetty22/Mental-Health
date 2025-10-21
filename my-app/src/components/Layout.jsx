@@ -1,5 +1,5 @@
 // src/components/Layout.jsx
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Home, Calendar, MessageCircle, LogOut, Globe } from 'lucide-react';
 import { BsJournalBookmarkFill } from "react-icons/bs";
 import { RiPsychotherapyLine } from "react-icons/ri";
@@ -8,7 +8,6 @@ import { useEffect, useState } from 'react';
 
 function Layout() {
   const location = useLocation();
-  const navigate = useNavigate();
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
