@@ -16,7 +16,7 @@
 }
 
 .main-navigation {
-  background: linear-gradient(135deg, #479682 0%, #2e613f 100%);
+  background: #3E5F44;
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;

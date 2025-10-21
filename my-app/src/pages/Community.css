@@ -225,11 +225,7 @@
   }
 }
 
-.community-post:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--border-hover);
-}
+
 
 /* Image Handling */
 .post-image {
@@ -249,9 +245,7 @@
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.community-post:hover .post-image img {
-  transform: scale(1.05);
-}
+
 
 /* Post Body */
 .post-body {

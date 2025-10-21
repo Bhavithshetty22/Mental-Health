@@ -3,21 +3,19 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import './App.css';
 import "@fontsource/poppins";
 import "@fontsource/poppins/600.css";
+import React, { Suspense, lazy } from 'react';
 
-// Import your components/pages
-import Dashboard from './pages/Dashboard';
-import MoodTrackerPage from './pages/MoodTracker';
-import TalkToFuture from './pages/TalkToFuture';
-import Layout from './components/Layout';
-import DailyJournal from './pages/DailyJournal';
-import AiTherapy from './pages/AiTherapy';
 
-// Auth page (login/signup)
-import LoginSignup from './pages/LoginSignup';
-
-// Community page (make sure this file exists)
-import CommunityPage from './pages/Community';
-import Profile from './pages/profile';
+// Lazy-loaded components to reduce initial bundle
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const MoodTrackerPage = lazy(() => import('./pages/MoodTracker'));
+const TalkToFuture = lazy(() => import('./pages/TalkToFuture'));
+const Layout = lazy(() => import('./components/Layout'));
+const DailyJournal = lazy(() => import('./pages/DailyJournal'));
+const AiTherapy = lazy(() => import('./pages/AiTherapy'));
+const LoginSignup = lazy(() => import('./pages/LoginSignup'));
+const CommunityPage = lazy(() => import('./pages/Community'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 function isAuthenticated() {
   return !!localStorage.getItem('token');
@@ -29,6 +27,7 @@ function App() {
   return (
     <Router>
       <div className="App">
+        <Suspense fallback={<div style={{padding:20}}>Loading...</div>}>
         <Routes>
           {/* Public auth routes */}
 
@@ -58,6 +57,7 @@ function App() {
             element={<Navigate to={authed ? "/" : "/login"} replace />} 
           />
         </Routes>
+        </Suspense>
       </div>
     </Router>
   );
