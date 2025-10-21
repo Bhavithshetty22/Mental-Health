@@ -14,10 +14,10 @@ import MoodTrackerGraph from "../components/MoodTrackerGraph";
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
 function Dashboard() {
-  const [count, setCount] = useState(0);
+  const [_count, _setCount] = useState(0);
   const [user, setUser] = useState(null);
   const [userMoods, setUserMoods] = useState({});
-  const [viewType, setViewType] = useState("weekly");
+  const [viewType, _setViewType] = useState("weekly");
   const [graphLoading, setGraphLoading] = useState(true);
   const navigate = useNavigate();
   const hasFetched = useRef(false);
@@ -74,7 +74,7 @@ function Dashboard() {
 
   const [selectedBot, setSelectedBot] = useState(null);
 
-  const displayName = () => {
+  const _displayName = () => {
     if (!user) return "Guest";
     return user.name || user.username || user.email || "Guest";
   };
@@ -83,17 +83,22 @@ function Dashboard() {
     navigate("/mood-tracker");
   };
 
+   // Handler functions for the three widgets
   const handleJournalClick = () => {
-    navigate("/daily-journal");
+    navigate('/daily-journal');
+    // Or any other action you want
   };
 
   const handleMeditationClick = () => {
-    navigate("/ai-therapy");
+    navigate('/ai-therapy');
+    // Or any other action you want
   };
 
   const handleAnalyticsClick = () => {
-    navigate("/talk-to-future");
+    navigate('/talk-to-future');
+    // Or any other action you want
   };
+ 
 
   return (
     <div className="cont">
@@ -128,6 +133,34 @@ function Dashboard() {
             )}
             <MoodCalendar moods={userMoods} />
           </div>
+        </div>
+        <div className='featuresgrid'>
+          <WidgetTemplate
+            theme="light"
+            title="Daily Journal"
+            description="Reflect on your day and track your thoughts and emotions through journaling."
+            buttonText="Start Writing"
+            imageUrl="/dailyjournal.png"
+            handleButtonClick={handleJournalClick}
+          />
+          
+          <WidgetTemplate
+            theme="light"
+            title="AI Therapist"
+            description="Find your inner peace with our curated meditation sessions and mindfulness exercises."
+            buttonText="Begin Session"
+            imageUrl="/aitherapist.png"
+            handleButtonClick={handleMeditationClick}
+          />
+          
+          <WidgetTemplate
+            theme="light"
+            title="Talk to your futute self"
+            description="Visualize your emotional patterns and gain insights into your mental health journey."
+            buttonText="Lets start"
+            imageUrl="/talktoyourfutureself.png"
+            handleButtonClick={handleAnalyticsClick}
+          />
         </div>
       </div>
     </div>

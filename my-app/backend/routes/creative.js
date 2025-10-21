@@ -54,13 +54,15 @@ Return a JSON object with exactly two keys: "story" and "poem". The values shoul
       if (parsed && typeof parsed === "object" && (parsed.story || parsed.poem)) {
         return res.json({ story: String(parsed.story || "").trim(), poem: String(parsed.poem || "").trim() });
       }
-    } catch (e) {
+    } catch (_e) {
       // fallthrough to attempt crude extraction
+      console.warn('creative.js: JSON parse fallback failed', _e?.message || _e);
     }
 
     // crude extraction if model returned text not strictly JSON
     // look for "story:" and "poem:" sections
-    const lower = raw.toLowerCase();
+  // keep 'rawLower' for potential future use; prefix to avoid unused-var lint
+  const _rawLower = raw.toLowerCase();
     let story = "";
     let poem = "";
 
@@ -73,16 +75,18 @@ Return a JSON object with exactly two keys: "story" and "poem". The values shoul
           story = parsed.story || "";
           poem = parsed.poem || "";
         }
-      } catch (_) {}
+      } catch (parseErr) {
+        console.warn('creative.js: JSON block parse failed', parseErr?.message || parseErr);
+      }
     }
 
     // fallback: split by headings
     if (!story) {
-      const sMatch = raw.match(/story[:\-]\s*([\s\S]*?)(poem[:\-]|\n\n|$)/i);
+      const sMatch = raw.match(/story[:-]\s*([\s\S]*?)(poem[:-]|\n\n|$)/i);
       if (sMatch) story = sMatch[1].trim();
     }
     if (!poem) {
-      const pMatch = raw.match(/poem[:\-]\s*([\s\S]*?)$/i);
+      const pMatch = raw.match(/poem[:-]\s*([\s\S]*?)$/i);
       if (pMatch) poem = pMatch[1].trim();
     }
 

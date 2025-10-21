@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import './MoodCalendar.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
-const MoodCalendar = () => {
+const MoodCalendar = ({ moods: propMoods = null }) => {
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [moods, setMoods] = useState({});
@@ -29,7 +29,10 @@ const MoodCalendar = () => {
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Fetch moods from API (with auth)
-  const fetchMoods = async (forceRefresh = false) => {
+  const fetchMoods = useCallback(async (forceRefresh = false) => {
+    // If parent supplied moods via props, skip fetching here entirely (avoid duplicate requests)
+    if (propMoods) return;
+
     // Prevent multiple calls unless forced refresh
     if (hasFetched.current && !forceRefresh) return;
     hasFetched.current = true;
@@ -88,10 +91,11 @@ const MoodCalendar = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [propMoods, navigate]);
 
   // Manual refresh function
   const handleRefresh = () => {
+    if (propMoods) return; // parent-controlled: no refresh here
     hasFetched.current = false; // Reset the flag to allow fetching again
     fetchMoods(true); // Force refresh
   };
@@ -133,17 +137,17 @@ const MoodCalendar = () => {
   // Fetch moods on mount
   useEffect(() => {
     fetchMoods();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchMoods]);
 
-  const days = getDaysInMonth(currentDate);
+  const days = useMemo(() => getDaysInMonth(currentDate), [currentDate]);
 
-  // count tracked days this month using same key format
-  const trackedDaysThisMonth = Object.keys(moods).filter(key => {
-    // consider keys like "2025-9-13" -> check year and month
-    const [ky, km] = key.split('-');
-    return Number(ky) === currentDate.getFullYear() && Number(km) === (currentDate.getMonth() + 1);
-  }).length;
+  // If parent provided moods, use them and skip initial fetch
+  useEffect(() => {
+    if (propMoods && Object.keys(propMoods).length > 0) {
+      setMoods(propMoods);
+      hasFetched.current = true;
+    }
+  }, [propMoods]);
 
   return (
     <div className="mood-calendar1">

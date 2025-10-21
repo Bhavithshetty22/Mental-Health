@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
+// Touch `motion` to satisfy some ESLint configs that otherwise report it as unused
+void motion;
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 const MoodTrackerGraph = ({ userMoods = {}, viewType = 'weekly' }) => {
@@ -8,64 +10,105 @@ const MoodTrackerGraph = ({ userMoods = {}, viewType = 'weekly' }) => {
   const [moodData, setMoodData] = useState([]);
 
   // Memoize userMoods to prevent unnecessary re-renders
-  const memoizedUserMoods = useMemo(() => userMoods, [JSON.stringify(userMoods)]);
+  const memoizedUserMoods = useMemo(() => userMoods, [userMoods]);
 
-  // Process data based on viewType and userMoods from database
   useEffect(() => {
     setShowGraph(false);
-    const processedData = processUserMoods(memoizedUserMoods, viewType);
+
+    const processUserMoodsInline = (moods, view) => {
+      if (!moods || Object.keys(moods).length === 0) {
+        return getEmptyData(view);
+      }
+
+      const moodEntries = Object.entries(moods).map(([dateStr, data]) => {
+        const moodType = typeof data === 'string' ? data : data?.mood;
+        return {
+          dateStr,
+          date: new Date(dateStr),
+          mood: moodType,
+          value: getMoodValue(moodType),
+          label: getMoodLabel(moodType),
+          color: getMoodColor(moodType)
+        };
+      }).sort((a, b) => a.date - b.date);
+
+      if (view === 'weekly') {
+        return getLastNDays(moodEntries, 7);
+      } else if (view === 'monthly') {
+        return getLastNDays(moodEntries, 30);
+      }
+      return moodEntries;
+    };
+
+  const processedData = processUserMoodsInline(memoizedUserMoods, viewType);
     setMoodData(processedData);
-    
+
     const timer = setTimeout(() => setShowGraph(true), 100);
     return () => clearTimeout(timer);
   }, [memoizedUserMoods, viewType]);
 
-  // Mood configuration
-  const moodConfig = {
-    terrible: { value: 1, label: 'Terrible', color: '#EF4444' },
-    bad: { value: 2, label: 'Bad', color: '#FB923C' },
-    okay: { value: 3, label: 'Okay', color: '#FCD34D' },
-    good: { value: 4, label: 'Good', color: '#A3E635' },
-    amazing: { value: 5, label: 'Amazing', color: '#22C55E' }
-  };
-
-  // Convert mood string to numeric value
-  const getMoodValue = (moodType) => {
-    return moodConfig[moodType]?.value || 3;
-  };
-
-  const getMoodLabel = (moodType) => {
-    return moodConfig[moodType]?.label || 'Unknown';
-  };
-
-  const getMoodColor = (moodType) => {
-    return moodConfig[moodType]?.color || '#FCD34D';
-  };
-
-  // Process user moods from database
-  const processUserMoods = (moods, view) => {
-    if (!moods || Object.keys(moods).length === 0) {
-      return getEmptyData(view);
+  // Helper: map mood string to numeric value (1-5)
+  const getMoodValue = (mood) => {
+    if (!mood) return null;
+    const m = String(mood).toLowerCase();
+    switch (m) {
+      case 'amazing':
+        return 5;
+      case 'good':
+        return 4;
+      case 'okay':
+      case 'ok':
+        return 3;
+      case 'bad':
+        return 2;
+      case 'terrible':
+        return 1;
+      default: {
+        // try numeric
+        const n = Number(mood);
+        return Number.isFinite(n) ? Math.max(1, Math.min(5, n)) : 3;
+      }
     }
+  };
 
-    const moodEntries = Object.entries(moods).map(([dateStr, data]) => {
-      const moodType = typeof data === 'string' ? data : data?.mood;
-      return {
-        dateStr,
-        date: new Date(dateStr),
-        mood: moodType,
-        value: getMoodValue(moodType),
-        label: getMoodLabel(moodType),
-        color: getMoodColor(moodType)
-      };
-    }).sort((a, b) => a.date - b.date);
-
-    if (view === 'weekly') {
-      return getLastNDays(moodEntries, 7);
-    } else if (view === 'monthly') {
-      return getLastNDays(moodEntries, 30);
+  const getMoodLabel = (mood) => {
+    if (!mood) return 'No data';
+    const m = String(mood).toLowerCase();
+    switch (m) {
+      case 'amazing':
+        return 'Amazing';
+      case 'good':
+        return 'Good';
+      case 'okay':
+      case 'ok':
+        return 'Okay';
+      case 'bad':
+        return 'Bad';
+      case 'terrible':
+        return 'Terrible';
+      default:
+        return String(mood);
     }
-    return moodEntries;
+  };
+
+  const getMoodColor = (mood) => {
+    if (!mood) return '#CBD5E1';
+    const m = String(mood).toLowerCase();
+    switch (m) {
+      case 'amazing':
+        return '#22C55E';
+      case 'good':
+        return '#A3E635';
+      case 'okay':
+      case 'ok':
+        return '#FCD34D';
+      case 'bad':
+        return '#FB923C';
+      case 'terrible':
+        return '#EF4444';
+      default:
+        return '#94a3b8';
+    }
   };
 
   // Get last N days with proper day labels
