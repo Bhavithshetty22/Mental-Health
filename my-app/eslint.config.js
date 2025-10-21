@@ -6,6 +6,22 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   globalIgnores(['dist']),
+  // Backend (Node) files: allow CommonJS and Node globals
+  {
+    files: ['backend/**', 'backend/**/.js'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.node,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'script',
+      },
+    },
+    rules: {
+      // relax browser-specific rules for backend
+      'no-undef': 'off'
+    }
+  },
   {
     files: ['**/*.{js,jsx}'],
     extends: [
