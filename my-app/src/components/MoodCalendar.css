@@ -140,23 +140,23 @@
 
 /* Mood colors */
 .mood-amazing {
-  background-color: #fde047;
+  background-color: #22C55E;
 }
 
 .mood-good {
-  background-color: #86efac;
+  background-color: #A3E635;
 }
 
 .mood-okay {
-  background-color: #4ade80;
+  background-color: #FCD34D;
 }
 
 .mood-bad {
-  background-color: #22c55e;
+  background-color: #FB923C;
 }
 
 .mood-terrible {
-  background-color: #16a34a;
+  background-color: #EF4444;
 }
 
 .mood-calendar__day-number {

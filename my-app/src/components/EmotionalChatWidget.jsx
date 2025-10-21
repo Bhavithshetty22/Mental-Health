@@ -151,7 +151,7 @@ const DashboardEmotionBots = ({ onBotSelect }) => {
             key={bot.id}
             onClick={() => onBotSelect && onBotSelect(bot)}
             style={{
-              backgroundColor:'#5E936C',
+              backgroundColor: bot.color,
               borderRadius: '16px',
               padding: '20px 24px',
               display: 'flex',
