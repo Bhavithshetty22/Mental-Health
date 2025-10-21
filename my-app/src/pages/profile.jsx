@@ -1,19 +1,42 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import "./profile.css"
+import MoodProfile from "../components/ProfileDynamic"
+
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000"
 
 export default function ProfileNew() {
   const [profile, setProfile] = useState({
-    name: "Sarah Rahman",
-    phone: "+1 555-369-9200",
-    email: "sarah.rahman001@gmail.com",
+    name: "",
+    username: "",
+    email: "",
     avatar: "👤",
     smsAlerts: true,
   })
+  
+  // Load user data from localStorage on component mount
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        setProfile(prevProfile => ({
+          ...prevProfile,
+          name: parsedUser.name || "",
+          username: parsedUser.username || "",
+          email: parsedUser.email || ""
+        }));
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, [])
 
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState(profile)
+  const [userPosts, setUserPosts] = useState([])
+  const [loading, setLoading] = useState(false)
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -32,6 +55,70 @@ export default function ProfileNew() {
     setFormData(profile)
     setIsEditing(false)
   }
+  
+  // Fetch user's community posts
+  const fetchUserPosts = async () => {
+    setLoading(true)
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        console.warn("No auth token found")
+        setUserPosts([])
+        setLoading(false)
+        return
+      }
+      
+      const resp = await fetch(`${API_BASE}/api/community/user`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      })
+      
+      if (!resp.ok) throw new Error("Failed to load posts")
+      const data = await resp.json()
+      setUserPosts(Array.isArray(data.posts) ? data.posts : [])
+      console.log("Fetched user posts:", data.posts)
+    } catch (err) {
+      console.error("Could not fetch user posts", err)
+      setUserPosts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  // Delete a post
+  const handleDeletePost = async (postId) => {
+    if (!confirm("Are you sure you want to delete this post?")) return
+    
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        console.warn("No auth token found")
+        alert("You must be logged in to delete posts")
+        return
+      }
+      
+      const resp = await fetch(`${API_BASE}/api/community/${postId}`, {
+        method: 'DELETE',
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+      if (!resp.ok) throw new Error("Failed to delete post")
+      
+      // Remove post from state
+      setUserPosts(userPosts.filter(post => post._id !== postId))
+    } catch (err) {
+      console.error("Could not delete post", err)
+      alert("Failed to delete post. Please try again.")
+    }
+  }
+  
+  useEffect(() => {
+    fetchUserPosts()
+  }, [])
 
   return (
     <div className="profile-new-page">
@@ -78,11 +165,11 @@ export default function ProfileNew() {
                   </div>
                 </div>
               ) : (
-                <>
+                <div className="profile-info">
                   <p className="profile-name">{profile.name}</p>
-                  <p className="profile-contact">{profile.phone}</p>
+                  <p className="profile-contact">@{profile.username}</p>
                   <p className="profile-contact">{profile.email}</p>
-                </>
+                </div>
               )}
 
               <button
@@ -107,16 +194,49 @@ export default function ProfileNew() {
           </div>
         </div>
 
-        {/* Right Column - Accounts & Bills */}
+        {/* Right Column - Content */}
         <div className="profile-right">
-            {/*mood section*/}
+          {/*mood section*/}
           <div className="section-card">
-            Today's mood
+            <h2>Today's Mood</h2>
+            <div className="mood-container">
+              <MoodProfile />
+            </div>
           </div>
 
           {/* uploaded images */}
           <div className="section-card">
-            Uploaded images
+            <h2>Uploaded Posts</h2>
+            <div className="user-posts-container">
+              {loading ? (
+                <div className="loading-posts">Loading your posts...</div>
+              ) : userPosts.length === 0 ? (
+                <div className="no-posts">You haven't posted anything yet.</div>
+              ) : (
+                <div className="posts-grid">
+                  {userPosts.map((post) => (
+                    <div key={post._id} className="user-post-item">
+                      {post.image && (
+                        <div className="post-image">
+                          <img src={post.image} alt={post.title || "Community post"} />
+                        </div>
+                      )}
+                      <div className="post-content">
+                        {post.title && <h3>{post.title}</h3>}
+                        {post.content && <p>{post.content}</p>}
+                      </div>
+                      <button 
+                        className="delete-post-btn" 
+                        onClick={() => handleDeletePost(post._id)}
+                        aria-label="Delete post"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

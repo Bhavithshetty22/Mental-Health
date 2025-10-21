@@ -10,6 +10,7 @@ export default function CommunityPage() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showUpload, setShowUpload] = useState(false)
+  const [activeTab, setActiveTab] = useState("images") // "images", "text"
 
   const fetchPosts = async () => {
     setLoading(true)
@@ -55,11 +56,57 @@ export default function CommunityPage() {
     }
   }
 
+  // Separate posts into images and text
+  const imagePosts = posts.filter(p => p.type === "image" || p.image)
+  const textPosts = posts.filter(p => p.type === "text" || (!p.image && p.content))
+
+  const renderPosts = (postList) => {
+    if (postList.length === 0) {
+      return (
+        <div className="empty-state">
+          <div className="empty-icon">📝</div>
+          <p>No posts yet — be the first to share something kind.</p>
+        </div>
+      )
+    }
+
+    return postList.map((p, idx) => {
+      const hasImage = !!p.image
+      return (
+        <article
+          key={p._id}
+          className={`community-post ${hasImage ? "with-image" : "text-only"}`}
+          style={{ animationDelay: `${idx * 0.05}s` }}
+        >
+          {hasImage && (
+            <div className="post-image">
+              <img
+                src={p.image || "/placeholder.svg"}
+                alt={p.title ? p.title : "Community image"}
+                loading="lazy"
+              />
+            </div>
+          )}
+
+          <div className="post-body">
+            {p.title && <h3 className="post-title">{p.title}</h3>}
+            {p.content && <div className="post-text">{p.content}</div>}
+          </div>
+
+          <div className="post-footer">
+            <span className="post-date">{formatDate(p.createdAt)}</span>
+            <span className="post-anon">• anonymous</span>
+          </div>
+        </article>
+      )
+    })
+  }
+
   return (
     <div className="community-page">
       <header className="community-header">
         <div className="header-content">
-          <h1>Community </h1>
+          <h1>Community</h1>
           <p className="subtitle">Share a poem, story, or creation. Posts are anonymous and like counts are hidden.</p>
         </div>
 
@@ -75,48 +122,33 @@ export default function CommunityPage() {
         </div>
       </header>
 
+      {/* Tab Navigation */}
+      <div className="community-tabs">
+        <button
+          className={`tab-btn ${activeTab === "images" ? "active" : ""}`}
+          onClick={() => setActiveTab("images")}
+        >
+          🖼️ Images ({imagePosts.length})
+        </button>
+        <button
+          className={`tab-btn ${activeTab === "text" ? "active" : ""}`}
+          onClick={() => setActiveTab("text")}
+        >
+          📝 Text & Poems ({textPosts.length})
+        </button>
+      </div>
+
       <main className="community-feed">
         {loading ? (
           <div className="empty-state loading">
             <div className="spinner"></div>
             <p>Loading posts…</p>
           </div>
-        ) : posts.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">📝</div>
-            <p>No posts yet — be the first to share something kind.</p>
-          </div>
         ) : (
-          posts.map((p, idx) => {
-            const hasImage = !!p.image
-            return (
-              <article
-                key={p._id}
-                className={`community-post ${hasImage ? "with-image" : "text-only"}`}
-                style={{ animationDelay: `${idx * 0.05}s` }}
-              >
-                {hasImage && (
-                  <div className="post-image">
-                    <img
-                      src={p.image || "/placeholder.svg"}
-                      alt={p.title ? p.title : "Community image"}
-                      loading="lazy"
-                    />
-                  </div>
-                )}
-
-                <div className="post-body">
-                  {p.title && <h3 className="post-title">{p.title}</h3>}
-                  {p.content && <div className="post-text">{p.content}</div>}
-                </div>
-
-                <div className="post-footer">
-                  <span className="post-date">{formatDate(p.createdAt)}</span>
-                  <span className="post-anon">• anonymous</span>
-                </div>
-              </article>
-            )
-          })
+          <div className="posts-container">
+            {activeTab === "images" && renderPosts(imagePosts)}
+            {activeTab === "text" && renderPosts(textPosts)}
+          </div>
         )}
       </main>
 
