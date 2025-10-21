@@ -47,16 +47,44 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /api/community/user - returns posts created by the authenticated user
+router.get("/user", authenticateToken, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ success: false, error: "Authentication required" });
+    }
+
+    const posts = await CommunityPost.find({ userId: req.user.id })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const userPosts = posts.map((p) => ({
+      _id: p._id,
+      title: p.title,
+      content: p.content,
+      image: p.image,
+      createdAt: p.createdAt,
+      userId: p.userId,
+      type: p.type
+    }));
+
+    res.json({ success: true, posts: userPosts, total: userPosts.length });
+  } catch (err) {
+    console.error("Failed to fetch user posts", err);
+    res.status(500).json({ success: false, error: "Failed to fetch user posts" });
+  }
+});
+
 // POST /api/community - create new post (supports anonymous)
 router.post("/", authenticateToken, async (req, res) => {
   try {
-    const { title = "", content = "", image = null } = req.body;
+    const { title = "", content = "", image = null, type = "text" } = req.body;
     if (!content && !image) {
       return res.status(400).json({ success: false, error: "Content or image required" });
     }
 
-    const createdBy = req.user?.id || null; // user id if logged in
-    const doc = await CommunityPost.create({ title, content, image, createdBy });
+    const userId = req.user?.id || null; // user id if logged in
+    const doc = await CommunityPost.create({ title, content, image, userId, type });
     res.json({
       success: true,
       post: {
@@ -65,11 +93,42 @@ router.post("/", authenticateToken, async (req, res) => {
         content: doc.content,
         image: doc.image,
         createdAt: doc.createdAt,
+        userId: doc.userId
       },
     });
   } catch (err) {
     console.error("Failed to create community post", err);
     res.status(500).json({ success: false, error: "Failed to create post" });
+  }
+});
+
+// DELETE /api/community/:postId - delete a post
+router.delete("/:postId", authenticateToken, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ success: false, error: "Authentication required" });
+    }
+
+    const { postId } = req.params;
+    
+    // Find the post first to verify ownership
+    const post = await CommunityPost.findById(postId);
+    
+    if (!post) {
+      return res.status(404).json({ success: false, error: "Post not found" });
+    }
+    
+    // Check if user owns this post
+    if (post.createdBy && post.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, error: "Not authorized to delete this post" });
+    }
+    
+    await CommunityPost.findByIdAndDelete(postId);
+    
+    res.json({ success: true, message: "Post deleted successfully" });
+  } catch (err) {
+    console.error("Failed to delete post", err);
+    res.status(500).json({ success: false, error: "Failed to delete post" });
   }
 });
 
