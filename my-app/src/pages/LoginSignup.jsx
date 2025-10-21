@@ -1,10 +1,10 @@
 // src/pages/LoginSignup.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate as _useNavigate } from "react-router-dom";
 import "./GenAIAuth.css";
 
 export default function LoginSignup() {
-  const navigate = useNavigate();
+  // navigate not used in this component currently
   const [mode, setMode] = useState("login"); // "login" or "signup"
 
   // login state

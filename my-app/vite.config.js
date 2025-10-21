@@ -14,8 +14,8 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         // Add error handling for the proxy
-        configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
             console.log('Proxy error:', err.message);
           });
         },

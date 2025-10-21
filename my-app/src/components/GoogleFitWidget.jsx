@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Activity, Heart, Moon, Footprints, TrendingUp } from 'lucide-react';
 import './GoogleFitWidget.css';
 
@@ -12,14 +12,12 @@ const GoogleFitnessWidget = () => {
   const [tokenExpiry, setTokenExpiry] = useState(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Google Fit API configuration
-  const GOOGLE_CLIENT_ID = import.meta.env?.VITE_GOOGLE_CLIENT_ID || '847083852436-c8gkmj53clud9jgo41htnjce8tnbh060.apps.googleusercontent.com';
-  const SCOPES = 'https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/fitness.heart_rate.read https://www.googleapis.com/auth/fitness.sleep.read';
-
-  // Session management constants
-  const SESSION_STORAGE_KEY = 'googleFitSession';
-  const DEFAULT_SESSION_DURATION = 50 * 60 * 1000; // 50 minutes (conservative estimate)
-  const REFRESH_BUFFER = 5 * 60 * 1000; // Refresh 5 minutes before expiry (reduced from 10)
+// Module-level Google Fit configuration/constants (stable across renders)
+const GOOGLE_CLIENT_ID = import.meta.env?.VITE_GOOGLE_CLIENT_ID || '847083852436-c8gkmj53clud9jgo41htnjce8tnbh060.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/fitness.heart_rate.read https://www.googleapis.com/auth/fitness.sleep.read';
+const SESSION_STORAGE_KEY = 'googleFitSession';
+const DEFAULT_SESSION_DURATION = 50 * 60 * 1000; // 50 minutes (conservative estimate)
+const REFRESH_BUFFER = 5 * 60 * 1000; // Refresh 5 minutes before expiry (reduced from 10)
 
   // Load saved session on component mount
   useEffect(() => {
@@ -64,7 +62,7 @@ const GoogleFitnessWidget = () => {
     };
 
     loadSavedSession();
-  }, []);
+  }, [fetchFitnessData]);
 
   // Save session to localStorage
   const saveSession = (token, expiryTime) => {
@@ -82,7 +80,7 @@ const GoogleFitnessWidget = () => {
   };
 
   // Clear session
-  const clearSession = () => {
+  const clearSession = useCallback(() => {
     try {
       localStorage.removeItem(SESSION_STORAGE_KEY);
       setAccessToken(null);
@@ -96,17 +94,17 @@ const GoogleFitnessWidget = () => {
     } catch (error) {
       console.error('Error clearing session:', error);
     }
-  };
+  }, [accessToken]);
 
   // Check if a specific token is expired (can work without React state)
-  const isSpecificTokenExpired = (token, expiry) => {
+  const _isSpecificTokenExpired = (token, expiry) => {
     if (!token || !expiry) return true;
     const now = Date.now();
     return now >= expiry;
   };
 
   // Check if current token is actually expired (relies on React state)
-  const isTokenExpired = () => {
+  const isTokenExpired = useCallback(() => {
     if (!tokenExpiry || !accessToken) {
       console.log('Token check: No token or expiry available in state');
       return true;
@@ -124,10 +122,10 @@ const GoogleFitnessWidget = () => {
     }
     
     return actuallyExpired;
-  };
+  }, [tokenExpiry, accessToken]);
 
   // Helper function to check if token needs refresh (different from expired)
-  const needsRefresh = () => {
+  const _needsRefresh = () => {
     if (!tokenExpiry || !accessToken) return false;
     const now = Date.now();
     return now >= (tokenExpiry - REFRESH_BUFFER);
@@ -209,7 +207,7 @@ const GoogleFitnessWidget = () => {
         setError('Failed to initialize authentication client.');
       }
     }
-  }, [gisReady, GOOGLE_CLIENT_ID, SCOPES]);
+  }, [gisReady, GOOGLE_CLIENT_ID, SCOPES, DEFAULT_SESSION_DURATION, fetchFitnessData]);
 
   // Auto-refresh token when it's about to expire
   useEffect(() => {
@@ -222,11 +220,12 @@ const GoogleFitnessWidget = () => {
       console.log(`Setting refresh timer for ${Math.floor(refreshTime / (1000 * 60))} minutes`);
       const refreshTimer = setTimeout(() => {
         console.log('Auto-refreshing Google Fit token');
-        if (window.tokenClient && isConnected && !isTokenExpired()) {
+        // Only attempt refresh if token still valid according to stored expiry
+        if (window.tokenClient && isConnected && tokenExpiry && Date.now() < tokenExpiry) {
           // Try silent refresh first
           try {
             window.tokenClient.requestAccessToken({ prompt: '' });
-          } catch (error) {
+          } catch {
             console.log('Silent refresh failed, will require manual reconnection');
             if (accessToken) {
               setError('Session will expire soon. Please reconnect to Google Fit.');
@@ -237,10 +236,10 @@ const GoogleFitnessWidget = () => {
 
       return () => clearTimeout(refreshTimer);
     }
-  }, [isConnected, tokenExpiry]);
+  }, [isConnected, tokenExpiry, accessToken, REFRESH_BUFFER]);
 
   // Fetch data using the new REST API with access token
-  const fetchFitnessData = async (token = accessToken) => {
+  const fetchFitnessData = useCallback(async (token = accessToken) => {
     console.log('fetchFitnessData called with token:', token ? 'present' : 'missing');
     
     if (!token) {
@@ -395,7 +394,7 @@ const GoogleFitnessWidget = () => {
       }
       setLoading(false);
     }
-  };
+  }, [accessToken, clearSession, isTokenExpired]);
 
   const connectGoogleFit = async () => {
     setLoading(true);
@@ -454,7 +453,7 @@ const GoogleFitnessWidget = () => {
     await fetchFitnessData();
   };
 
-  const getMoodCorrelation = () => {
+  const _getMoodCorrelation = () => {
     if (!fitnessData) return null;
     
     const { steps, sleep, activeMinutes } = fitnessData;
@@ -495,7 +494,6 @@ const GoogleFitnessWidget = () => {
     }
   };
 
-  const correlation = getMoodCorrelation();
   const sessionInfo = getSessionInfo();
 
   return (

@@ -1,275 +1,242 @@
-// EmotionWidget.jsx
-import React, { useRef, useState } from 'react';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
-import EmotionCard from './EmotionCard';
-import GeminiChatInterface from '../pages/AiChatInterface';
-import './EmotionalChatWidget.css';
+import React, { useState } from 'react';
 
-const EmotionWidget = () => {
-  const scrollContainerRef = useRef(null);
-  const [selectedBot, setSelectedBot] = useState(null);
+const DashboardEmotionBots = ({ onBotSelect }) => {
+  const [activeTab, setActiveTab] = useState('all');
 
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({
-        left: -300,
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({
-        left: 300,
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  const voicebots = [
-    {
-      id: 1,
-      name: "Joybot",
-      mood: "Joyful",
-      description: "Spread happiness and celebrate life's moments",
-      colorClass: "color-yellow-orange",
-      bgColorClass: "bg-yellow-orange",
-      image: "/joybot.png"
-    },
-    {
-      id: 2,
-      name: "Serenity",
-      mood: "Peaceful",
-      description: "Find inner peace and tranquil moments",
-      colorClass: "color-blue-cyan",
-      bgColorClass: "bg-blue-cyan",
-      image: "/serenity.png"
-    },
-    {
-      id: 3,
-      name: "Thunderbot",
-      mood: "Angry",
-      description: "Express frustration and work through anger",
-      colorClass: "color-red-dark",
-      bgColorClass: "bg-red-dark",
-      image: "/thunderbolt.png"
-    },
-    {
-      id: 4,
-      name: "Melancholy",
-      mood: "Sad",
-      description: "Navigate through sadness with understanding",
-      colorClass: "color-gray-blue",
-      bgColorClass: "bg-gray-blue",
-      image: "/sadness.png"
-    },
-    {
-      id: 5,
-      name: "Anxious",
+  const emotionBots = [
+    { 
+      id: 1, 
+      name: "Anxious", 
       mood: "Worried",
+      color: "#6B9080", 
       description: "Work through anxiety and find calm",
       colorClass: "color-purple-indigo",
       bgColorClass: "bg-purple-indigo",
       image: "/anxious.png"
     },
-    {
-      id: 6,
-      name: "Fearless",
+    { 
+      id: 2, 
+      name: "Melancholy", 
+      mood: "Sad",
+      color: "#6B9080", 
+      description: "Navigate through sadness with understanding",
+      colorClass: "color-gray-blue",
+      bgColorClass: "bg-gray-blue",
+      image: "/sadness.png"
+    },
+    { 
+      id: 3, 
+      name: "Joybot", 
+      mood: "Joyful",
+      color: "#6B9080", 
+      description: "Spread happiness and celebrate life's moments",
+      colorClass: "color-yellow-orange",
+      bgColorClass: "bg-yellow-orange",
+      image: "/joybot.png"
+    },
+    { 
+      id: 4, 
+      name: "Stressbot", 
+      mood: "Stressed",
+      color: "#6B9080", 
+      description: "Manage stress and find healthy coping",
+      colorClass: "color-gray-slate",
+      bgColorClass: "bg-gray-slate",
+      image: "https://images.unsplash.com/photo-1499996860823-5214fcc65f8f?w=150&h=150&fit=crop&crop=face"
+    },
+    { 
+      id: 5, 
+      name: "Lonesome", 
+      mood: "Lonely",
+      color: "#6B9080", 
+      description: "Find connection and overcome isolation",
+      colorClass: "color-indigo-purple",
+      bgColorClass: "bg-indigo-purple",
+      image: "https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=150&h=150&fit=crop&crop=face"
+    },
+    { 
+      id: 6, 
+      name: "Thunderbot", 
+      mood: "Angry",
+      color: "#6B9080", 
+      description: "Express frustration and work through anger",
+      colorClass: "color-red-dark",
+      bgColorClass: "bg-red-dark",
+      image: "/thunderbolt.png"
+    },
+    { 
+      id: 7, 
+      name: "Fearless", 
       mood: "Afraid",
+      color: "#6B9080", 
       description: "Face fears and build courage together",
       colorClass: "color-gray-dark",
       bgColorClass: "bg-gray-dark",
       image: "/fear.png"
     },
     {
-      id: 7,
-      name: "Wonderbot",
-      mood: "Surprised",
-      description: "Explore amazement and unexpected discoveries",
-      colorClass: "color-pink-rose",
-      bgColorClass: "bg-pink-rose",
-      image: "amazement.png"
-    },
-    {
       id: 8,
-      name: "Disgustia",
-      mood: "Disgusted",
-      description: "Process aversion and difficult feelings",
-      colorClass: "color-green-dark",
-      bgColorClass: "bg-green-dark",
-      image: "disgustia.png"
-    },
-    {
-      id: 9,
-      name: "Confidia",
-      mood: "Confident",
-      description: "Build self-assurance and inner strength",
-      colorClass: "color-emerald-teal",
-      bgColorClass: "bg-emerald-teal",
-      image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 10,
-      name: "Envybot",
-      mood: "Envious",
-      description: "Transform envy into motivation and growth",
-      colorClass: "color-lime-green",
-      bgColorClass: "bg-lime-green",
-      image: "motivation.png"
-    },
-    {
-      id: 11,
-      name: "Prideful",
-      mood: "Proud",
-      description: "Celebrate achievements and build self-worth",
-      colorClass: "color-amber-yellow",
-      bgColorClass: "bg-amber-yellow",
-      image: "pride.png"
-    },
-    {
-      id: 12,
-      name: "Shybot",
-      mood: "Shy",
-      description: "Overcome shyness and build social confidence",
-      colorClass: "color-rose-pink",
-      bgColorClass: "bg-rose-pink",
-      image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 13,
-      name: "Guiltybot",
-      mood: "Guilty",
-      description: "Process guilt and find path to forgiveness",
-      colorClass: "color-orange-red",
-      bgColorClass: "bg-orange-red",
-      image: "https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 14,
-      name: "Shameful",
-      mood: "Ashamed",
-      description: "Heal shame and rebuild self-compassion",
-      colorClass: "color-slate-gray",
-      bgColorClass: "bg-slate-gray",
-      image: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 15,
-      name: "Gratitude",
-      mood: "Grateful",
-      description: "Cultivate appreciation and thankfulness",
-      colorClass: "color-violet-purple",
-      bgColorClass: "bg-violet-purple",
-      image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 16,
-      name: "Hopebot",
-      mood: "Hopeful",
-      description: "Nurture optimism and positive outlook",
-      colorClass: "color-sky-blue",
-      bgColorClass: "bg-sky-blue",
-      image: "https://images.unsplash.com/photo-1502323777036-f29e3972d82f?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 17,
-      name: "Lonesome",
-      mood: "Lonely",
-      description: "Find connection and overcome isolation",
-      colorClass: "color-indigo-purple",
-      bgColorClass: "bg-indigo-purple",
-      image: "https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 18,
-      name: "Loveable",
-      mood: "In Love",
-      description: "Explore love and deep emotional connections",
-      colorClass: "color-red-pink",
-      bgColorClass: "bg-red-pink",
-      image: "https://images.unsplash.com/photo-1559829577-7e2228c8dbd0?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 19,
-      name: "Stressbot",
-      mood: "Stressed",
-      description: "Manage stress and find healthy coping",
-      colorClass: "color-gray-slate",
-      bgColorClass: "bg-gray-slate",
-      image: "https://images.unsplash.com/photo-1499996860823-5214fcc65f8f?w=150&h=150&fit=crop&crop=face"
-    },
-    {
-      id: 20,
-      name: "Exhausted",
-      mood: "Tired",
-      description: "Rest, recharge and restore energy",
-      colorClass: "color-slate-gray-dark",
-      bgColorClass: "bg-slate-gray-dark",
-      image: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=150&h=150&fit=crop&crop=face"
+      name: "CalmBot",
+      mood: "Calm",
+      color: "#6B9080",
+      description: "Maintain tranquility and mindfulness",
+      colorClass: "color-blue-light",
+      bgColorClass: "bg-blue-light",
+      image: "/calmbot.png"
     }
   ];
 
-  const handleTalkClick = (voicebot) => {
-    setSelectedBot(voicebot);
-  };
-
-  const handleCloseChat = () => {
-    setSelectedBot(null);
-  };
+  const tabs = [
+    { id: 'all', label: 'All emotion bots' },
+    { id: 'newest', label: 'Newest' },
+    { id: 'rated', label: 'Top rated' },
+    { id: 'popular', label: 'Most Popular' }
+  ];
 
   return (
-    <div className="emotion-widget">
-      <div className="emotion-widget__container">
-        <div className="emotion-widget__header">
-          <div className="emotion-widget__header-content">
-            <h1 className="emotion-widget__title">TALK TO AI EMOTION BOTS</h1>
-            <p className="emotion-widget__subtitle">
-              Choose how you're feeling and chat with that emotional context
-            </p>
-          </div>
-          <div className="emotion-widget__navigation">
-            <button className="emotion-widget__nav-btn" onClick={scrollLeft}>
-              <ChevronLeft className="emotion-widget__chevron" />
-            </button>
-            <button className="emotion-widget__nav-btn" onClick={scrollRight}>
-              <ChevronRight className="emotion-widget__chevron" />
-            </button>
-          </div>
-        </div>
-        
-        <div className="emotion-widget__cards-container" ref={scrollContainerRef}>
-          {voicebots.map((bot) => (
-            <EmotionCard 
-              key={bot.id} 
-              bot={bot} 
-              onTalkClick={handleTalkClick} 
-            />
-          ))}
-        </div>
-        
-        <div className="emotion-widget__scroll-indicators">
-          <div className="emotion-widget__indicators">
-            {Array.from({ length: Math.min(voicebots.length, 8) }).map((_, index) => (
-              <div
-                key={index}
-                className="emotion-widget__indicator"
-              ></div>
-            ))}
-          </div>
-        </div>
+    <div style={{ 
+      borderRadius: '12px',
+      padding: '24px',
+      minWidth:'55%'
+    }}>
+      {/* Header */}
+      <h2 style={{
+        fontSize: '25px',
+        fontWeight: '600',
+        color: '#1e293b',
+        marginBottom: '20px',
+        marginTop: '0'
+      }}>
+        Talk to AI Emotion Bots
+      </h2>
+
+      {/* Tabs */}
+      <div style={{
+        display: 'flex',
+        gap: '24px',
+        marginBottom: '20px',
+        borderBottom: '1px solid #e2e8f0'
+      }}>
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '12px 0',
+              fontSize: '14px',
+              fontWeight: activeTab === tab.id ? '600' : '400',
+              color: activeTab === tab.id ? '#1e293b' : '#94a3b8',
+              cursor: 'pointer',
+              position: 'relative',
+              transition: 'color 0.2s ease',
+              borderBottom: activeTab === tab.id ? '2px solid #6B9080' : '2px solid transparent',
+              marginBottom: '-1px'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {selectedBot && (
-        <GeminiChatInterface 
-          selectedBot={selectedBot} 
-          onClose={handleCloseChat}
-          // Pass the API key from environment variables
-          apiKey={import.meta.env.VITE_GEMINI_API_KEY || process.env.REACT_APP_GEMINI_API_KEY}
-        />
-      )}
+      {/* Bot Cards */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px'
+      }}>
+        {emotionBots.map(bot => (
+          <div
+            key={bot.id}
+            onClick={() => onBotSelect && onBotSelect(bot)}
+            style={{
+              backgroundColor: bot.color,
+              borderRadius: '16px',
+              padding: '20px 24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              minHeight: '60px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateX(4px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateX(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255,255,255,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden'
+              }}>
+                {bot.image ? (
+                  <img 
+                    src={bot.image} 
+                    alt={bot.name}
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'cover' 
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerHTML = '<span style="font-size: 20px">🤖</span>';
+                    }}
+                  />
+                ) : (
+                  <span style={{ fontSize: '20px' }}>🤖</span>
+                )}
+              </div>
+              <div>
+                <h3 style={{
+                  margin: '0',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: 'white'
+                }}>
+                  {bot.name}
+                </h3>
+                <p style={{
+                  margin: '4px 0 0 0',
+                  fontSize: '13px',
+                  color: 'rgba(255,255,255,0.9)'
+                }}>
+                  {bot.description}
+                </p>
+              </div>
+            </div>
+            <svg 
+              width="20" 
+              height="20" 
+              viewBox="0 0 20 20" 
+              fill="none" 
+              style={{ opacity: 0.8, flexShrink: 0 }}
+            >
+              <path 
+                d="M7.5 15L12.5 10L7.5 5" 
+                stroke="white" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
 
-export default EmotionWidget;
+export default DashboardEmotionBots;

@@ -24,13 +24,13 @@ if (GEMINI_KEY) {
 function safeParseJson(text) {
   try {
     return JSON.parse(text);
-  } catch (e) {
+  } catch {
     // try to extract a JSON array/object blob from noisy output
     const match = text.match(/(\[\s*\{[\s\S]*\}\s*\])/m);
     if (match) {
       try {
         return JSON.parse(match[1]);
-      } catch (e2) {
+      } catch {
         return null;
       }
     }
@@ -41,7 +41,6 @@ function safeParseJson(text) {
 // sanitize and validate a direct URL coming from model (handles YouTube links)
 // Normalizes youtu.be, youtube.com/shorts, watch?v=... -> canonical https://www.youtube.com/watch?v=VIDEOID
 function sanitizeUrl(raw) {
-  if (!raw) return null;
   let s = String(raw).trim();
 
   // strip common wrappers and whitespace/newlines/tabs
@@ -52,7 +51,7 @@ function sanitizeUrl(raw) {
   if (/^\(.+\)$/.test(s)) s = s.slice(1, -1).trim();
 
   // collapse multiple spaces and strip trailing punctuation
-  s = s.replace(/\s+/g, " ").replace(/[\)\]\.,;:!?]+$/g, "");
+  s = s.replace(/\s+/g, " ").replace(/[)\],;:!?]+$/g, "");
 
   // youtu.be short link (e.g. https://youtu.be/VIDEOID)
   const ytShortMatch = s.match(/(?:https?:\/\/)?(?:www\.)?youtu\.be\/([A-Za-z0-9_-]{11})/i);
@@ -86,10 +85,10 @@ function sanitizeUrl(raw) {
   // try to normalize encoding without double-encoding
   try {
     s = encodeURI(decodeURI(s));
-  } catch (e) {
+  } catch {
     try {
       s = s.replace(/\s/g, "%20");
-    } catch (e2) {
+    } catch {
       // last resort: leave as-is
     }
   }
@@ -103,7 +102,7 @@ function buildYouTubeSearchUrl(title = "", artist = "") {
   let q = `${title || ""} ${artist || ""}`.trim();
   q = q.replace(/[\n\r]+/g, " ");
   q = q.replace(/["'`‘’“”]/g, "");
-  q = q.replace(/[\/\\|]/g, " ");
+    q = q.replace(new RegExp('\\\\/|\\\\|', 'g'), " ");
   q = q.replace(/\s+/g, " ").trim();
   if (!q) q = "music";
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
@@ -117,7 +116,7 @@ async function isYouTubeAvailable(watchUrl) {
     const resp = await axios.get(oembed, { timeout: 5000, validateStatus: () => true });
     // oEmbed returns 200 for existing public videos; 404 for removed/private
     return resp.status === 200;
-  } catch (e) {
+  } catch {
     // network error or blocked -> treat as unavailable
     return false;
   }
@@ -214,8 +213,8 @@ router.post("/", async (req, res) => {
             console.log("YouTube video unavailable, falling back to search:", url);
             url = buildYouTubeSearchUrl(s.title, s.artist);
           }
-        } catch (e) {
-          console.log("Error verifying YouTube availability for", url, e?.message || e);
+        } catch (_e) {
+          console.log("Error verifying YouTube availability for", url, _e?.message || _e);
           // on error, fall back to search to avoid broken links
           url = buildYouTubeSearchUrl(s.title, s.artist);
         }

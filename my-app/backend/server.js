@@ -437,7 +437,7 @@ app.post("/api/detect-mood", async (req, res) => {
         warning: "Using basic emotion detection due to service errors",
         error: error.message
       });
-    } catch (fallbackError) {
+    } catch {
       res.status(500).json({
         error: "All emotion detection methods failed",
         details: error.message,
@@ -690,7 +690,7 @@ Guidelines:
 });
 
 // ===== Global error handler =====
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
   console.error('Unhandled error:', err);
   
   // Don't leak error details in production

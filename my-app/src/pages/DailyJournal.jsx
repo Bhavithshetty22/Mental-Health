@@ -55,7 +55,7 @@ Output only the final artistic image prompt, nothing else.`,
   }
 };
 
-const getMoodEmoji = (mood) => {
+const _getMoodEmoji = (mood) => {
   const emojis = {
     happy: "😊",
     sad: "😢",
@@ -79,15 +79,15 @@ const DailyJournal = () => {
   const [isDark, setIsDark] = useState(false);
   
   // Mood detection states
-  const [isMoodDetecting, setIsMoodDetecting] = useState(false);
-  const [moodResult, setMoodResult] = useState(null);
-  const [showMoodPopup, setShowMoodPopup] = useState(false);
+  const [_isMoodDetecting, _setIsMoodDetecting] = useState(false);
+  const [_moodResult, _setMoodResult] = useState(null);
+  const [_showMoodPopup, _setShowMoodPopup] = useState(false);
 
   const [songs, setSongs] = useState([]);
   const [story, setStory] = useState("");
   const [poem, setPoem] = useState("");
 
-  const toggleTheme = () => {
+  const _toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle("dark");
   };
@@ -97,14 +97,15 @@ const DailyJournal = () => {
     let q = `${title || ""} ${artist || ""}`.trim();
     q = q.replace(/[\n\r]+/g, " ");
     q = q.replace(/["'`''""]/g, "");
-    q = q.replace(/[\/\\|]/g, " ");
+  q = q.replace(/["'`‘’“”]/g, "");
+  q = q.replace(/[\\/|]/g, " ");
     q = q.replace(/\s+/g, " ").trim();
     if (!q) q = "music";
     return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
   };
 
   // Mood detection function
-  const detectMood = async () => {
+  const _detectMood = async () => {
     const textToAnalyze = textInput.trim();
 
     if (!textToAnalyze) {
@@ -112,7 +113,7 @@ const DailyJournal = () => {
       return;
     }
 
-    setIsMoodDetecting(true);
+  _setIsMoodDetecting(true);
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE}/api/detect-mood`, {
@@ -124,17 +125,17 @@ const DailyJournal = () => {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      setMoodResult(data);
-      setShowMoodPopup(true);
+  _setMoodResult(data);
+  _setShowMoodPopup(true);
     } catch (error) {
       console.error('Error detecting mood:', error);
       alert('Failed to detect mood. Please make sure the server is running.');
     } finally {
-      setIsMoodDetecting(false);
+  _setIsMoodDetecting(false);
     }
   };
 
-  const closeMoodPopup = () => setShowMoodPopup(false);
+  const _closeMoodPopup = () => _setShowMoodPopup(false);
 
   // Generate Output (keep Stability + songs + poem logic)
   const generateOutput = async () => {

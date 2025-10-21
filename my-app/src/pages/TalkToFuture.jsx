@@ -49,8 +49,9 @@ export default function TalkToFuture() {
       let data;
       try {
         data = JSON.parse(raw);
-      } catch {
-        // backend returned plain text
+      } catch (parseErr) {
+        // backend returned plain text or parsing failed — keep raw text
+        console.warn('TalkToFuture: JSON parse failed', parseErr);
         setLetter(raw);
         return;
       }
@@ -161,13 +162,13 @@ export default function TalkToFuture() {
   }
 
   // Fallback approach: invisible iframe print (less popup-prone)
-  function fallbackPrintPdf(filename) {
+  function fallbackPrintPdf() {
     if (!letter) return;
     const printHtml = buildPrintableHtml("A letter from your future self", letter);
 
     // remove any existing helper iframe
     const existing = document.getElementById("mf-print-iframe");
-    if (existing) existing.remove();
+  if (existing) existing.remove();
 
     const iframe = document.createElement("iframe");
     iframe.id = "mf-print-iframe";
@@ -192,12 +193,12 @@ export default function TalkToFuture() {
         iframe.contentWindow.print();
         // optionally remove iframe after a short delay
         setTimeout(() => {
-          try { iframe.remove(); } catch (e) {}
+          try { iframe.remove(); } catch (removeErr) { console.warn('Failed to remove iframe', removeErr); }
         }, 1000);
       } catch (err) {
         console.error("Fallback print failed:", err);
         alert("Printing failed. Try installing jsPDF (npm i jspdf) for direct download.");
-        iframe.remove();
+        try { iframe.remove(); } catch (removeErr) { console.warn('Failed to remove iframe after print error', removeErr); }
       }
     };
 
@@ -206,9 +207,11 @@ export default function TalkToFuture() {
       try {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
-        setTimeout(() => iframe.remove(), 1000);
+        setTimeout(() => {
+          try { iframe.remove(); } catch (removeErr) { console.warn('Failed to remove iframe', removeErr); }
+        }, 1000);
       } catch (err) {
-        // ignore
+        console.warn('Fallback print timed out or failed', err);
       }
     }, 600);
   }
