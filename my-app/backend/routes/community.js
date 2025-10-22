@@ -65,13 +65,55 @@ router.get("/user", authenticateToken, async (req, res) => {
       image: p.image,
       createdAt: p.createdAt,
       userId: p.userId,
-      type: p.type
+      type: p.type,
+      likes: p.likes
     }));
 
     res.json({ success: true, posts: userPosts, total: userPosts.length });
   } catch (err) {
     console.error("Failed to fetch user posts", err);
     res.status(500).json({ success: false, error: "Failed to fetch user posts" });
+  }
+});
+
+// POST /api/community/:postId/support - add support/like to a post
+router.post("/:postId/support", authenticateToken, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ success: false, error: "Authentication required" });
+    }
+
+    const postId = req.params.postId;
+    const userId = req.user.id;
+    
+    // Find the post
+    const post = await CommunityPost.findById(postId);
+    
+    if (!post) {
+      return res.status(404).json({ success: false, error: "Post not found" });
+    }
+    
+    // Check if user already supported this post
+    if (post.supporters && post.supporters.includes(userId)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "You have already supported this post",
+        likes: post.likes
+      });
+    }
+    
+    // Add user to supporters array and increment likes count
+    post.supporters.push(userId);
+    post.likes += 1;
+    await post.save();
+    
+    res.json({ 
+      success: true, 
+      likes: post.likes
+    });
+  } catch (err) {
+    console.error("Failed to support post", err);
+    res.status(500).json({ success: false, error: "Failed to support post" });
   }
 });
 
