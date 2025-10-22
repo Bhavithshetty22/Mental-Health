@@ -99,6 +99,65 @@
   margin-bottom: 1rem;
 }
 
+/* Profile Tabs */
+.profile-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding: 8px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e8e0d5;
+  overflow-x: auto;
+}
+
+.profile-tabs .tab-btn {
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: #4a4a4a;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.profile-tabs .tab-btn:hover {
+  background: #f3ede3;
+  color: #1a1a1a;
+}
+
+.profile-tabs .tab-btn.active {
+  background: #4299e1;
+  color: white;
+  box-shadow: 0 2px 8px rgba(66, 153, 225, 0.3);
+}
+
+/* Post actions and support button */
+.post-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.support-btn {
+  background: #f8f0f0;
+  color: #333;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.support-btn:hover {
+  background: #ffebeb;
+  transform: translateY(-2px);
+}
+
 .form-row {
   margin-bottom: 1rem;
 }

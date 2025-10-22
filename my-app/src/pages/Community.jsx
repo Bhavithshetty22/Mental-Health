@@ -11,6 +11,7 @@ export default function CommunityPage() {
   const [loading, setLoading] = useState(true)
   const [showUpload, setShowUpload] = useState(false)
   const [activeTab, setActiveTab] = useState("images") // "images", "text"
+  const [supportedPosts, setSupportedPosts] = useState([])
 
   const fetchPosts = async () => {
     setLoading(true)
@@ -30,6 +31,13 @@ export default function CommunityPage() {
 
   useEffect(() => {
     fetchPosts()
+    
+    // Load supported posts from localStorage - check both formats
+    const userId = localStorage.getItem("userId") || localStorage.getItem("user_id")
+    if (userId) {
+      const supported = JSON.parse(localStorage.getItem(`supported_${userId}`) || "[]")
+      setSupportedPosts(supported)
+    }
   }, [])
 
   const formatDate = (iso) => {
@@ -53,6 +61,54 @@ export default function CommunityPage() {
       })
     } catch {
       return iso
+    }
+  }
+  
+  // Function to handle support/like
+  const handleSupport = async (postId) => {
+    try {
+      const token = localStorage.getItem("token") 
+      const userId = localStorage.getItem("user")
+      
+      if (!token || !userId) {
+        console.warn("No auth token or userId found")
+        alert("You must be logged in to support posts")
+        return
+      }
+      
+      // Check if user already supported this post
+      if (supportedPosts.includes(postId)) {
+        alert("You have already supported this post")
+        return
+      }
+      
+      const resp = await fetch(`${API_BASE}/api/community/${postId}/support`, {
+        method: 'POST',
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      })
+      
+      if (!resp.ok) throw new Error("Failed to support post")
+      
+      const data = await resp.json()
+      
+      // Update post in state with new like count
+      setPosts(posts.map(post => 
+        post._id === postId ? {...post, likes: data.likes} : post
+      ))
+      
+      // Add to supported posts
+      const newSupportedPosts = [...supportedPosts, postId]
+      setSupportedPosts(newSupportedPosts)
+      
+      // Save to localStorage - use the userId we found
+      const actualUserId = localStorage.getItem("userId") || localStorage.getItem("user_id")
+      localStorage.setItem(`supported_${actualUserId}`, JSON.stringify(newSupportedPosts))
+    } catch (err) {
+      console.error("Could not support post", err)
+      alert("Failed to support post. Please try again.")
     }
   }
 
@@ -96,6 +152,14 @@ export default function CommunityPage() {
           <div className="post-footer">
             <span className="post-date">{formatDate(p.createdAt)}</span>
             <span className="post-anon">• anonymous</span>
+            <button 
+              className={`support-btn ${supportedPosts.includes(p._id) ? 'supported' : ''}`}
+              onClick={() => handleSupport(p._id)}
+              disabled={supportedPosts.includes(p._id)}
+              aria-label="Support post"
+            >
+              ❤️ {supportedPosts.includes(p._id) ? 'Supported' : 'Support'} {p.likes > 0 && `(${p.likes})`}
+            </button>
           </div>
         </article>
       )

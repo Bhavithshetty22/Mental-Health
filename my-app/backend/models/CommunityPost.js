@@ -9,6 +9,7 @@ const CommunityPostSchema = new mongoose.Schema({
   type: { type: String, enum: ["text", "image"], default: "text" },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null }, // optional, keep for moderation
   likes: { type: Number, default: 0 }, // you said like count hidden — still keep for analytics if desired
+  supporters: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // track which users have supported
   createdAt: { type: Date, default: Date.now },
 });
 

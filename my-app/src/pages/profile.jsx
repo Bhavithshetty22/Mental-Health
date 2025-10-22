@@ -37,6 +37,9 @@ export default function ProfileNew() {
   const [formData, setFormData] = useState(profile)
   const [userPosts, setUserPosts] = useState([])
   const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState("images") // "images", "text"
+  
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -199,14 +202,29 @@ export default function ProfileNew() {
           {/*mood section*/}
           <div className="section-card">
             <h2>Today's Mood</h2>
-            <div className="mood-container">
-              <MoodProfile />
-            </div>
+            <MoodProfile />
           </div>
 
           {/* uploaded images */}
           <div className="section-card">
             <h2>Uploaded Posts</h2>
+            
+            {/* Tab Navigation */}
+            <div className="profile-tabs">
+              <button
+                className={`tab-btn ${activeTab === "images" ? "active" : ""}`}
+                onClick={() => setActiveTab("images")}
+              >
+                🖼️ Images
+              </button>
+              <button
+                className={`tab-btn ${activeTab === "text" ? "active" : ""}`}
+                onClick={() => setActiveTab("text")}
+              >
+                📝 Poems & Text
+              </button>
+            </div>
+            
             <div className="user-posts-container">
               {loading ? (
                 <div className="loading-posts">Loading your posts...</div>
@@ -214,7 +232,13 @@ export default function ProfileNew() {
                 <div className="no-posts">You haven't posted anything yet.</div>
               ) : (
                 <div className="posts-grid">
-                  {userPosts.map((post) => (
+                  {userPosts
+                    .filter(post => 
+                      activeTab === "images" 
+                        ? (post.type === "image" || post.image) 
+                        : (post.type === "text" || (!post.image && post.content))
+                    )
+                    .map((post) => (
                     <div key={post._id} className="user-post-item">
                       {post.image && (
                         <div className="post-image">
@@ -225,13 +249,15 @@ export default function ProfileNew() {
                         {post.title && <h3>{post.title}</h3>}
                         {post.content && <p>{post.content}</p>}
                       </div>
-                      <button 
-                        className="delete-post-btn" 
-                        onClick={() => handleDeletePost(post._id)}
-                        aria-label="Delete post"
-                      >
-                        🗑️ Delete
-                      </button>
+                      <div className="post-actions">
+                        <button 
+                          className="delete-post-btn" 
+                          onClick={() => handleDeletePost(post._id)}
+                          aria-label="Delete post"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
