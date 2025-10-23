@@ -23,21 +23,26 @@ const authenticateToken = (req, res, next) => {
 };
 
 // GET /api/community - returns list of recent posts
-router.get("/", async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
   try {
     const posts = await CommunityPost.find({})
       .sort({ createdAt: -1 })
       .limit(200)
       .lean();
 
-    // IMPORTANT: remove or mask any PII before sending (createdBy -> hidden)
+    const userId = req.user?.id;
+
+    // Include likes count and whether current user has supported each post
     const safe = posts.map((p) => ({
       _id: p._id,
       title: p.title,
       content: p.content,
       image: p.image,
+      type: p.type,
       createdAt: p.createdAt,
-      // likes and createdBy intentionally omitted from client view for privacy
+      likes: p.likes || 0,
+      // Include whether the current user has already supported this post
+      hasSupported: userId && p.supporters ? p.supporters.includes(userId) : false
     }));
 
     res.json({ success: true, posts: safe, total: safe.length });
@@ -66,7 +71,7 @@ router.get("/user", authenticateToken, async (req, res) => {
       createdAt: p.createdAt,
       userId: p.userId,
       type: p.type,
-      likes: p.likes
+      likes: p.likes || 0
     }));
 
     res.json({ success: true, posts: userPosts, total: userPosts.length });
@@ -93,23 +98,29 @@ router.post("/:postId/support", authenticateToken, async (req, res) => {
       return res.status(404).json({ success: false, error: "Post not found" });
     }
     
+    // Initialize supporters array if it doesn't exist
+    if (!post.supporters) {
+      post.supporters = [];
+    }
+    
     // Check if user already supported this post
-    if (post.supporters && post.supporters.includes(userId)) {
+    if (post.supporters.includes(userId)) {
       return res.status(400).json({ 
         success: false, 
         error: "You have already supported this post",
-        likes: post.likes
+        likes: post.likes || 0
       });
     }
     
     // Add user to supporters array and increment likes count
     post.supporters.push(userId);
-    post.likes += 1;
+    post.likes = (post.likes || 0) + 1;
     await post.save();
     
     res.json({ 
       success: true, 
-      likes: post.likes
+      likes: post.likes,
+      message: "Post supported successfully"
     });
   } catch (err) {
     console.error("Failed to support post", err);
@@ -126,7 +137,15 @@ router.post("/", authenticateToken, async (req, res) => {
     }
 
     const userId = req.user?.id || null; // user id if logged in
-    const doc = await CommunityPost.create({ title, content, image, userId, type });
+    const doc = await CommunityPost.create({ 
+      title, 
+      content, 
+      image, 
+      userId, 
+      type,
+      likes: 0,
+      supporters: []
+    });
     res.json({
       success: true,
       post: {
@@ -135,7 +154,9 @@ router.post("/", authenticateToken, async (req, res) => {
         content: doc.content,
         image: doc.image,
         createdAt: doc.createdAt,
-        userId: doc.userId
+        userId: doc.userId,
+        type: doc.type,
+        likes: doc.likes
       },
     });
   } catch (err) {
@@ -161,7 +182,7 @@ router.delete("/:postId", authenticateToken, async (req, res) => {
     }
     
     // Check if user owns this post
-    if (post.createdBy && post.createdBy.toString() !== req.user.id) {
+    if (post.userId && post.userId.toString() !== req.user.id) {
       return res.status(403).json({ success: false, error: "Not authorized to delete this post" });
     }
     

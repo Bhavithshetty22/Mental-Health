@@ -11,12 +11,17 @@ export default function CommunityPage() {
   const [loading, setLoading] = useState(true)
   const [showUpload, setShowUpload] = useState(false)
   const [activeTab, setActiveTab] = useState("images") // "images", "text"
-  const [supportedPosts, setSupportedPosts] = useState([])
 
   const fetchPosts = async () => {
     setLoading(true)
     try {
-      const resp = await fetch(`${API_BASE}/api/community`)
+      const token = localStorage.getItem("token")
+      const headers = {}
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
+      const resp = await fetch(`${API_BASE}/api/community`, { headers })
       if (!resp.ok) throw new Error("Failed to load posts")
       const data = await resp.json()
       const list = Array.isArray(data.posts) ? [...data.posts].reverse() : []
@@ -31,13 +36,6 @@ export default function CommunityPage() {
 
   useEffect(() => {
     fetchPosts()
-    
-    // Load supported posts from localStorage - check both formats
-    const userId = localStorage.getItem("userId") || localStorage.getItem("user_id")
-    if (userId) {
-      const supported = JSON.parse(localStorage.getItem(`supported_${userId}`) || "[]")
-      setSupportedPosts(supported)
-    }
   }, [])
 
   const formatDate = (iso) => {
@@ -67,22 +65,23 @@ export default function CommunityPage() {
   // Function to handle support/like
   const handleSupport = async (postId) => {
     try {
-      const token = localStorage.getItem("token") 
-      const userId = localStorage.getItem("user")
+      const token = localStorage.getItem("token")
       
-      if (!token || !userId) {
-        console.warn("No auth token or userId found")
+      if (!token) {
         alert("You must be logged in to support posts")
         return
       }
       
-      // Check if user already supported this post
-      if (supportedPosts.includes(postId)) {
+      // Check if user already supported this post (from backend data)
+      const post = posts.find(p => p._id === postId)
+      if (post && post.hasSupported) {
         alert("You have already supported this post")
         return
       }
       
-      const resp = await fetch(`${API_BASE}/api/community/${postId}/support`, {
+      const url = `${API_BASE}/api/community/${postId}/support`
+      
+      const resp = await fetch(url, {
         method: 'POST',
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -90,25 +89,20 @@ export default function CommunityPage() {
         }
       })
       
-      if (!resp.ok) throw new Error("Failed to support post")
-      
       const data = await resp.json()
       
-      // Update post in state with new like count
-      setPosts(posts.map(post => 
-        post._id === postId ? {...post, likes: data.likes} : post
+      if (!resp.ok) {
+        throw new Error(data.error || "Failed to support post")
+      }
+      
+      // Update post in state with new like count and hasSupported flag
+      setPosts(posts.map(p => 
+        p._id === postId ? {...p, likes: data.likes, hasSupported: true} : p
       ))
       
-      // Add to supported posts
-      const newSupportedPosts = [...supportedPosts, postId]
-      setSupportedPosts(newSupportedPosts)
-      
-      // Save to localStorage - use the userId we found
-      const actualUserId = localStorage.getItem("userId") || localStorage.getItem("user_id")
-      localStorage.setItem(`supported_${actualUserId}`, JSON.stringify(newSupportedPosts))
     } catch (err) {
       console.error("Could not support post", err)
-      alert("Failed to support post. Please try again.")
+      alert(err.message || "Failed to support post. Please try again.")
     }
   }
 
@@ -153,12 +147,12 @@ export default function CommunityPage() {
             <span className="post-date">{formatDate(p.createdAt)}</span>
             <span className="post-anon">• anonymous</span>
             <button 
-              className={`support-btn ${supportedPosts.includes(p._id) ? 'supported' : ''}`}
+              className={`support-btn ${p.hasSupported ? 'supported' : ''}`}
               onClick={() => handleSupport(p._id)}
-              disabled={supportedPosts.includes(p._id)}
+              disabled={p.hasSupported}
               aria-label="Support post"
             >
-              ❤️ {supportedPosts.includes(p._id) ? 'Supported' : 'Support'} {p.likes > 0 && `(${p.likes})`}
+              ❤️ {p.hasSupported ? 'Supported' : 'Support'} {p.likes > 0 && `(${p.likes})`}
             </button>
           </div>
         </article>
