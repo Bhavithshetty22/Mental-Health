@@ -85,6 +85,7 @@
 /* Clean header with subtle shadow */
 .community-header {
   position: relative;
+  
   z-index: 10;
   display: flex;
   justify-content: space-between;
