@@ -40,7 +40,6 @@ export default function ProfileNew() {
   const [activeTab, setActiveTab] = useState("images") // "images", "text"
   
 
-
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({
@@ -59,7 +58,7 @@ export default function ProfileNew() {
     setIsEditing(false)
   }
   
-  // Fetch user's community posts
+  // Fetch user's community posts - FIXED ENDPOINT
   const fetchUserPosts = async () => {
     setLoading(true)
     try {
@@ -67,22 +66,31 @@ export default function ProfileNew() {
       if (!token) {
         console.warn("No auth token found")
         setUserPosts([])
-        setLoading(false)
         return
       }
       
+      // Changed from /api/community/my-posts to /api/community/user
       const resp = await fetch(`${API_BASE}/api/community/user`, {
-        method: "GET",
         headers: {
-          "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         }
       })
       
-      if (!resp.ok) throw new Error("Failed to load posts")
+      if (!resp.ok) {
+        if (resp.status === 401) {
+          console.error("Authentication failed - token may be invalid")
+          // Optionally clear invalid token
+          // localStorage.removeItem("token")
+        }
+        throw new Error(`Failed to fetch user posts: ${resp.status}`)
+      }
+      
       const data = await resp.json()
-      setUserPosts(Array.isArray(data.posts) ? data.posts : [])
-      console.log("Fetched user posts:", data.posts)
+      console.log("Fetched posts:", data) // Debug log
+      
+      // Handle the response structure from backend
+      const posts = Array.isArray(data.posts) ? [...data.posts].reverse() : []
+      setUserPosts(posts)
     } catch (err) {
       console.error("Could not fetch user posts", err)
       setUserPosts([])
@@ -93,35 +101,89 @@ export default function ProfileNew() {
   
   // Delete a post
   const handleDeletePost = async (postId) => {
-    if (!confirm("Are you sure you want to delete this post?")) return
+    if (!confirm("Are you sure you want to delete this post?")) {
+      return
+    }
     
     try {
       const token = localStorage.getItem("token")
       if (!token) {
-        console.warn("No auth token found")
-        alert("You must be logged in to delete posts")
+        alert("Authentication required")
         return
       }
       
       const resp = await fetch(`${API_BASE}/api/community/${postId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`
         }
       })
-      if (!resp.ok) throw new Error("Failed to delete post")
+      
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}))
+        throw new Error(errorData.error || "Failed to delete post")
+      }
       
       // Remove post from state
-      setUserPosts(userPosts.filter(post => post._id !== postId))
+      setUserPosts(prev => prev.filter(post => post._id !== postId))
+      alert("Post deleted successfully")
     } catch (err) {
       console.error("Could not delete post", err)
-      alert("Failed to delete post. Please try again.")
+      alert(err.message || "Failed to delete post. Please try again.")
     }
   }
   
+  // Load user posts when component mounts
   useEffect(() => {
     fetchUserPosts()
   }, [])
+
+  // Separate posts into images and text
+  const imagePosts = userPosts.filter(p => p.type === "image" || p.image)
+  const textPosts = userPosts.filter(p => p.type === "text" || (!p.image && p.content))
+
+  const renderUserPosts = (postList) => {
+    if (loading) {
+      return <div className="loading-posts">Loading your posts...</div>
+    }
+    
+    if (postList.length === 0) {
+      return (
+        <div className="no-posts">
+          You haven't posted anything yet.
+        </div>
+      )
+    }
+
+    return (
+      <div className="posts-grid">
+        {postList.map((post) => (
+          <div key={post._id} className="user-post-item">
+            {post.image && (
+              <div className="post-image">
+                <img
+                  src={post.image || "/placeholder.svg"}
+                  alt={post.title || "Your post"}
+                  loading="lazy"
+                />
+              </div>
+            )}
+            <div className="post-content">
+              {post.title && <h3>{post.title}</h3>}
+              {post.content && <p>{post.content}</p>}
+            </div>
+            <button 
+              className="delete-post-btn"
+              onClick={() => handleDeletePost(post._id)}
+              aria-label="Delete post"
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="profile-new-page">
@@ -129,12 +191,20 @@ export default function ProfileNew() {
         {/* Left Column - Profile Card */}
         <div className="profile-left">
           <div className="profile-card">
-            <div className="profile-avatar-large">{profile.avatar}</div>
-
+            <div className="profile-avatar-large">
+              {profile.avatar || "👤"}
+            </div>
+            
             <div className="profile-details">
-              <h1 className="profile-title">My profile</h1>
-
-              {isEditing ? (
+              <h1 className="profile-title">Profile</h1>
+              
+              {!isEditing ? (
+                <div className="profile-info">
+                  <div className="profile-name">{profile.name || "Anonymous User"}</div>
+                  <div className="profile-contact">@{profile.username || "username"}</div>
+                  <div className="profile-contact">{profile.email || "user@example.com"}</div>
+                </div>
+              ) : (
                 <div className="edit-form">
                   <div className="form-row">
                     <input
@@ -142,18 +212,18 @@ export default function ProfileNew() {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
+                      placeholder="Your name"
                       className="form-input"
-                      placeholder="Full name"
                     />
                   </div>
                   <div className="form-row">
                     <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
+                      type="text"
+                      name="username"
+                      value={formData.username}
                       onChange={handleInputChange}
+                      placeholder="Username"
                       className="form-input"
-                      placeholder="Phone number"
                     />
                   </div>
                   <div className="form-row">
@@ -162,36 +232,32 @@ export default function ProfileNew() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
+                      placeholder="Email"
                       className="form-input"
-                      placeholder="Email address"
                     />
                   </div>
                 </div>
-              ) : (
-                <div className="profile-info">
-                  <p className="profile-name">{profile.name}</p>
-                  <p className="profile-contact">@{profile.username}</p>
-                  <p className="profile-contact">{profile.email}</p>
-                </div>
               )}
 
-              <button
-                className="btn btn-save"
-                onClick={() => {
-                  if (isEditing) {
-                    handleSave()
-                  } else {
+              {!isEditing ? (
+                <button
+                  className="btn btn-save"
+                  onClick={() => {
+                    setFormData(profile)
                     setIsEditing(true)
-                  }
-                }}
-              >
-                {isEditing ? "Save" : "Edit"}
-              </button>
-
-              {isEditing && (
-                <button className="btn btn-cancel" onClick={handleCancel}>
-                  Cancel
+                  }}
+                >
+                  ✏️ Edit Profile
                 </button>
+              ) : (
+                <>
+                  <button className="btn btn-save" onClick={handleSave}>
+                    💾 Save Changes
+                  </button>
+                  <button className="btn btn-cancel" onClick={handleCancel}>
+                    Cancel
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -199,69 +265,39 @@ export default function ProfileNew() {
 
         {/* Right Column - Content */}
         <div className="profile-right">
-          {/*mood section*/}
+          {/* Mood Profile Section */}
           <div className="section-card">
-            <h2>Today's Mood</h2>
-            <MoodProfile />
+            <h2>Mood Profile</h2>
+            <div className="mood-container">
+              <div className="mood-profile-div">
+                <MoodProfile />
+              </div>
+            </div>
           </div>
 
-          {/* uploaded images */}
+          {/* My Posts Section */}
           <div className="section-card">
-            <h2>Uploaded Posts</h2>
+            <h2>My Posts</h2>
             
-            {/* Tab Navigation */}
+            {/* Tabs for image/text posts */}
             <div className="profile-tabs">
               <button
                 className={`tab-btn ${activeTab === "images" ? "active" : ""}`}
                 onClick={() => setActiveTab("images")}
               >
-                🖼️ Images
+                🖼️ Images ({imagePosts.length})
               </button>
               <button
                 className={`tab-btn ${activeTab === "text" ? "active" : ""}`}
                 onClick={() => setActiveTab("text")}
               >
-                📝 Poems & Text
+                📝 Text & Poems ({textPosts.length})
               </button>
             </div>
             
             <div className="user-posts-container">
-              {loading ? (
-                <div className="loading-posts">Loading your posts...</div>
-              ) : userPosts.length === 0 ? (
-                <div className="no-posts">You haven't posted anything yet.</div>
-              ) : (
-                <div className="posts-grid">
-                  {userPosts
-                    .filter(post => 
-                      activeTab === "images" 
-                        ? (post.type === "image" || post.image) 
-                        : (post.type === "text" || (!post.image && post.content))
-                    )
-                    .map((post) => (
-                    <div key={post._id} className="user-post-item">
-                      {post.image && (
-                        <div className="post-image">
-                          <img src={post.image} alt={post.title || "Community post"} />
-                        </div>
-                      )}
-                      <div className="post-content">
-                        {post.title && <h3>{post.title}</h3>}
-                        {post.content && <p>{post.content}</p>}
-                      </div>
-                      <div className="post-actions">
-                        <button 
-                          className="delete-post-btn" 
-                          onClick={() => handleDeletePost(post._id)}
-                          aria-label="Delete post"
-                        >
-                          🗑️ Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {activeTab === "images" && renderUserPosts(imagePosts)}
+              {activeTab === "text" && renderUserPosts(textPosts)}
             </div>
           </div>
         </div>
