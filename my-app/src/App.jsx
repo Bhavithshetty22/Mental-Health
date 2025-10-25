@@ -5,6 +5,7 @@ import "@fontsource/poppins";
 import "@fontsource/poppins/600.css";
 import React, { Suspense, lazy } from 'react';
 
+
 // Lazy-loaded components to reduce initial bundle
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const MoodTrackerPage = lazy(() => import('./pages/MoodTracker'));
@@ -14,6 +15,7 @@ const DailyJournal = lazy(() => import('./pages/DailyJournal'));
 const AiTherapy = lazy(() => import('./pages/AiTherapy'));
 const LoginSignup = lazy(() => import('./pages/LoginSignup'));
 const CommunityPage = lazy(() => import('./pages/Community'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 function isAuthenticated() {
   return !!localStorage.getItem('token');
@@ -45,6 +47,7 @@ function App() {
             <Route path="community" element={<CommunityPage />} />
             <Route path="daily-journal" element={<DailyJournal />} />
             <Route path="ai-therapy" element={<AiTherapy />} />
+            <Route path="profile" element={<Profile />} />
             <Route path="analytics" element={<div>Analytics Page (Coming Soon)</div>} />
           </Route>
           
