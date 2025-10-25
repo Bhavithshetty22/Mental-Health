@@ -6,13 +6,73 @@ const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
 const MoodProfile = ({ selectedDate = null }) => {
   const [currentMood, setCurrentMood] = useState('okay');
-  const [_loading, _setLoading] = useState(true);
+  const [moodImage, setMoodImage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingImage, setLoadingImage] = useState(false);
+  const [userName, setUserName] = useState('Guest');
 
-  // Add your image URLs here for each mood
-  const moodImages = {
-   
+  // Mood colors for fallback display
+  const moodColors = {
+    terrible: "#ef4444",
+    bad: "#f97316",
+    okay: "#f59e0b",
+    good: "#3b82f6",
+    amazing: "#10b981"
   };
 
+  const moodEmojis = {
+    terrible: "😢",
+    bad: "😕",
+    okay: "😐",
+    good: "😊",
+    amazing: "😄"
+  };
+
+  // Get user name from localStorage
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        setUserName(user.name || user.username || 'Guest');
+      }
+    } catch (error) {
+      console.error('Error parsing user:', error);
+    }
+  }, []);
+
+  // Fetch mood image from API
+  const fetchMoodImage = async (mood) => {
+    try {
+      setLoadingImage(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      console.log(`[ProfileDynamic] Fetching mood image for: ${mood}`);
+
+      const response = await fetch(`${API_BASE}/api/mood-tracker/image/${mood}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.imageUrl) {
+          console.log(`[ProfileDynamic] Got mood image, cached: ${data.cached}`);
+          setMoodImage(data.imageUrl);
+        }
+      } else {
+        console.error("[ProfileDynamic] Failed to fetch mood image:", response.status);
+      }
+    } catch (error) {
+      console.error("[ProfileDynamic] Error fetching mood image:", error);
+    } finally {
+      setLoadingImage(false);
+    }
+  };
 
   // Fetch mood when component mounts or date changes
   useEffect(() => {
@@ -22,11 +82,11 @@ const MoodProfile = ({ selectedDate = null }) => {
         return `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
       };
       try {
-        _setLoading(true);
+        setLoading(true);
         const token = localStorage.getItem("token");
         if (!token) {
           setCurrentMood('okay');
-          _setLoading(false);
+          setLoading(false);
           return;
         }
 
@@ -41,7 +101,7 @@ const MoodProfile = ({ selectedDate = null }) => {
         if (response.status === 401 || response.status === 403) {
           console.warn('Authentication failed in MoodProfile');
           setCurrentMood('okay');
-          _setLoading(false);
+          setLoading(false);
           return;
         }
 
@@ -53,6 +113,8 @@ const MoodProfile = ({ selectedDate = null }) => {
             if (todayMoodData) {
               const mood = typeof todayMoodData === 'string' ? todayMoodData : todayMoodData.mood;
               setCurrentMood(mood || 'okay');
+              // Fetch the mood image
+              await fetchMoodImage(mood || 'okay');
             } else {
               setCurrentMood('okay');
             }
@@ -64,28 +126,106 @@ const MoodProfile = ({ selectedDate = null }) => {
         console.error('Error fetching mood from database:', error);
         setCurrentMood('okay');
       } finally {
-        _setLoading(false);
+        setLoading(false);
       }
     };
 
     fetchMoodFromDatabase();
   }, [selectedDate]);
 
-  
-
   return (
     <div className="mood-profile-div">
       <div className='mood-text-for-box'>
-        <h1 className='mood-welcome-text'>Hello Bhavith!</h1>
+        <h1 className='mood-welcome-text'>Hello {userName}!</h1>
         <p className='mood-welcome-para'>It's good to see you again</p>
       </div>
-     <img 
-        src={moodImages[currentMood] || moodImages['okay']} 
-        alt={`Mood: ${currentMood}`} 
-        className="mood-image1"
-        />
-    </div>
+      
+      {/* Mood Image Display */}
+      <div 
+        className="mood-image-container"
+        style={{
+          position: 'relative',
+          width: '100px',
+          height: '100px',
+          borderRadius: '20px',
+          overflow: 'hidden',
+          boxShadow: `0 4px 16px ${moodColors[currentMood]}40`,
+          border: `3px solid ${moodColors[currentMood]}`,
+          background: loading || loadingImage ? `${moodColors[currentMood]}20` : 'white'
+        }}
+      >
+        {loading || loadingImage ? (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '40px'
+          }}>
+            {moodEmojis[currentMood]}
+          </div>
+        ) : moodImage ? (
+          <img 
+            src={moodImage} 
+            alt={`Mood: ${currentMood}`} 
+            className="mood-image1"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
+            onError={(e) => {
+              console.error("Mood image failed to load, showing emoji fallback");
+              e.target.style.display = 'none';
+              // Show emoji as fallback
+              const parent = e.target.parentElement;
+              if (parent) {
+                parent.innerHTML = `
+                  <div style="
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 40px;
+                  ">
+                    ${moodEmojis[currentMood]}
+                  </div>
+                `;
+              }
+            }}
+          />
+        ) : (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '40px'
+          }}>
+            {moodEmojis[currentMood]}
+          </div>
+        )}
+      </div>
 
+      {/* Optional: Mood label */}
+      <div 
+        className="mood-label"
+        style={{
+          marginTop: '8px',
+          textAlign: 'center',
+          fontSize: '12px',
+          fontWeight: '600',
+          color: moodColors[currentMood],
+          textTransform: 'capitalize',
+          letterSpacing: '0.5px'
+        }}
+      >
+        Mood: {currentMood}
+      </div>
+    </div>
   );
 };
 

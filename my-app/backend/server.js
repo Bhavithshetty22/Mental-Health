@@ -10,6 +10,9 @@ const axios = require("axios");
 
 const moodRoutes = require("./routes/moodRoutes"); 
 const lettersRouter = require("./routes/letters"); 
+const moodTrackerRouter = require("./routes/mood-tracker"); // Mood image routes
+const authRoutes = require("./routes/auth");
+const communityRoutes = require("./routes/community");
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
@@ -61,11 +64,12 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   next();
 });
+
 app.use((req, res, next) => {
- 
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   next();
 });
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -106,17 +110,11 @@ const limiter = rateLimit({
 
 app.use("/api/", limiter);
 
-// server.js (add near other app.use calls)
-const authRoutes = require("./routes/auth");
-app.use("/api/auth", authRoutes);
-
-const communityRoutes = require("./routes/community");
-app.use("/api/community", communityRoutes);
-
 // ===== Debug .env =====
 console.log("DEBUG MONGO_URI:", process.env.MONGO_URI ? "present" : "MISSING");
 console.log("DEBUG GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "present" : "MISSING");
 console.log("DEBUG HUGGING_FACE_TOKEN:", process.env.HUGGING_FACE_TOKEN ? "present" : "MISSING");
+console.log("DEBUG STABILITY_API_KEY:", process.env.STABILITY_API_KEY ? "present" : "MISSING");
 
 // ===== Enhanced MongoDB Connection =====
 if (process.env.MONGO_URI) {
@@ -182,13 +180,17 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// ===== Use mood routes with error handling =====
+// ===== Mount all routers =====
+app.use("/api/auth", authRoutes);
+app.use("/api/community", communityRoutes);
+app.use("/api/letters", lettersRouter);
+app.use("/api/mood-tracker", moodTrackerRouter); // IMPORTANT: Mood image routes
+
+// Use mood routes with error handling
 if (process.env.MONGO_URI) {
   app.use("/api/moods", moodRoutes);
 }
 
-// ===== Mount routers with error handling =====
-app.use("/api/letters", lettersRouter);
 const Letter = lettersRouter.Letter;
 
 // Load other routers with error handling
@@ -689,22 +691,8 @@ Guidelines:
   }
 });
 
-// ===== Global error handler =====
-app.use((err, req, res) => {
-  console.error('Unhandled error:', err);
-  
-  // Don't leak error details in production
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  
-  res.status(500).json({
-    error: "Internal server error",
-    ...(isDevelopment && { details: err.message, stack: err.stack }),
-    timestamp: new Date().toISOString()
-  });
-});
-
-// ===== 404 handler =====
-app.use((req, res) => {
+// ===== 404 handler - MUST come before error handler =====
+app.use((req, res, next) => {
   console.log(`404: ${req.method} ${req.path}`);
   res.status(404).json({ 
     error: `Route not found: ${req.method} ${req.path}`,
@@ -714,9 +702,33 @@ app.use((req, res) => {
       "GET /api/health",
       "POST /api/generate",
       "POST /api/detect-mood",
+      "POST /api/auth/signup",
+      "POST /api/auth/login",
       "* /api/moods",
-      "* /api/letters"
+      "* /api/letters",
+      "* /api/mood-tracker",
+      "* /api/community"
     ]
+  });
+});
+
+// ===== Global error handler - MUST have 4 parameters and come LAST =====
+app.use((err, req, res, next) => {
+  console.error('Global error handler caught:', err);
+  
+  // Check if headers were already sent
+  if (res.headersSent) {
+    return next(err);
+  }
+  
+  // Don't leak error details in production
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || "Internal server error",
+    ...(isDevelopment && { details: err.message, stack: err.stack }),
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -744,6 +756,10 @@ app.listen(PORT, () => {
   console.log(`   GET  /api/health`);
   console.log(`   POST /api/generate`);
   console.log(`   POST /api/detect-mood`);
+  console.log(`   POST /api/auth/signup`);
+  console.log(`   POST /api/auth/login`);
   console.log(`   *    /api/moods`);
   console.log(`   *    /api/letters`);
+  console.log(`   *    /api/mood-tracker`);
+  console.log(`   *    /api/community`);
 });
