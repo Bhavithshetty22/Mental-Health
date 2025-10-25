@@ -8,6 +8,29 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
 const SALT_ROUNDS = 10;
 
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+      return res.status(401).json({ message: "Access token required" });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+      if (err) {
+        return res.status(403).json({ message: "Invalid or expired token" });
+      }
+      req.user = user;
+      next();
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Authentication error" });
+  }
+};
+
 // Signup
 router.post("/signup", async (req, res) => {
   try {
@@ -60,4 +83,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// Export both router and middleware
 module.exports = router;
+module.exports.authenticateToken = authenticateToken;
