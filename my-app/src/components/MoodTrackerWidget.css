@@ -1,6 +1,6 @@
 /* MoodTrackerWidget.css */
 .mood-tracker-widget1 {
-  background: #5E936C;
+  background: #D9D9D9;
   border-radius: 1rem;
   padding: 1.5rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -8,7 +8,7 @@
   transition: all 0.3s ease;
   height: fit-content;
   width: 420px;
-  color: white;
+  color: black;
 
 }
 
@@ -24,7 +24,7 @@
 }
 
 .widget-header1 h3 {
-  color: white;
+  color: black;
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
@@ -32,7 +32,7 @@
 }
 
 .widget-header p {
-  color: white;
+  color: black;
   font-size: 0.875rem;
   margin: 0;
 }
@@ -67,7 +67,7 @@
 }
 
 .mood-hint {
-  color: white;
+  color: black;
   font-size: 0.875rem;
   margin: 0;
 }
