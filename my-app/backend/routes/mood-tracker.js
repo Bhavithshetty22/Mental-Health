@@ -5,13 +5,13 @@ const axios = require('axios');
 const MoodImage = require('../models/MoodImage');
 const { authenticateToken } = require('./auth');
 
-// Mood-specific prompts for Stability AI
+// Mood-specific prompts for Stability AI - Updated for human emotions
 const MOOD_PROMPTS = {
-  terrible: "abstract calming art, soft blues and gentle purples, peaceful flowing water, serene healing atmosphere, minimalist gentle waves, soothing ethereal colors, comforting peaceful landscape, emotional support visual, high quality 4k",
-  bad: "warm contemplative scene, soft orange amber sunset tones, gentle rolling hills, hopeful peaceful atmosphere, comforting soft gradients, emotional warmth, uplifting gentle light, healing visualization, high quality 4k",
-  okay: "balanced neutral composition, calm earth tones, tranquil nature scenery, gentle mountains peaceful sky, harmonious balanced colors, centered grounded feeling, serene peaceful atmosphere, emotional equilibrium, high quality 4k",
-  good: "bright uplifting scene, vibrant blues fresh greens, sunny cheerful day, happy blooming flowers, positive joyful energy, optimistic pleasant atmosphere, emotional wellness visual, celebration of life, high quality 4k",
-  amazing: "energetic celebration, brilliant golds vibrant rainbow colors, radiant glowing sunrise, magnificent blooming garden, euphoric magical atmosphere, inspiring fantastic energy, peak happiness visual, pure joy expression, high quality 4k"
+  terrible: "portrait of person crying with sadness, tears streaming down face, emotional distress, somber lighting, empathetic expression, realistic human face, photorealistic emotional portrait, gentle soft focus, 4k high quality",
+  bad: "portrait of person looking worried and anxious, furrowed brow, concerned expression, subdued lighting, realistic human emotion, thoughtful sad face, photorealistic portrait, natural lighting, 4k high quality",
+  okay: "portrait of person with neutral calm expression, peaceful face, relaxed features, balanced natural lighting, serene composure, realistic human portrait, photorealistic facial features, soft natural light, 4k high quality",
+  good: "portrait of person smiling warmly, genuine happy expression, bright cheerful face, joyful eyes, positive energy, realistic human happiness, photorealistic smiling portrait, natural daylight, 4k high quality",
+  amazing: "portrait of person laughing with pure joy, ecstatic happy expression, radiant smile, eyes full of delight, euphoric face, realistic human elation, photorealistic joyful portrait, bright vibrant lighting, 4k high quality"
 };
 
 // Mood color mapping for fallback images
@@ -23,37 +23,125 @@ const MOOD_COLORS = {
   amazing: "#10b981"
 };
 
-const MOOD_EMOJIS = {
-  terrible: "😢",
-  bad: "😕",
-  okay: "😐",
-  good: "😊",
-  amazing: "😄"
+const MOOD_DESCRIPTIONS = {
+  terrible: "Deeply Sad",
+  bad: "Feeling Down",
+  okay: "Neutral",
+  good: "Happy",
+  amazing: "Ecstatic"
 };
 
-// Generate an SVG-based fallback image as data URI
+// Generate an SVG-based fallback image with human silhouette
 function generateFallbackImage(mood) {
   const color = MOOD_COLORS[mood] || "#999999";
-  const emoji = MOOD_EMOJIS[mood] || "😐";
+  const description = MOOD_DESCRIPTIONS[mood] || "Neutral";
   
-  // Create an SVG with gradient background and emoji
+  // Create an SVG with gradient background and human face silhouette
   const svg = `
     <svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:${color};stop-opacity:0.8" />
-          <stop offset="100%" style="stop-color:${color};stop-opacity:1" />
+          <stop offset="0%" style="stop-color:${color};stop-opacity:0.6" />
+          <stop offset="100%" style="stop-color:${color};stop-opacity:0.9" />
         </linearGradient>
+        <radialGradient id="face-gradient" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.3" />
+          <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.1" />
+        </radialGradient>
       </defs>
       <rect width="512" height="512" fill="url(#grad)" rx="40"/>
-      <text x="50%" y="50%" font-size="180" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
-      <text x="50%" y="85%" font-size="24" text-anchor="middle" fill="white" opacity="0.9" font-family="Arial, sans-serif">${mood.toUpperCase()}</text>
+      
+      <!-- Simple human face silhouette -->
+      <g transform="translate(256, 200)">
+        <!-- Head circle -->
+        <circle cx="0" cy="0" r="80" fill="url(#face-gradient)" stroke="white" stroke-width="3" opacity="0.8"/>
+        
+        <!-- Eyes based on mood -->
+        ${getMoodEyes(mood)}
+        
+        <!-- Mouth based on mood -->
+        ${getMoodMouth(mood)}
+      </g>
+      
+      <!-- Shoulders/body hint -->
+      <ellipse cx="256" cy="380" rx="120" ry="60" fill="url(#face-gradient)" opacity="0.6"/>
+      
+      <text x="50%" y="90%" font-size="22" text-anchor="middle" fill="white" opacity="0.95" font-family="Arial, sans-serif" font-weight="600">${description}</text>
     </svg>
   `;
   
   // Convert SVG to base64 data URI
   const base64 = Buffer.from(svg).toString('base64');
   return `data:image/svg+xml;base64,${base64}`;
+}
+
+// Helper function to draw eyes based on mood
+function getMoodEyes(mood) {
+  switch(mood) {
+    case 'terrible':
+      // Sad/crying eyes - downturned with tears
+      return `
+        <circle cx="-25" cy="-10" r="8" fill="white" opacity="0.9"/>
+        <circle cx="25" cy="-10" r="8" fill="white" opacity="0.9"/>
+        <line x1="-25" y1="5" x2="-25" y2="25" stroke="white" stroke-width="2" opacity="0.7"/>
+        <line x1="25" y1="5" x2="25" y2="25" stroke="white" stroke-width="2" opacity="0.7"/>
+      `;
+    case 'bad':
+      // Worried eyes - slightly downturned
+      return `
+        <ellipse cx="-25" cy="-10" rx="7" ry="9" fill="white" opacity="0.9"/>
+        <ellipse cx="25" cy="-10" rx="7" ry="9" fill="white" opacity="0.9"/>
+      `;
+    case 'okay':
+      // Neutral eyes
+      return `
+        <circle cx="-25" cy="-10" r="7" fill="white" opacity="0.9"/>
+        <circle cx="25" cy="-10" r="7" fill="white" opacity="0.9"/>
+      `;
+    case 'good':
+      // Happy eyes - slightly curved
+      return `
+        <circle cx="-25" cy="-10" r="8" fill="white" opacity="0.9"/>
+        <circle cx="25" cy="-10" r="8" fill="white" opacity="0.9"/>
+        <path d="M -35 -15 Q -25 -20 -15 -15" stroke="white" stroke-width="2" fill="none" opacity="0.8"/>
+        <path d="M 15 -15 Q 25 -20 35 -15" stroke="white" stroke-width="2" fill="none" opacity="0.8"/>
+      `;
+    case 'amazing':
+      // Ecstatic eyes - curved happy eyes
+      return `
+        <path d="M -35 -10 Q -25 -18 -15 -10" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>
+        <path d="M 15 -10 Q 25 -18 35 -10" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>
+      `;
+    default:
+      return `<circle cx="-25" cy="-10" r="7" fill="white" opacity="0.9"/>
+              <circle cx="25" cy="-10" r="7" fill="white" opacity="0.9"/>`;
+  }
+}
+
+// Helper function to draw mouth based on mood
+function getMoodMouth(mood) {
+  switch(mood) {
+    case 'terrible':
+      // Deep frown
+      return `<path d="M -30 35 Q 0 25 30 35" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>`;
+    case 'bad':
+      // Slight frown
+      return `<path d="M -25 30 Q 0 28 25 30" stroke="white" stroke-width="2.5" fill="none" opacity="0.9"/>`;
+    case 'okay':
+      // Straight line
+      return `<line x1="-25" y1="30" x2="25" y2="30" stroke="white" stroke-width="2.5" opacity="0.9"/>`;
+    case 'good':
+      // Smile
+      return `<path d="M -30 25 Q 0 35 30 25" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>`;
+    case 'amazing':
+      // Big smile with open mouth
+      return `
+        <path d="M -35 25 Q 0 45 35 25" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>
+        <path d="M -25 28 Q 0 38 25 28" fill="white" opacity="0.3"/>
+      `;
+    default:
+      return `<line x1="-25" y1="30" x2="25" y2="30" stroke="white" stroke-width="2.5" opacity="0.9"/>`;
+  }
 }
 
 // GET /api/mood-tracker/image/:mood - Check if mood image exists or generate new one
@@ -130,7 +218,7 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
         {
           text_prompts: [
             { text: prompt, weight: 1 },
-            { text: "ugly, blurry, low quality, distorted, text, watermark, signature", weight: -1 }
+            { text: "cartoon, anime, drawing, illustration, painting, sketch, ugly, blurry, low quality, distorted, deformed, text, watermark, signature, multiple faces", weight: -1 }
           ],
           cfg_scale: 7,
           height: 512,
@@ -255,7 +343,7 @@ router.post('/image/generate', authenticateToken, async (req, res) => {
       {
         text_prompts: [
           { text: prompt, weight: 1 },
-          { text: "ugly, blurry, low quality, distorted, text, watermark, signature", weight: -1 }
+          { text: "cartoon, anime, drawing, illustration, painting, sketch, ugly, blurry, low quality, distorted, deformed, text, watermark, signature, multiple faces", weight: -1 }
         ],
         cfg_scale: 7,
         height: 512,
