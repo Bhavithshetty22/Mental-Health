@@ -238,10 +238,7 @@ function Dashboard() {
                 className="notifications"
                 whileHover={{ scale: 1.1, rotate: -5 }}
                 whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300 }}
-                animate={{
-                  y: [0, -3, 0],
-                }}
+                
                 transition={{
                   duration: 2,
                   repeat: Infinity,
