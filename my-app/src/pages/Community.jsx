@@ -11,6 +11,7 @@ export default function CommunityPage() {
   const [loading, setLoading] = useState(true)
   const [showUpload, setShowUpload] = useState(false)
   const [activeTab, setActiveTab] = useState("images") // "images", "text"
+  const [supportingPostId, setSupportingPostId] = useState(null) // Track which post is being supported
 
   const fetchPosts = async () => {
     setLoading(true)
@@ -24,7 +25,18 @@ export default function CommunityPage() {
       const resp = await fetch(`${API_BASE}/api/community`, { headers })
       if (!resp.ok) throw new Error("Failed to load posts")
       const data = await resp.json()
+      
+      console.log("Fetched posts data:", data); // Debug log
+      
       const list = Array.isArray(data.posts) ? [...data.posts].reverse() : []
+      
+      // Log hasSupported status for debugging
+      list.forEach(post => {
+        if (post.likes > 0) {
+          console.log(`Post ${post._id}: hasSupported=${post.hasSupported}, likes=${post.likes}`);
+        }
+      });
+      
       setPosts(list)
     } catch (err) {
       console.error("Could not fetch community posts", err)
@@ -72,14 +84,24 @@ export default function CommunityPage() {
         return
       }
       
-      // Check if user already supported this post (from backend data)
+      // Check if user already supported this post (from current state)
       const post = posts.find(p => p._id === postId)
       if (post && post.hasSupported) {
-        alert("You have already supported this post")
+        console.log("Post already supported, not sending request");
         return
       }
       
+      // Prevent double-clicking
+      if (supportingPostId === postId) {
+        console.log("Already processing support for this post");
+        return
+      }
+      
+      setSupportingPostId(postId)
+      
       const url = `${API_BASE}/api/community/${postId}/support`
+      
+      console.log("Sending support request for post:", postId);
       
       const resp = await fetch(url, {
         method: 'POST',
@@ -91,18 +113,34 @@ export default function CommunityPage() {
       
       const data = await resp.json()
       
+      console.log("Support response:", data);
+      
       if (!resp.ok) {
+        // If already supported, just update the UI without showing error
+        if (resp.status === 400 && data.error?.includes("already supported")) {
+          console.log("Backend says already supported, updating UI");
+          setPosts(posts.map(p => 
+            p._id === postId ? {...p, hasSupported: true, likes: data.likes || p.likes} : p
+          ))
+          return
+        }
         throw new Error(data.error || "Failed to support post")
       }
       
       // Update post in state with new like count and hasSupported flag
+      console.log("Successfully supported post, updating state");
       setPosts(posts.map(p => 
         p._id === postId ? {...p, likes: data.likes, hasSupported: true} : p
       ))
       
     } catch (err) {
       console.error("Could not support post", err)
-      alert(err.message || "Failed to support post. Please try again.")
+      // Only show alert for actual errors, not "already supported"
+      if (!err.message?.includes("already supported")) {
+        alert(err.message || "Failed to support post. Please try again.")
+      }
+    } finally {
+      setSupportingPostId(null)
     }
   }
 
@@ -114,7 +152,7 @@ export default function CommunityPage() {
     if (postList.length === 0) {
       return (
         <div className="empty-state">
-          <div className="empty-icon">📝</div>
+          <div className="empty-icon">📭</div>
           <p>No posts yet — be the first to share something kind.</p>
         </div>
       )
@@ -122,6 +160,8 @@ export default function CommunityPage() {
 
     return postList.map((p, idx) => {
       const hasImage = !!p.image
+      const isSupporting = supportingPostId === p._id
+      
       return (
         <article
           key={p._id}
@@ -147,12 +187,16 @@ export default function CommunityPage() {
             <span className="post-date">{formatDate(p.createdAt)}</span>
             <span className="post-anon">• anonymous</span>
             <button 
-              className={`support-btn ${p.hasSupported ? 'supported' : ''}`}
+              className={`support-btn ${p.hasSupported ? 'supported' : ''} ${isSupporting ? 'loading' : ''}`}
               onClick={() => handleSupport(p._id)}
-              disabled={p.hasSupported}
-              aria-label="Support post"
+              disabled={p.hasSupported || isSupporting}
+              aria-label={p.hasSupported ? "Already supported" : "Support post"}
             >
-              ❤️ {p.hasSupported ? 'Supported' : 'Support'} {p.likes > 0 && `(${p.likes})`}
+              {isSupporting ? '...' : (
+                <>
+                  ❤️ {p.likes  ? 'Supported' : 'Support'} {p.likes > 0 && `(${p.likes})`}
+                </>
+              )}
             </button>
           </div>
         </article>
@@ -212,7 +256,7 @@ export default function CommunityPage() {
 
       {showUpload && (
         <UploadModal
-          onClose={() => setShowUpload(false)}
+          onClose={() => setShowUpload(true)}
           onUploaded={() => {
             fetchPosts()
             setShowUpload(false)
