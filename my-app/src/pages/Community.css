@@ -297,7 +297,13 @@
   }
 }
 
-/* Advanced image display with full visibility - NO HEIGHT LIMITS */
+
+.community-post:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-xl);
+}
+
+
 .post-image {
   width: 100%;
   position: relative;
@@ -325,9 +331,11 @@
 }
 
 .community-post:hover .post-image img {
+
   transform: scale(1.02);
   filter: brightness(1);
 }
+
 
 .post-body {
   padding: 28px;
