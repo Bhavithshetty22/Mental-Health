@@ -33,17 +33,23 @@ router.get("/", authenticateToken, async (req, res) => {
     const userId = req.user?.id;
 
     // Include likes count and whether current user has supported each post
-    const safe = posts.map((p) => ({
-      _id: p._id,
-      title: p.title,
-      content: p.content,
-      image: p.image,
-      type: p.type,
-      createdAt: p.createdAt,
-      likes: p.likes || 0,
-      // Include whether the current user has already supported this post
-      hasSupported: userId && p.supporters ? p.supporters.includes(userId) : false
-    }));
+    const safe = posts.map((p) => {
+      // Convert supporters array items to strings for comparison
+      const supportersArray = p.supporters || [];
+      const supportersStrings = supportersArray.map(s => s.toString());
+      
+      return {
+        _id: p._id,
+        title: p.title,
+        content: p.content,
+        image: p.image,
+        type: p.type,
+        createdAt: p.createdAt,
+        likes: p.likes || 0,
+        // Check if current user has already supported this post
+        hasSupported: userId ? supportersStrings.includes(userId.toString()) : false
+      };
+    });
 
     res.json({ success: true, posts: safe, total: safe.length });
   } catch (err) {
@@ -103,8 +109,11 @@ router.post("/:postId/support", authenticateToken, async (req, res) => {
       post.supporters = [];
     }
     
+    // Convert all supporter IDs to strings for comparison
+    const supportersStrings = post.supporters.map(s => s.toString());
+    
     // Check if user already supported this post
-    if (post.supporters.includes(userId)) {
+    if (supportersStrings.includes(userId.toString())) {
       return res.status(400).json({ 
         success: false, 
         error: "You have already supported this post",
@@ -120,6 +129,7 @@ router.post("/:postId/support", authenticateToken, async (req, res) => {
     res.json({ 
       success: true, 
       likes: post.likes,
+      hasSupported: true,
       message: "Post supported successfully"
     });
   } catch (err) {
