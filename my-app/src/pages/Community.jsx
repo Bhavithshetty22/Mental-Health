@@ -152,7 +152,7 @@ export default function CommunityPage() {
               disabled={p.hasSupported}
               aria-label="Support post"
             >
-              ❤️ {p.likes? 'Supported' : 'Support'} {p.likes > 0 && `(${p.likes})`}
+              ❤️ {p.hasSupported ? 'Supported' : 'Support'} {p.likes > 0 && `(${p.likes})`}
             </button>
           </div>
         </article>

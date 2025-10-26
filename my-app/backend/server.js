@@ -10,6 +10,9 @@ const axios = require("axios");
 
 const moodRoutes = require("./routes/moodRoutes"); 
 const lettersRouter = require("./routes/letters"); 
+const moodTrackerRouter = require("./routes/mood-tracker"); // Mood image routes
+const authRoutes = require("./routes/auth");
+const communityRoutes = require("./routes/community");
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
@@ -18,19 +21,24 @@ const PORT = process.env.PORT || 5000;
 
 // ===== Enhanced CORS Configuration =====
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
-
+// ===== Simplified CORS Configuration for Development =====
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (mobile apps, curl, etc.)
+      // Allow requests with no origin (like mobile apps, Postman, server-to-server)
       if (!origin) return callback(null, true);
       
-      // Check if origin is allowed
+      // For development, allow all localhost origins
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+      
+      // Allow specific production origins
       const allowedOrigins = [
-        CLIENT_ORIGIN,
-        'http://localhost:3000',
+        process.env.CLIENT_ORIGIN,
         'http://localhost:5173',
-        //'https://mental-health-five-beige.vercel.app',
+        'http://localhost:5000',  // Allow server to call itself
+        'http://localhost:3000',
         'http://localhost:8080'
       ];
       
@@ -38,9 +46,9 @@ app.use(
         return callback(null, true);
       }
       
-      // Log blocked origin for debugging
       console.log(`CORS blocked origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      // In development, allow it anyway
+      callback(null, true);
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: [
@@ -51,7 +59,7 @@ app.use(
       "Origin"
     ],
     credentials: true,
-    optionsSuccessStatus: 200 // Support legacy browsers
+    optionsSuccessStatus: 200
   })
 );
 
@@ -61,11 +69,12 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   next();
 });
+
 app.use((req, res, next) => {
- 
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   next();
 });
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -106,17 +115,11 @@ const limiter = rateLimit({
 
 app.use("/api/", limiter);
 
-// server.js (add near other app.use calls)
-const authRoutes = require("./routes/auth");
-app.use("/api/auth", authRoutes);
-
-const communityRoutes = require("./routes/community");
-app.use("/api/community", communityRoutes);
-
 // ===== Debug .env =====
 console.log("DEBUG MONGO_URI:", process.env.MONGO_URI ? "present" : "MISSING");
 console.log("DEBUG GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "present" : "MISSING");
 console.log("DEBUG HUGGING_FACE_TOKEN:", process.env.HUGGING_FACE_TOKEN ? "present" : "MISSING");
+console.log("DEBUG STABILITY_API_KEY:", process.env.STABILITY_API_KEY ? "present" : "MISSING");
 
 // ===== Enhanced MongoDB Connection =====
 if (process.env.MONGO_URI) {
@@ -182,13 +185,17 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// ===== Use mood routes with error handling =====
+// ===== Mount all routers =====
+app.use("/api/auth", authRoutes);
+app.use("/api/community", communityRoutes);
+app.use("/api/letters", lettersRouter);
+app.use("/api/mood-tracker", moodTrackerRouter); // IMPORTANT: Mood image routes
+
+// Use mood routes with error handling
 if (process.env.MONGO_URI) {
   app.use("/api/moods", moodRoutes);
 }
 
-// ===== Mount routers with error handling =====
-app.use("/api/letters", lettersRouter);
 const Letter = lettersRouter.Letter;
 
 // Load other routers with error handling
@@ -689,22 +696,8 @@ Guidelines:
   }
 });
 
-// ===== Global error handler =====
-app.use((err, req, res) => {
-  console.error('Unhandled error:', err);
-  
-  // Don't leak error details in production
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  
-  res.status(500).json({
-    error: "Internal server error",
-    ...(isDevelopment && { details: err.message, stack: err.stack }),
-    timestamp: new Date().toISOString()
-  });
-});
-
-// ===== 404 handler =====
-app.use((req, res) => {
+// ===== 404 handler - MUST come before error handler =====
+app.use((req, res, next) => {
   console.log(`404: ${req.method} ${req.path}`);
   res.status(404).json({ 
     error: `Route not found: ${req.method} ${req.path}`,
@@ -714,9 +707,33 @@ app.use((req, res) => {
       "GET /api/health",
       "POST /api/generate",
       "POST /api/detect-mood",
+      "POST /api/auth/signup",
+      "POST /api/auth/login",
       "* /api/moods",
-      "* /api/letters"
+      "* /api/letters",
+      "* /api/mood-tracker",
+      "* /api/community"
     ]
+  });
+});
+
+// ===== Global error handler - MUST have 4 parameters and come LAST =====
+app.use((err, req, res, next) => {
+  console.error('Global error handler caught:', err);
+  
+  // Check if headers were already sent
+  if (res.headersSent) {
+    return next(err);
+  }
+  
+  // Don't leak error details in production
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || "Internal server error",
+    ...(isDevelopment && { details: err.message, stack: err.stack }),
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -744,6 +761,18 @@ app.listen(PORT, () => {
   console.log(`   GET  /api/health`);
   console.log(`   POST /api/generate`);
   console.log(`   POST /api/detect-mood`);
+  console.log(`   POST /api/auth/signup`);
+  console.log(`   POST /api/auth/login`);
   console.log(`   *    /api/moods`);
   console.log(`   *    /api/letters`);
+  console.log(`   *    /api/mood-tracker`);
+  console.log(`   *    /api/community`);
 });
+require('dotenv').config();
+
+// Add this debug log
+console.log('\n🔍 ENVIRONMENT CHECK:');
+console.log('VITE_STABILITY_API_KEY:', process.env.VITE_STABILITY_API_KEY ? '✅ Loaded' : '❌ Missing');
+console.log('API Key Length:', process.env.VITE_STABILITY_API_KEY ? process.env.VITE_STABILITY_API_KEY.length : 0);
+console.log('API Key Prefix:', process.env.VITE_STABILITY_API_KEY ? process.env.VITE_STABILITY_API_KEY.substring(0, 10) + '...' : 'N/A');
+console.log('\n');

@@ -7,7 +7,6 @@ import { Calendar, TrendingUp, BarChart3, Plus, Sparkles, Activity, PieChart } f
 import { motion } from "framer-motion"
 import "./MoodTracker.css"
 
-// Vite: use import.meta.env and a VITE_ prefixed var
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000"
 
 const MoodTrackerPage = () => {
@@ -19,14 +18,20 @@ const MoodTrackerPage = () => {
   const [saving, setSaving] = useState(false)
   const [todayMood, setTodayMood] = useState(null)
   const [sliderValue, setSliderValue] = useState(50)
+
+  const [viewType, setViewType] = useState('weekly')
+  const [moodImages, setMoodImages] = useState({}) // Store mood images
+  const [loadingImage, setLoadingImage] = useState(false) // Image loading state
+  const [imageError, setImageError] = useState(null) // Track image errors
   const hasFetched = useRef(false)
 
   const moodTypes = {
-    terrible: { color: "#ef4444", face: "😢", label: "Terrible", description: "Really struggling today", range: [0, 20], value: 1 },
-    bad:     { color: "#f97316", face: "😔", label: "Bad",     description: "Not having a great day",    range: [20, 40], value: 2 },
-    okay:    { color: "#f59e0b", face: "😐", label: "Okay",    description: "Feeling neutral",           range: [40, 60], value: 3 },
-    good:    { color: "#3b82f6", face: "😊", label: "Good",    description: "Having a pleasant day",     range: [60, 80], value: 4 },
-    amazing: { color: "#10b981", face: "😄", label: "Amazing", description: "Feeling fantastic!",        range: [80, 100], value: 5 },
+    terrible: { color: "#ef4444", face: "😢", label: "Terrible", description: "Really struggling today", range: [0, 20] },
+    bad:     { color: "#f97316", face: "😕", label: "Bad",     description: "Not having a great day",    range: [20, 40] },
+    okay:    { color: "#f59e0b", face: "😐", label: "Okay",    description: "Feeling neutral",           range: [40, 60] },
+    good:    { color: "#3b82f6", face: "😊", label: "Good",    description: "Having a pleasant day",     range: [60, 80] },
+    amazing: { color: "#10b981", face: "😄", label: "Amazing", description: "Feeling fantastic!",        range: [80, 100] },
+
   }
 
   const getMoodFromSliderValue = (value) => {
@@ -54,6 +59,62 @@ const MoodTrackerPage = () => {
       return null
     }
     return token
+  }
+
+  // Fetch mood image from API with better error handling
+  const fetchMoodImage = async (mood) => {
+    try {
+      setLoadingImage(true)
+      setImageError(null)
+      const token = getTokenOrRedirect()
+      if (!token) return null
+
+      console.log(`Fetching image for mood: ${mood}`)
+
+      const response = await fetch(`${API_BASE}/api/mood-tracker/image/${mood}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("Failed to fetch mood image:", {
+          status: response.status,
+          error: errorData
+        })
+        
+        if (response.status === 401 || response.status === 403) {
+          console.log("Authentication error - might need to re-login")
+        } else if (response.status === 500) {
+          setImageError("Image generation service temporarily unavailable")
+        }
+        return null
+      }
+
+      const data = await response.json()
+      console.log("Image fetch response:", data)
+
+      if (data.success && data.imageUrl) {
+        console.log(`Got image for ${mood}, cached: ${data.cached}`)
+        setMoodImages(prev => ({
+          ...prev,
+          [mood]: data.imageUrl
+        }))
+        return data.imageUrl
+      } else {
+        console.error("Invalid response format:", data)
+        setImageError("Failed to load mood image")
+      }
+    } catch (error) {
+      console.error("Error fetching mood image:", error)
+      setImageError("Network error loading image")
+    } finally {
+      setLoadingImage(false)
+    }
+    return null
   }
 
   const loadMoods = async (forceRefresh = false) => {
@@ -100,6 +161,9 @@ const MoodTrackerPage = () => {
         if (todayMoodData) {
           setTodayMood(todayMoodData.mood)
           setSliderValue(getSliderValueFromMood(todayMoodData.mood))
+          
+          // Fetch image for today's mood
+          await fetchMoodImage(todayMoodData.mood)
         }
       }
     } catch (error) {
@@ -157,7 +221,11 @@ const MoodTrackerPage = () => {
         },
       }))
 
-      if (apiDate === getTodayKey()) setTodayMood(moodType)
+      if (apiDate === getTodayKey()) {
+        setTodayMood(moodType)
+        // Fetch image when mood is saved
+        await fetchMoodImage(moodType)
+      }
 
       await loadMoods(true)
       return true
@@ -260,7 +328,6 @@ const MoodTrackerPage = () => {
       return
     }
     loadMoods()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const stats = getMoodStats()
@@ -299,9 +366,41 @@ const MoodTrackerPage = () => {
             <h2>How are you feeling today?</h2>
             {todayMood ? (
               <div className="current-mood-display">
-                <div className="current-mood-icon" style={{ backgroundColor: moodTypes[todayMood]?.color || "#999" }}>
-                  {moodTypes[todayMood]?.face || "😐"}
-                </div>
+                {/* Display mood image or fallback */}
+                {loadingImage ? (
+                  <div className="current-mood-icon" style={{ backgroundColor: moodTypes[todayMood]?.color || "#999" }}>
+                    <div className="loading-spinner small"></div>
+                  </div>
+                ) : moodImages[todayMood] ? (
+                  <div className="current-mood-image-container">
+                    <img 
+                      src={moodImages[todayMood]} 
+                      alt={`${todayMood} mood`}
+                      className="current-mood-image"
+                      style={{ 
+                        width: '120px', 
+                        height: '120px', 
+                        borderRadius: '20px',
+                        objectFit: 'cover',
+                        border: `3px solid ${moodTypes[todayMood]?.color}`
+                      }}
+                      onError={(e) => {
+                        console.error("Image failed to load")
+                        e.target.style.display = 'none'
+                        setImageError("Image load failed")
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="current-mood-icon" style={{ backgroundColor: moodTypes[todayMood]?.color || "#999" }}>
+                    {moodTypes[todayMood]?.face || "😐"}
+                  </div>
+                )}
+                {imageError && (
+                  <div style={{ fontSize: '12px', color: '#ef4444', marginTop: '8px' }}>
+                    {imageError}
+                  </div>
+                )}
                 <div className="current-mood-info">
                   <h3>{moodTypes[todayMood]?.label || "Unknown"}</h3>
                   <p>{moodTypes[todayMood]?.description || "Mood description not available"}</p>
