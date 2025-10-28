@@ -24,7 +24,8 @@ export default function CommunityPage() {
       const resp = await fetch(`${API_BASE}/api/community`, { headers })
       if (!resp.ok) throw new Error("Failed to load posts")
       const data = await resp.json()
-      const list = Array.isArray(data.posts) ? [...data.posts].reverse() : []
+      // Backend now sorts by likes, so don't reverse the order
+      const list = Array.isArray(data.posts) ? data.posts : []
       setPosts(list)
     } catch (err) {
       console.error("Could not fetch community posts", err)
@@ -96,9 +97,12 @@ export default function CommunityPage() {
       }
       
       // Update post in state with new like count and hasSupported flag
-      setPosts(posts.map(p => 
+      // Then re-sort posts by likes to maintain correct order
+      const updatedPosts = posts.map(p => 
         p._id === postId ? {...p, likes: data.likes, hasSupported: true} : p
-      ))
+      ).sort((a, b) => b.likes - a.likes)
+      
+      setPosts(updatedPosts)
       
     } catch (err) {
       console.error("Could not support post", err)
@@ -106,7 +110,7 @@ export default function CommunityPage() {
     }
   }
 
-  // Separate posts into images and text
+  // Separate posts into images and text (already sorted by likes from backend)
   const imagePosts = posts.filter(p => p.type === "image" || p.image)
   const textPosts = posts.filter(p => p.type === "text" || (!p.image && p.content))
 

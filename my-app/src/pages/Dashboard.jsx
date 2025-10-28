@@ -258,6 +258,8 @@ function Dashboard() {
             className="emotionbotandupper"
             variants={slideInVariants}
           >
+
+            {/*here is the completed section */}
             <motion.div 
               className="recent"
               whileHover={{ scale: 1.01 }}

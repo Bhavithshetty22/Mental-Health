@@ -22,11 +22,11 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-// GET /api/community - returns list of recent posts
+// GET /api/community - returns list of recent posts sorted by likes (most supported first)
 router.get("/", authenticateToken, async (req, res) => {
   try {
     const posts = await CommunityPost.find({})
-      .sort({ createdAt: -1 })
+      .sort({ likes: -1, createdAt: -1 }) // Sort by likes first (descending), then by date
       .limit(200)
       .lean();
 
