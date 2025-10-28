@@ -2,19 +2,24 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const FormData = require('form-data');
 const MoodImage = require('../models/MoodImage');
 const { authenticateToken } = require('./auth');
 
-// Mood-specific prompts for Stability AI - Updated for human emotions
+const BASE_CHARACTER = "portrait of a young Asian person with medium-length dark hair, soft natural lighting, consistent character design, photorealistic, cinematic lighting, 4k ultra detail, realistic skin texture, same person in all moods, upper body shot";
+
 const MOOD_PROMPTS = {
-  terrible: "portrait of person crying with sadness, tears streaming down face, emotional distress, somber lighting, empathetic expression, realistic human face, photorealistic emotional portrait, gentle soft focus, 4k high quality",
-  bad: "portrait of person looking worried and anxious, furrowed brow, concerned expression, subdued lighting, realistic human emotion, thoughtful sad face, photorealistic portrait, natural lighting, 4k high quality",
-  okay: "portrait of person with neutral calm expression, peaceful face, relaxed features, balanced natural lighting, serene composure, realistic human portrait, photorealistic facial features, soft natural light, 4k high quality",
-  good: "portrait of person smiling warmly, genuine happy expression, bright cheerful face, joyful eyes, positive energy, realistic human happiness, photorealistic smiling portrait, natural daylight, 4k high quality",
-  amazing: "portrait of person laughing with pure joy, ecstatic happy expression, radiant smile, eyes full of delight, euphoric face, realistic human elation, photorealistic joyful portrait, bright vibrant lighting, 4k high quality"
+  terrible: `${BASE_CHARACTER}, crying softly, eyes red and teary, expression of deep sadness and emotional pain, dim cool lighting, empathetic atmosphere, cinematic realism, subtle tears on face, muted tones`,
+  
+  bad: `${BASE_CHARACTER}, worried and anxious expression, slightly furrowed brows, eyes looking down, low contrast lighting, somber atmosphere, emotional realism, muted background colors`,
+  
+  okay: `${BASE_CHARACTER}, neutral relaxed expression, gentle eye contact, calm breathing, balanced soft lighting, natural background blur, peaceful composition, warm and cool tones balanced`,
+  
+  good: `${BASE_CHARACTER}, gentle happy smile, warm eyes, positive calm energy, golden hour lighting, soft shadows, vibrant yet natural tones, cinematic depth of field`,
+  
+  amazing: `${BASE_CHARACTER}, laughing joyfully, radiant smile, bright eyes, expressive face full of energy, vivid colorful lighting, warm golden tones, cinematic portrait with sparkle in eyes`
 };
 
-// Mood color mapping for fallback images
 const MOOD_COLORS = {
   terrible: "#ef4444",
   bad: "#f97316",
@@ -31,12 +36,10 @@ const MOOD_DESCRIPTIONS = {
   amazing: "Ecstatic"
 };
 
-// Generate an SVG-based fallback image with human silhouette
 function generateFallbackImage(mood) {
   const color = MOOD_COLORS[mood] || "#999999";
   const description = MOOD_DESCRIPTIONS[mood] || "Neutral";
   
-  // Create an SVG with gradient background and human face silhouette
   const svg = `
     <svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -51,35 +54,25 @@ function generateFallbackImage(mood) {
       </defs>
       <rect width="512" height="512" fill="url(#grad)" rx="40"/>
       
-      <!-- Simple human face silhouette -->
       <g transform="translate(256, 200)">
-        <!-- Head circle -->
         <circle cx="0" cy="0" r="80" fill="url(#face-gradient)" stroke="white" stroke-width="3" opacity="0.8"/>
-        
-        <!-- Eyes based on mood -->
         ${getMoodEyes(mood)}
-        
-        <!-- Mouth based on mood -->
         ${getMoodMouth(mood)}
       </g>
       
-      <!-- Shoulders/body hint -->
       <ellipse cx="256" cy="380" rx="120" ry="60" fill="url(#face-gradient)" opacity="0.6"/>
       
       <text x="50%" y="90%" font-size="22" text-anchor="middle" fill="white" opacity="0.95" font-family="Arial, sans-serif" font-weight="600">${description}</text>
     </svg>
   `;
   
-  // Convert SVG to base64 data URI
   const base64 = Buffer.from(svg).toString('base64');
   return `data:image/svg+xml;base64,${base64}`;
 }
 
-// Helper function to draw eyes based on mood
 function getMoodEyes(mood) {
   switch(mood) {
     case 'terrible':
-      // Sad/crying eyes - downturned with tears
       return `
         <circle cx="-25" cy="-10" r="8" fill="white" opacity="0.9"/>
         <circle cx="25" cy="-10" r="8" fill="white" opacity="0.9"/>
@@ -87,19 +80,16 @@ function getMoodEyes(mood) {
         <line x1="25" y1="5" x2="25" y2="25" stroke="white" stroke-width="2" opacity="0.7"/>
       `;
     case 'bad':
-      // Worried eyes - slightly downturned
       return `
         <ellipse cx="-25" cy="-10" rx="7" ry="9" fill="white" opacity="0.9"/>
         <ellipse cx="25" cy="-10" rx="7" ry="9" fill="white" opacity="0.9"/>
       `;
     case 'okay':
-      // Neutral eyes
       return `
         <circle cx="-25" cy="-10" r="7" fill="white" opacity="0.9"/>
         <circle cx="25" cy="-10" r="7" fill="white" opacity="0.9"/>
       `;
     case 'good':
-      // Happy eyes - slightly curved
       return `
         <circle cx="-25" cy="-10" r="8" fill="white" opacity="0.9"/>
         <circle cx="25" cy="-10" r="8" fill="white" opacity="0.9"/>
@@ -107,7 +97,6 @@ function getMoodEyes(mood) {
         <path d="M 15 -15 Q 25 -20 35 -15" stroke="white" stroke-width="2" fill="none" opacity="0.8"/>
       `;
     case 'amazing':
-      // Ecstatic eyes - curved happy eyes
       return `
         <path d="M -35 -10 Q -25 -18 -15 -10" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>
         <path d="M 15 -10 Q 25 -18 35 -10" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>
@@ -118,23 +107,17 @@ function getMoodEyes(mood) {
   }
 }
 
-// Helper function to draw mouth based on mood
 function getMoodMouth(mood) {
   switch(mood) {
     case 'terrible':
-      // Deep frown
       return `<path d="M -30 35 Q 0 25 30 35" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>`;
     case 'bad':
-      // Slight frown
       return `<path d="M -25 30 Q 0 28 25 30" stroke="white" stroke-width="2.5" fill="none" opacity="0.9"/>`;
     case 'okay':
-      // Straight line
       return `<line x1="-25" y1="30" x2="25" y2="30" stroke="white" stroke-width="2.5" opacity="0.9"/>`;
     case 'good':
-      // Smile
       return `<path d="M -30 25 Q 0 35 30 25" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>`;
     case 'amazing':
-      // Big smile with open mouth
       return `
         <path d="M -35 25 Q 0 45 35 25" stroke="white" stroke-width="3" fill="none" opacity="0.9"/>
         <path d="M -25 28 Q 0 38 25 28" fill="white" opacity="0.3"/>
@@ -144,13 +127,31 @@ function getMoodMouth(mood) {
   }
 }
 
+// DEBUG ENDPOINT - Check API configuration
+router.get('/debug/config', authenticateToken, (req, res) => {
+  const STABILITY_API_KEY = process.env.VITE_STABILITY_API_KEY;
+  
+  res.json({
+    apiKeyExists: !!STABILITY_API_KEY,
+    apiKeyLength: STABILITY_API_KEY ? STABILITY_API_KEY.length : 0,
+    apiKeyPrefix: STABILITY_API_KEY ? STABILITY_API_KEY.substring(0, 10) + '...' : 'NO KEY',
+    envVars: {
+      VITE_STABILITY_API_KEY: !!process.env.VITE_STABILITY_API_KEY,
+      STABILITY_API_KEY: !!process.env.STABILITY_API_KEY
+    }
+  });
+});
+
 // GET /api/mood-tracker/image/:mood - Check if mood image exists or generate new one
 router.get('/image/:mood', authenticateToken, async (req, res) => {
   try {
     const { mood } = req.params;
     const userId = req.user.id;
 
-    console.log(`[Mood Image] Request for mood: ${mood}, userId: ${userId}`);
+    console.log('\n========================================');
+    console.log(`[Mood Image] 🎭 Request for mood: ${mood}`);
+    console.log(`[Mood Image] 👤 User ID: ${userId}`);
+    console.log('========================================');
 
     if (!MOOD_PROMPTS[mood]) {
       return res.status(400).json({ 
@@ -164,7 +165,8 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
     let moodImage = await MoodImage.findOne({ userId, mood });
 
     if (moodImage && moodImage.imageUrl) {
-      console.log(`[Mood Image] Found cached image for ${mood}`);
+      console.log(`[Mood Image] ✅ Found cached image for ${mood}`);
+      console.log(`[Mood Image] 📊 Usage count: ${moodImage.usageCount}`);
       await moodImage.incrementUsage();
 
       return res.json({
@@ -177,16 +179,22 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
     }
 
     // No cached image - try to generate new one
-    console.log(`[Mood Image] No cached image found, attempting to generate for ${mood}`);
+    console.log(`[Mood Image] 🆕 No cached image found, attempting to generate...`);
     
-    const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
+    const STABILITY_API_KEY = process.env.VITE_STABILITY_API_KEY;
+    
+    console.log(`[Mood Image] 🔑 API Key exists: ${!!STABILITY_API_KEY}`);
+    console.log(`[Mood Image] 🔑 API Key length: ${STABILITY_API_KEY ? STABILITY_API_KEY.length : 0}`);
+    console.log(`[Mood Image] 🔑 API Key prefix: ${STABILITY_API_KEY?.substring(0, 10)}...`);
     
     // If no API key, use fallback immediately
     if (!STABILITY_API_KEY) {
-      console.log(`[Mood Image] No STABILITY_API_KEY found, using fallback image`);
+      console.log(`[Mood Image] ❌ No STABILITY_API_KEY found!`);
+      console.log(`[Mood Image] 💡 Add VITE_STABILITY_API_KEY to your .env file`);
+      console.log(`[Mood Image] 🎨 Using fallback SVG image`);
+      
       const fallbackUrl = generateFallbackImage(mood);
       
-      // Save fallback image to database
       moodImage = new MoodImage({
         userId,
         mood,
@@ -205,48 +213,47 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
         imageUrl: fallbackUrl,
         cached: false,
         fallback: true,
+        reason: 'No API key configured',
         generatedAt: moodImage.generatedAt
       });
     }
 
     const prompt = MOOD_PROMPTS[mood];
-    console.log(`[Mood Image] Calling Stability AI with prompt: ${prompt.substring(0, 50)}...`);
+    console.log(`[Mood Image] 📝 Prompt: ${prompt.substring(0, 80)}...`);
+    console.log(`[Mood Image] 🚀 Calling Stability AI API with multipart/form-data...`);
 
     try {
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
+      formData.append('prompt', prompt);
+      formData.append('negative_prompt', "cartoon, anime, drawing, illustration, painting, sketch, ugly, blurry, low quality, distorted, deformed, text, watermark, signature, multiple faces");
+      formData.append('output_format', 'png');
+      formData.append('aspect_ratio', '1:1');
+
       const stabilityResponse = await axios.post(
-        'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image',
-        {
-          text_prompts: [
-            { text: prompt, weight: 1 },
-            { text: "cartoon, anime, drawing, illustration, painting, sketch, ugly, blurry, low quality, distorted, deformed, text, watermark, signature, multiple faces", weight: -1 }
-          ],
-          cfg_scale: 7,
-          height: 512,
-          width: 512,
-          steps: 30,
-          samples: 1,
-          style_preset: "photographic"
-        },
+        'https://api.stability.ai/v2beta/stable-image/generate/core',
+        formData,
         {
           headers: {
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${STABILITY_API_KEY}`,
-            'Accept': 'application/json'
+            'Accept': 'image/*',
+            ...formData.getHeaders()
           },
-          timeout: 30000
+          responseType: 'arraybuffer',
+          timeout: 60000
         }
       );
 
-      if (!stabilityResponse.data?.artifacts?.[0]) {
-        throw new Error('Invalid response from Stability AI');
-      }
+      console.log(`[Mood Image] ✅ Stability API SUCCESS!`);
+      console.log(`[Mood Image] 📊 Status: ${stabilityResponse.status}`);
+      console.log(`[Mood Image] 📦 Response size: ${stabilityResponse.data.length} bytes`);
 
-      const imageBase64 = stabilityResponse.data.artifacts[0].base64;
+      const imageBase64 = Buffer.from(stabilityResponse.data, 'binary').toString('base64');
       const imageUrl = `data:image/png;base64,${imageBase64}`;
 
-      console.log(`[Mood Image] Successfully generated image for ${mood}`);
+      console.log(`[Mood Image] 🎨 Successfully generated AI image for ${mood}`);
+      console.log(`[Mood Image] 💾 Saving to database...`);
 
-      // Save to database
       moodImage = new MoodImage({
         userId,
         mood,
@@ -259,20 +266,57 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
       });
 
       await moodImage.save();
-      console.log(`[Mood Image] Saved new mood image to database`);
+      console.log(`[Mood Image] ✅ Saved AI-generated image to database`);
 
       return res.json({
         success: true,
         imageUrl,
         cached: false,
+        aiGenerated: true,
         generatedAt: moodImage.generatedAt
       });
 
     } catch (stabilityError) {
-      console.error('[Mood Image] Stability API error:', stabilityError.message);
+      console.log('\n========================================');
+      console.error('[Mood Image] ❌ STABILITY API ERROR');
+      console.log('========================================');
+      console.error('[Mood Image] Error message:', stabilityError.message);
+      console.error('[Mood Image] Status code:', stabilityError.response?.status);
+      console.error('[Mood Image] Status text:', stabilityError.response?.statusText);
       
-      // Fall back to SVG placeholder if Stability fails
-      console.log(`[Mood Image] Falling back to SVG placeholder for ${mood}`);
+      if (stabilityError.response?.data) {
+        try {
+          const errorText = Buffer.from(stabilityError.response.data).toString();
+          console.error('[Mood Image] Error details:', errorText);
+        } catch (e) {
+          console.error('[Mood Image] Could not parse error details');
+        }
+      }
+
+      // Provide specific error messages
+      let errorReason = 'Unknown error';
+      if (stabilityError.response?.status === 401) {
+        errorReason = 'Invalid API key';
+        console.error('[Mood Image] 🔑 Your API key is invalid or expired');
+        console.error('[Mood Image] 💡 Get a new key at: https://platform.stability.ai/account/keys');
+      } else if (stabilityError.response?.status === 402) {
+        errorReason = 'Insufficient credits';
+        console.error('[Mood Image] 💳 Your account has insufficient credits');
+        console.error('[Mood Image] 💡 Add credits at: https://platform.stability.ai/account/billing');
+      } else if (stabilityError.response?.status === 404) {
+        errorReason = 'Model not found';
+        console.error('[Mood Image] 🤖 The core model is not available');
+      } else if (stabilityError.response?.status === 400) {
+        errorReason = 'Bad request';
+        console.error('[Mood Image] 📝 Request format error');
+      } else if (stabilityError.code === 'ECONNABORTED') {
+        errorReason = 'Request timeout';
+        console.error('[Mood Image] ⏱️ Request timed out after 60 seconds');
+      }
+      
+      console.log(`[Mood Image] 🎨 Falling back to SVG placeholder`);
+      console.log('========================================\n');
+      
       const fallbackUrl = generateFallbackImage(mood);
       
       moodImage = new MoodImage({
@@ -293,15 +337,17 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
         imageUrl: fallbackUrl,
         cached: false,
         fallback: true,
+        reason: errorReason,
         generatedAt: moodImage.generatedAt,
-        warning: 'Using placeholder image - AI generation unavailable'
+        warning: 'Using placeholder image - AI generation unavailable',
+        error: stabilityError.message
       });
     }
 
   } catch (error) {
-    console.error('[Mood Image] Error:', error.message);
+    console.error('[Mood Image] ❌ General error:', error.message);
+    console.error('[Mood Image] Stack:', error.stack);
     
-    // Last resort fallback
     const fallbackUrl = generateFallbackImage(req.params.mood);
     
     res.json({ 
@@ -319,7 +365,7 @@ router.post('/image/generate', authenticateToken, async (req, res) => {
     const { mood } = req.body;
     const userId = req.user.id;
 
-    console.log(`[Mood Image] Force regenerate request for mood: ${mood}, userId: ${userId}`);
+    console.log(`[Mood Image] 🔄 Force regenerate request for mood: ${mood}, userId: ${userId}`);
 
     if (!MOOD_PROMPTS[mood]) {
       return res.status(400).json({ 
@@ -328,7 +374,7 @@ router.post('/image/generate', authenticateToken, async (req, res) => {
       });
     }
 
-    const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
+    const STABILITY_API_KEY = process.env.VITE_STABILITY_API_KEY;
     if (!STABILITY_API_KEY) {
       return res.status(500).json({ 
         success: false, 
@@ -338,31 +384,28 @@ router.post('/image/generate', authenticateToken, async (req, res) => {
 
     const prompt = MOOD_PROMPTS[mood];
     
+    // Create FormData for multipart/form-data request
+    const formData = new FormData();
+    formData.append('prompt', prompt);
+    formData.append('negative_prompt', "cartoon, anime, drawing, illustration, painting, sketch, ugly, blurry, low quality, distorted, deformed, text, watermark, signature, multiple faces");
+    formData.append('output_format', 'png');
+    formData.append('aspect_ratio', '1:1');
+    
     const stabilityResponse = await axios.post(
-      'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image',
-      {
-        text_prompts: [
-          { text: prompt, weight: 1 },
-          { text: "cartoon, anime, drawing, illustration, painting, sketch, ugly, blurry, low quality, distorted, deformed, text, watermark, signature, multiple faces", weight: -1 }
-        ],
-        cfg_scale: 7,
-        height: 512,
-        width: 512,
-        steps: 30,
-        samples: 1,
-        style_preset: "photographic"
-      },
+      'https://api.stability.ai/v2beta/stable-image/generate/core',
+      formData,
       {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${STABILITY_API_KEY}`,
-          'Accept': 'application/json'
+          'Accept': 'image/*',
+          ...formData.getHeaders()
         },
-        timeout: 30000
+        responseType: 'arraybuffer',
+        timeout: 60000
       }
     );
 
-    const imageBase64 = stabilityResponse.data.artifacts[0].base64;
+    const imageBase64 = Buffer.from(stabilityResponse.data, 'binary').toString('base64');
     const imageUrl = `data:image/png;base64,${imageBase64}`;
 
     const moodImage = await MoodImage.findOneAndUpdate(
@@ -382,7 +425,7 @@ router.post('/image/generate', authenticateToken, async (req, res) => {
       }
     );
 
-    console.log(`[Mood Image] Force regenerated and saved image for ${mood}`);
+    console.log(`[Mood Image] ✅ Force regenerated and saved image for ${mood}`);
 
     res.json({
       success: true,
@@ -392,11 +435,43 @@ router.post('/image/generate', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[Mood Image] Regeneration error:', error.message);
+    console.error('[Mood Image] ❌ Regeneration error:', error.message);
+    if (error.response?.data) {
+      try {
+        const errorText = Buffer.from(error.response.data).toString();
+        console.error('[Mood Image] Error details:', errorText);
+      } catch (e) {
+        console.error('[Mood Image] Could not parse error');
+      }
+    }
     res.status(500).json({ 
       success: false, 
       error: 'Failed to regenerate mood image',
       details: error.message
+    });
+  }
+});
+
+// DELETE /api/mood-tracker/images/clear-all - Clear all cached images
+router.delete('/images/clear-all', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await MoodImage.deleteMany({ userId });
+
+    console.log(`[Mood Image] 🗑️ Cleared ${result.deletedCount} cached images for user ${userId}`);
+
+    res.json({
+      success: true,
+      message: `Cleared ${result.deletedCount} cached mood images`,
+      deletedCount: result.deletedCount
+    });
+
+  } catch (error) {
+    console.error('[Mood Image] ❌ Clear all error:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to clear cached images'
     });
   }
 });
@@ -450,7 +525,7 @@ router.delete('/image/:mood', authenticateToken, async (req, res) => {
       });
     }
 
-    console.log(`[Mood Image] Deleted cached image for ${mood}`);
+    console.log(`[Mood Image] 🗑️ Deleted cached image for ${mood}`);
 
     res.json({
       success: true,

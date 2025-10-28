@@ -151,7 +151,7 @@ const DashboardEmotionBots = ({ onBotSelect }) => {
             key={bot.id}
             onClick={() => onBotSelect && onBotSelect(bot)}
             style={{
-              backgroundColor: bot.color,
+              backgroundColor: '#D9D9D9',
               borderRadius: '16px',
               padding: '20px 24px',
               display: 'flex',
@@ -204,14 +204,14 @@ const DashboardEmotionBots = ({ onBotSelect }) => {
                   margin: '0',
                   fontSize: '16px',
                   fontWeight: '600',
-                  color: 'white'
+                  color: 'black'
                 }}>
                   {bot.name}
                 </h3>
                 <p style={{
                   margin: '4px 0 0 0',
                   fontSize: '13px',
-                  color: 'rgba(255,255,255,0.9)'
+                  color: 'rgba(29, 29, 29, 0.9)'
                 }}>
                   {bot.description}
                 </p>
@@ -222,7 +222,7 @@ const DashboardEmotionBots = ({ onBotSelect }) => {
               height="20" 
               viewBox="0 0 20 20" 
               fill="none" 
-              style={{ opacity: 0.8, flexShrink: 0 }}
+              style={{ color:'black' ,opacity: 0.8, flexShrink: 0 }}
             >
               <path 
                 d="M7.5 15L12.5 10L7.5 5" 

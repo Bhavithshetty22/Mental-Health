@@ -3,9 +3,8 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { Calendar, TrendingUp, BarChart3, Plus } from "lucide-react"
-import MoodCalendar from '../components/MoodCalendar'
-import MoodTrackerGraph from '../components/MoodTrackerGraph'
+import { Calendar, TrendingUp, BarChart3, Plus, Sparkles, Activity, PieChart } from "lucide-react"
+import { motion } from "framer-motion"
 import "./MoodTracker.css"
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000"
@@ -19,6 +18,7 @@ const MoodTrackerPage = () => {
   const [saving, setSaving] = useState(false)
   const [todayMood, setTodayMood] = useState(null)
   const [sliderValue, setSliderValue] = useState(50)
+
   const [viewType, setViewType] = useState('weekly')
   const [moodImages, setMoodImages] = useState({}) // Store mood images
   const [loadingImage, setLoadingImage] = useState(false) // Image loading state
@@ -31,6 +31,7 @@ const MoodTrackerPage = () => {
     okay:    { color: "#f59e0b", face: "😐", label: "Okay",    description: "Feeling neutral",           range: [40, 60] },
     good:    { color: "#3b82f6", face: "😊", label: "Good",    description: "Having a pleasant day",     range: [60, 80] },
     amazing: { color: "#10b981", face: "😄", label: "Amazing", description: "Feeling fantastic!",        range: [80, 100] },
+
   }
 
   const getMoodFromSliderValue = (value) => {
@@ -151,7 +152,6 @@ const MoodTrackerPage = () => {
       }
 
       const data = await response.json()
-      console.log("API Response:", data)
 
       if (data.success) {
         setUserMoods(data.moods || {})
@@ -172,11 +172,6 @@ const MoodTrackerPage = () => {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleRefreshMoods = () => {
-    hasFetched.current = false
-    loadMoods(true)
   }
 
   const saveMood = async (date, moodType, notes = "") => {
@@ -215,7 +210,6 @@ const MoodTrackerPage = () => {
       }
 
       const result = await response.json()
-      console.log("Save result:", result)
 
       const displayKey = apiDate
       setUserMoods((prev) => ({
@@ -250,11 +244,6 @@ const MoodTrackerPage = () => {
     if (success) setShowMoodSelector(false)
   }
 
-  const handleMoodSelectFromCalendar = async (moodType) => {
-    const success = await saveMood(selectedDate, moodType)
-    if (success) setShowMoodSelector(false)
-  }
-
   const openTodayMoodSelector = () => {
     setSelectedDate(new Date())
     if (todayMood) setSliderValue(getSliderValueFromMood(todayMood))
@@ -279,6 +268,59 @@ const MoodTrackerPage = () => {
     }
   }
 
+  // Get mood trend data for line chart
+  const getMoodTrendData = () => {
+    const entries = Object.entries(userMoods)
+      .map(([dateKey, moodData]) => {
+        const [year, month, day] = dateKey.split('-').map(Number)
+        const date = new Date(year, month - 1, day)
+        const mood = typeof moodData === 'string' ? moodData : moodData?.mood
+        return { date, mood, dateKey }
+      })
+      .sort((a, b) => a.date - b.date)
+      .slice(-14) // Last 14 days
+    
+    return entries.map(entry => ({
+      date: entry.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      value: moodTypes[entry.mood]?.value || 3,
+      mood: entry.mood
+    }))
+  }
+
+  // Get mood distribution for donut chart
+  const getMoodDistribution = () => {
+    const stats = getMoodStats()
+    if (!stats) return []
+    
+    return Object.entries(stats.distribution).map(([mood, count]) => ({
+      mood,
+      count,
+      percentage: (count / stats.totalEntries) * 100,
+      color: moodTypes[mood]?.color || '#999',
+      label: moodTypes[mood]?.label || mood
+    }))
+  }
+
+  // Get weekly average
+  const getWeeklyAverage = () => {
+    const now = new Date()
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    
+    const weekMoods = Object.entries(userMoods)
+      .filter(([dateKey]) => {
+        const [year, month, day] = dateKey.split('-').map(Number)
+        const date = new Date(year, month - 1, day)
+        return date >= weekAgo && date <= now
+      })
+      .map(([, moodData]) => {
+        const mood = typeof moodData === 'string' ? moodData : moodData?.mood
+        return moodTypes[mood]?.value || 3
+      })
+    
+    if (weekMoods.length === 0) return 0
+    return (weekMoods.reduce((a, b) => a + b, 0) / weekMoods.length).toFixed(1)
+  }
+
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) {
@@ -289,6 +331,9 @@ const MoodTrackerPage = () => {
   }, [])
 
   const stats = getMoodStats()
+  const trendData = getMoodTrendData()
+  const distributionData = getMoodDistribution()
+  const weeklyAvg = getWeeklyAverage()
   const currentMoodKey = getMoodFromSliderValue(sliderValue)
   const currentMoodInfo = moodTypes[currentMoodKey]
 
@@ -308,7 +353,7 @@ const MoodTrackerPage = () => {
       <div className="mood-tracker-container">
         <header className="mood-tracker-header">
           <div className="mood-tracker-title">
-            <Calendar className="mood-tracker-title-icon" />
+            <Sparkles className="mood-tracker-title-icon" />
             <h1>Mood Tracker</h1>
           </div>
           <p className="mood-tracker-subtitle">
@@ -375,95 +420,250 @@ const MoodTrackerPage = () => {
         </section>
 
         {stats && (
-          <section className="mood-stats-section">
-            <h2>Your Mood Insights</h2>
-            <div className="mood-stats-grid">
-              <div className="mood-stat-card">
-                <TrendingUp className="mood-stat-icon" />
-                <div className="mood-stat-content">
-                  <h3>{stats.totalEntries}</h3>
-                  <p>Days tracked</p>
+          <>
+            <section className="mood-stats-section">
+              <h2>Your Mood Insights</h2>
+              <div className="mood-stats-grid">
+                <div className="mood-stat-card">
+                  <TrendingUp className="mood-stat-icon" />
+                  <div className="mood-stat-content">
+                    <h3>{stats.totalEntries}</h3>
+                    <p>Days tracked</p>
+                  </div>
+                </div>
+
+                {stats.mostCommon && moodTypes[stats.mostCommon] && (
+                  <div className="mood-stat-card">
+                    <div className="mood-stat-mood" style={{ backgroundColor: moodTypes[stats.mostCommon].color }}>
+                      {moodTypes[stats.mostCommon].face}
+                    </div>
+                    <div className="mood-stat-content">
+                      <h3>{moodTypes[stats.mostCommon].label}</h3>
+                      <p>Most common mood</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mood-stat-card">
+                  <Activity className="mood-stat-icon" />
+                  <div className="mood-stat-content">
+                    <h3>{weeklyAvg}/5</h3>
+                    <p>Weekly average</p>
+                  </div>
                 </div>
               </div>
+            </section>
 
-              {stats.mostCommon && moodTypes[stats.mostCommon] && (
-                <div className="mood-stat-card">
-                  <div className="mood-stat-mood" style={{ backgroundColor: moodTypes[stats.mostCommon].color }}>
-                    {moodTypes[stats.mostCommon].face}
+            {/* Mood Analysis Section */}
+            <section className="mood-analysis-section">
+              <h2>Mood Analysis</h2>
+              
+              {/* Mood Trend Chart */}
+              {trendData.length > 0 && (
+                <div className="analysis-card">
+                  <div className="analysis-card-header">
+                    <Activity size={20} />
+                    <h3>14-Day Mood Trend</h3>
                   </div>
-                  <div className="mood-stat-content">
-                    <h3>{moodTypes[stats.mostCommon].label}</h3>
-                    <p>Most common mood</p>
+                  <div className="mood-trend-chart">
+                    <svg width="100%" height="200" viewBox="0 -14 600 200">
+                      {/* Grid lines */}
+                      {[1, 2, 3, 4, 5].map(i => (
+                        <motion.line
+                          key={i}
+                          x1="40"
+                          y1={160 - (i - 1) * 40}
+                          x2="580"
+                          y2={160 - (i - 1) * 40}
+                          stroke="#e5e7eb"
+                          strokeWidth="1"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.1 }}
+                        />
+                      ))}
+                      
+                      {/* Y-axis labels */}
+                      {['😢', '😔', '😐', '😊', '😄'].map((emoji, i) => (
+                        <text key={i} x="15" y={165 - i * 40} fontSize="16" fill="#6b7280">
+                          {emoji}
+                        </text>
+                      ))}
+                      
+                      {/* Line path */}
+                      <motion.path
+                        d={trendData.map((point, i) => {
+                          const x = 60 + (i * (500 / (trendData.length - 1)))
+                          const y = 160 - ((point.value - 1) * 40)
+                          return `${i === 0 ? 'M' : 'L'} ${x} ${y}`
+                        }).join(' ')}
+                        fill="none"
+                        stroke="#6366f1"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{ duration: 1.5, ease: "easeInOut" }}
+                      />
+                      
+                      {/* Data points */}
+                      {trendData.map((point, i) => {
+                        const x = 60 + (i * (500 / (trendData.length - 1)))
+                        const y = 160 - ((point.value - 1) * 40)
+                        return (
+                          <motion.g key={i}>
+                            <motion.circle
+                              cx={x}
+                              cy={y}
+                              r="6"
+                              fill={moodTypes[point.mood]?.color || '#999'}
+                              stroke="white"
+                              strokeWidth="2"
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: 0.5 + i * 0.05 }}
+                            />
+                            {i % 2 === 0 && (
+                              <text
+                                x={x}
+                                y="185"
+                                fontSize="10"
+                                fill="#6b7280"
+                                textAnchor="middle"
+                              >
+                                {point.date}
+                              </text>
+                            )}
+                          </motion.g>
+                        )
+                      })}
+                    </svg>
                   </div>
                 </div>
               )}
 
-              <div className="mood-stat-card">
-                <BarChart3 className="mood-stat-icon" />
-                <div className="mood-stat-content">
-                  <h3>{Math.round((stats.totalEntries / 30) * 100)}%</h3>
-                  <p>Month completion</p>
+              {/* Mood Distribution */}
+              {distributionData.length > 0 && (
+                <div className="analysis-card">
+                  <div className="analysis-card-header">
+                    <PieChart size={20} />
+                    <h3>Mood Distribution</h3>
+                  </div>
+                  <div className="mood-distribution">
+                    <svg width="200" height="200" viewBox="0 0 200 200" className="donut-chart">
+                      {(() => {
+                        let currentAngle = -90
+                        const radius = 70
+                        const innerRadius = 45
+                        
+                        return distributionData.map((item, i) => {
+                          const angle = (item.percentage / 100) * 360
+                          const startAngle = currentAngle
+                          const endAngle = currentAngle + angle
+                          
+                          const startRad = (startAngle * Math.PI) / 180
+                          const endRad = (endAngle * Math.PI) / 180
+                          
+                          const x1 = 100 + radius * Math.cos(startRad)
+                          const y1 = 100 + radius * Math.sin(startRad)
+                          const x2 = 100 + radius * Math.cos(endRad)
+                          const y2 = 100 + radius * Math.sin(endRad)
+                          
+                          const x3 = 100 + innerRadius * Math.cos(endRad)
+                          const y3 = 100 + innerRadius * Math.sin(endRad)
+                          const x4 = 100 + innerRadius * Math.cos(startRad)
+                          const y4 = 100 + innerRadius * Math.sin(startRad)
+                          
+                          const largeArc = angle > 180 ? 1 : 0
+                          
+                          const pathData = [
+                            `M ${x1} ${y1}`,
+                            `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
+                            `L ${x3} ${y3}`,
+                            `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x4} ${y4}`,
+                            'Z'
+                          ].join(' ')
+                          
+                          currentAngle = endAngle
+                          
+                          return (
+                            <motion.path
+                              key={i}
+                              d={pathData}
+                              fill={item.color}
+                              initial={{ opacity: 0, scale: 0 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: i * 0.1, duration: 0.5 }}
+                            />
+                          )
+                        })
+                      })()}
+                      
+                      {/* Center text */}
+                      <text x="100" y="95" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#374151">
+                        {stats.totalEntries}
+                      </text>
+                      <text x="100" y="110" textAnchor="middle" fontSize="12" fill="#6b7280">
+                        entries
+                      </text>
+                    </svg>
+                    
+                    <div className="distribution-legend">
+                      {distributionData.map((item, i) => (
+                        <motion.div
+                          key={i}
+                          className="legend-item"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.5 + i * 0.1 }}
+                        >
+                          <div className="legend-color" style={{ backgroundColor: item.color }}></div>
+                          <div className="legend-info">
+                            <span className="legend-label">{item.label}</span>
+                            <span className="legend-value">{item.count} ({item.percentage.toFixed(0)}%)</span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </section>
+              )}
+
+              {/* Mood Frequency Bars */}
+              {distributionData.length > 0 && (
+                <div className="analysis-card">
+                  <div className="analysis-card-header">
+                    <BarChart3 size={20} />
+                    <h3>Mood Frequency</h3>
+                  </div>
+                  <div className="frequency-bars">
+                    {distributionData.sort((a, b) => b.count - a.count).map((item, i) => (
+                      <div key={i} className="frequency-bar-item">
+                        <div className="frequency-bar-label">
+                          <span className="frequency-emoji" style={{ color: item.color }}>
+                            {moodTypes[item.mood]?.face}
+                          </span>
+                          <span>{item.label}</span>
+                        </div>
+                        <div className="frequency-bar-track">
+                          <motion.div
+                            className="frequency-bar-fill"
+                            style={{ backgroundColor: item.color }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${item.percentage}%` }}
+                            transition={{ delay: i * 0.1, duration: 0.8, ease: "easeOut" }}
+                          />
+                        </div>
+                        <div className="frequency-bar-count">{item.count}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          </>
         )}
-
-        <section className="mood-graph-section" style={{ marginBottom: '32px' }}>
-          <div style={{ marginBottom: '16px', display: 'flex', gap: '8px' }}>
-            <button 
-              style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                border: '1px solid #6B9080',
-                backgroundColor: viewType === 'weekly' ? '#6B9080' : 'white',
-                color: viewType === 'weekly' ? 'white' : '#64748b',
-                fontSize: '13px',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}
-              onClick={() => setViewType('weekly')}
-            >
-              Weekly
-            </button>
-            <button 
-              style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                backgroundColor: viewType === 'monthly' ? '#6B9080' : 'white',
-                color: viewType === 'monthly' ? 'white' : '#64748b',
-                fontSize: '13px',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}
-              onClick={() => setViewType('monthly')}
-            >
-              Monthly
-            </button>
-          </div>
-          <MoodTrackerGraph 
-            userMoods={userMoods} 
-            viewType={viewType}
-          />
-        </section>
-
-        <section className="calendar-section">
-          <h2>Mood Calendar</h2>
-          <MoodCalendar
-            moods={userMoods}
-            onMoodSelect={handleMoodSelectFromCalendar}
-            onDateSelect={(date) => {
-              setSelectedDate(date)
-              const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
-              const existingMood = userMoods[dateKey]
-              if (existingMood && existingMood.mood) setSliderValue(getSliderValueFromMood(existingMood.mood))
-              else setSliderValue(50)
-              setShowMoodSelector(true)
-            }}
-            onRefresh={handleRefreshMoods}
-          />
-        </section>
 
         {showMoodSelector && (
           <div className="mood-selector-overlay">

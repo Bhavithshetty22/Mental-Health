@@ -21,19 +21,24 @@ const PORT = process.env.PORT || 5000;
 
 // ===== Enhanced CORS Configuration =====
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
-
+// ===== Simplified CORS Configuration for Development =====
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (mobile apps, curl, etc.)
+      // Allow requests with no origin (like mobile apps, Postman, server-to-server)
       if (!origin) return callback(null, true);
       
-      // Check if origin is allowed
+      // For development, allow all localhost origins
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+      
+      // Allow specific production origins
       const allowedOrigins = [
-        CLIENT_ORIGIN,
-        'http://localhost:3000',
+        process.env.CLIENT_ORIGIN,
         'http://localhost:5173',
-        'https://mental-health-five-beige.vercel.app',
+        'http://localhost:5000',  // Allow server to call itself
+        'http://localhost:3000',
         'http://localhost:8080'
       ];
       
@@ -41,9 +46,9 @@ app.use(
         return callback(null, true);
       }
       
-      // Log blocked origin for debugging
       console.log(`CORS blocked origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      // In development, allow it anyway
+      callback(null, true);
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: [
@@ -54,7 +59,7 @@ app.use(
       "Origin"
     ],
     credentials: true,
-    optionsSuccessStatus: 200 // Support legacy browsers
+    optionsSuccessStatus: 200
   })
 );
 
@@ -763,3 +768,11 @@ app.listen(PORT, () => {
   console.log(`   *    /api/mood-tracker`);
   console.log(`   *    /api/community`);
 });
+require('dotenv').config();
+
+// Add this debug log
+console.log('\n🔍 ENVIRONMENT CHECK:');
+console.log('VITE_STABILITY_API_KEY:', process.env.VITE_STABILITY_API_KEY ? '✅ Loaded' : '❌ Missing');
+console.log('API Key Length:', process.env.VITE_STABILITY_API_KEY ? process.env.VITE_STABILITY_API_KEY.length : 0);
+console.log('API Key Prefix:', process.env.VITE_STABILITY_API_KEY ? process.env.VITE_STABILITY_API_KEY.substring(0, 10) + '...' : 'N/A');
+console.log('\n');
