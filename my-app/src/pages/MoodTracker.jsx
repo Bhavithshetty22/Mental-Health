@@ -235,6 +235,9 @@ const MoodTrackerPage = () => {
       return false
     } finally {
       setSaving(false)
+      // After successful save, dispatch event
+      window.dispatchEvent(new CustomEvent('moodSaved'));
+      window.dispatchEvent(new CustomEvent('taskCompleted'));
     }
   }
 

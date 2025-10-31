@@ -62,11 +62,29 @@ router.get("/", authenticateToken, async (req, res) => {
 
     const moodEntries = await Mood.find(query).sort({ date: -1 })
     const moods = {}
+    
     moodEntries.forEach((entry) => {
+      // Store with BOTH formats for compatibility
       const [year, month, day] = entry.date.split("-")
-      const dateKey = `${year}-${parseInt(month, 10)}-${parseInt(day, 10)}`
-      moods[dateKey] = { mood: entry.mood, notes: entry.notes, timestamp: entry.timestamp }
+      
+      // Format 1: "YYYY-M-D" (no leading zeros) - for backward compatibility
+      const dateKey1 = `${year}-${parseInt(month, 10)}-${parseInt(day, 10)}`
+      
+      // Format 2: "YYYY-MM-DD" (with leading zeros) - standard format
+      const dateKey2 = entry.date
+      
+      const moodData = { 
+        mood: entry.mood, 
+        notes: entry.notes, 
+        timestamp: entry.timestamp 
+      }
+      
+      // Store under both formats so any component can find it
+      moods[dateKey1] = moodData
+      moods[dateKey2] = moodData
     })
+
+    console.log('📊 Moods response keys:', Object.keys(moods))
 
     res.json({ success: true, moods, total: moodEntries.length })
   } catch (error) {
@@ -93,11 +111,15 @@ router.post("/", authenticateToken, async (req, res) => {
     const [, year, month, day] = dateMatch
     const standardDate = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
 
+    console.log('💾 Saving mood for date:', standardDate)
+
     const moodEntry = await Mood.findOneAndUpdate(
       { userId, date: standardDate },
       { userId, date: standardDate, mood, notes, timestamp: new Date() },
       { upsert: true, new: true, runValidators: true }
     )
+
+    console.log('✅ Mood saved successfully:', { date: standardDate, mood })
 
     res.json({
       success: true,
