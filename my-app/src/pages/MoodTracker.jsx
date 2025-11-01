@@ -212,69 +212,75 @@ const MoodTrackerPage = () => {
     }
   }
 
-  const saveMood = async (date, moodType, notes = "") => {
-    try {
-      setSaving(true)
-      const token = getTokenOrRedirect()
-      if (!token) return false
+  // In MoodTracker.jsx, update the saveMood function:
+const saveMood = async (date, moodType, notes = "") => {
+  try {
+    setSaving(true)
+    const token = getTokenOrRedirect()
+    if (!token) return false
 
-      const apiDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+    const apiDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
 
-      const response = await fetch(`${API_BASE}/api/moods`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          date: apiDate,
-          mood: moodType,
-          notes: notes,
-        }),
-      })
+    const response = await fetch(`${API_BASE}/api/moods`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        date: apiDate,
+        mood: moodType,
+        notes: notes,
+      }),
+    })
 
-      if (response.status === 401 || response.status === 403) {
-        alert("You must be signed in to save moods. Redirecting to login...")
-        localStorage.removeItem("token")
-        localStorage.removeItem("user")
-        navigate("/settings")
-        return false
-      }
-
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => null)
-        console.error("Save error:", errJson || "unknown")
-        throw new Error(errJson?.error || "Failed to save mood")
-      }
-
-      const result = await response.json()
-
-      const displayKey = apiDate
-      setUserMoods((prev) => ({
-        ...prev,
-        [displayKey]: {
-          mood: moodType,
-          notes,
-          timestamp: new Date().toISOString(),
-        },
-      }))
-
-      if (apiDate === getTodayKey()) {
-        setTodayMood(moodType)
-        // Fetch image when mood is saved
-        await fetchMoodImage(moodType)
-      }
-
-      await loadMoods(true)
-      return true
-    } catch (error) {
-      console.error("Error saving mood:", error)
-      alert("Failed to save mood. Please try again.")
+    if (response.status === 401 || response.status === 403) {
+      alert("You must be signed in to save moods. Redirecting to login...")
+      localStorage.removeItem("token")
+      localStorage.removeItem("user")
+      navigate("/settings")
       return false
-    } finally {
-      setSaving(false)
     }
+
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => null)
+      console.error("Save error:", errJson || "unknown")
+      throw new Error(errJson?.error || "Failed to save mood")
+    }
+
+    const result = await response.json()
+
+    const displayKey = apiDate
+    setUserMoods((prev) => ({
+      ...prev,
+      [displayKey]: {
+        mood: moodType,
+        notes,
+        timestamp: new Date().toISOString(),
+      },
+    }))
+
+    if (apiDate === getTodayKey()) {
+      setTodayMood(moodType)
+      await fetchMoodImage(moodType)
+      
+      // ADD THIS: Emit custom event to notify DailyTasksTracker
+      console.log('[MoodTracker] Emitting moodUpdated event')
+      window.dispatchEvent(new CustomEvent('moodUpdated', { 
+        detail: { mood: moodType, date: apiDate } 
+      }))
+    }
+
+    await loadMoods(true)
+    return true
+  } catch (error) {
+    console.error("Error saving mood:", error)
+    alert("Failed to save mood. Please try again.")
+    return false
+  } finally {
+    setSaving(false)
   }
+}
 
   const handleMoodSelect = async () => {
     const moodType = getMoodFromSliderValue(sliderValue)

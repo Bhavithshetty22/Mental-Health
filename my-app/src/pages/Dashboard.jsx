@@ -11,21 +11,25 @@ import AiChatInterface from "./AiChatInterface";
 import GoogleFitnessWidget from "../components/GoogleFitWidget";
 import WidgetTemplate from "../components/WidgetTemplate";
 import MoodTrackerGraph from "../components/MoodTrackerGraph";
+import DailyTasksTracker from "../components/DailyTaskTracker";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
 // SVG Background Pattern Component
 const BackgroundPattern = () => (
-  <svg className="dashboard-bg-pattern" style={{
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    zIndex: 0,
-    opacity: 0.03,
-    pointerEvents: 'none'
-  }}>
+  <svg
+    className="dashboard-bg-pattern"
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      zIndex: 0,
+      opacity: 0.03,
+      pointerEvents: "none",
+    }}
+  >
     <defs>
       <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
         <circle cx="20" cy="20" r="1" fill="currentColor" />
@@ -45,7 +49,14 @@ const AnimatedMoodIcon = () => (
     animate={{ rotate: 360 }}
     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
   >
-    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
     <circle cx="9" cy="9" r="1.5" fill="currentColor" />
     <circle cx="15" cy="9" r="1.5" fill="currentColor" />
     <motion.path
@@ -68,9 +79,9 @@ const containerVariants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.1,
-      delayChildren: 0.2
-    }
-  }
+      delayChildren: 0.2,
+    },
+  },
 };
 
 const itemVariants = {
@@ -81,9 +92,9 @@ const itemVariants = {
     transition: {
       type: "spring",
       stiffness: 100,
-      damping: 12
-    }
-  }
+      damping: 12,
+    },
+  },
 };
 
 const slideInVariants = {
@@ -94,9 +105,9 @@ const slideInVariants = {
     transition: {
       type: "spring",
       stiffness: 80,
-      damping: 15
-    }
-  }
+      damping: 15,
+    },
+  },
 };
 
 const scaleInVariants = {
@@ -107,9 +118,9 @@ const scaleInVariants = {
     transition: {
       type: "spring",
       stiffness: 100,
-      damping: 15
-    }
-  }
+      damping: 15,
+    },
+  },
 };
 
 function Dashboard() {
@@ -183,66 +194,57 @@ function Dashboard() {
   };
 
   const handleJournalClick = () => {
-    navigate('/daily-journal');
+    navigate("/daily-journal");
   };
 
   const handleMeditationClick = () => {
-    navigate('/ai-therapy');
+    navigate("/ai-therapy");
   };
 
   const handleAnalyticsClick = () => {
-    navigate('/talk-to-future');
+    navigate("/talk-to-future");
   };
 
   return (
-    <div className="cont" style={{ position: 'relative', overflow: 'hidden' }}>
+    <div className="cont" style={{ position: "relative", overflow: "hidden" }}>
       <BackgroundPattern />
-      
-      <motion.div 
+
+      <motion.div
         className="maincontainer"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        style={{ position: 'relative', zIndex: 1 }}
+        style={{ position: "relative", zIndex: 1 }}
       >
         {/* Top Dashboard Section */}
-        <motion.div 
-          className="topdashboarddiv"
-          variants={itemVariants}
-        >
-         
-            <ProfileDynamic />
-         
-          
-          <motion.div 
+        <motion.div className="topdashboarddiv" variants={itemVariants}>
+          <ProfileDynamic />
+
+          <motion.div
             className="righttopdashboarddiv"
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <MoodTrackerWidget onGoClick={handleGoToMoodTracker} />
             </motion.div>
-            
+
             <div className="thesquareicons">
-              <motion.div 
+              <motion.div
                 className="profileicon"
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 300 }}
               />
-              <motion.div 
+              <motion.div
                 className="notifications"
                 whileHover={{ scale: 1.1, rotate: -5 }}
                 whileTap={{ scale: 0.95 }}
-                
                 transition={{
                   duration: 2,
                   repeat: Infinity,
-                  ease: "easeInOut"
+                  ease: "easeInOut",
                 }}
               />
             </div>
@@ -250,20 +252,15 @@ function Dashboard() {
         </motion.div>
 
         {/* Middle Dashboard Section */}
-        <motion.div 
-          className="middledashdiv1"
-          variants={itemVariants}
-        >
-          <motion.div 
-            className="emotionbotandupper"
-            variants={slideInVariants}
-          >
-            <motion.div 
-              className="recent"
-              whileHover={{ scale: 1.01 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            />
-            
+        <motion.div className="middledashdiv1" variants={itemVariants}>
+          <motion.div className="emotionbotandupper" variants={slideInVariants}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              <DailyTasksTracker />
+            </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -271,7 +268,6 @@ function Dashboard() {
             >
               <EmotionChatWidget onBotSelect={setSelectedBot} />
             </motion.div>
-            
             <AnimatePresence>
               {selectedBot && (
                 <motion.div
@@ -290,10 +286,7 @@ function Dashboard() {
             </AnimatePresence>
           </motion.div>
 
-          <motion.div 
-            className="graphsdiv"
-            variants={slideInVariants}
-          >
+          <motion.div className="graphsdiv" variants={slideInVariants}>
             <AnimatePresence mode="wait">
               {!graphLoading && (
                 <motion.div
@@ -306,7 +299,7 @@ function Dashboard() {
                 </motion.div>
               )}
             </AnimatePresence>
-            
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -319,16 +312,13 @@ function Dashboard() {
         </motion.div>
 
         {/* Features Grid */}
-        <motion.div 
-          className='featuresgrid'
-          variants={containerVariants}
-        >
+        <motion.div className="featuresgrid" variants={containerVariants}>
           <motion.div
             variants={scaleInVariants}
-            whileHover={{ 
+            whileHover={{
               scale: 1.03,
               boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-              transition: { duration: 0.2 }
+              transition: { duration: 0.2 },
             }}
             whileTap={{ scale: 0.98 }}
           >
@@ -341,13 +331,13 @@ function Dashboard() {
               handleButtonClick={handleJournalClick}
             />
           </motion.div>
-          
+
           <motion.div
             variants={scaleInVariants}
-            whileHover={{ 
+            whileHover={{
               scale: 1.03,
               boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-              transition: { duration: 0.2 }
+              transition: { duration: 0.2 },
             }}
             whileTap={{ scale: 0.98 }}
           >
@@ -360,13 +350,13 @@ function Dashboard() {
               handleButtonClick={handleMeditationClick}
             />
           </motion.div>
-          
+
           <motion.div
             variants={scaleInVariants}
-            whileHover={{ 
+            whileHover={{
               scale: 1.03,
               boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-              transition: { duration: 0.2 }
+              transition: { duration: 0.2 },
             }}
             whileTap={{ scale: 0.98 }}
           >

@@ -9,63 +9,86 @@ export default function TalkToFuture() {
   const [error, setError] = useState(null);
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    setError(null);
-    setLetter(null);
+  e.preventDefault();
+  setError(null);
+  setLetter(null);
 
-    if (!situation.trim()) {
-      setError("Please describe your situation.");
+  if (!situation.trim()) {
+    setError("Please describe your situation.");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const userId = getUserId();
+    const url = `${import.meta.env.VITE_API_BASE}/api/generate`;
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        situation,
+        owner: userId, // Add owner to save it with user ID
+        title: "Letter from Future"
+      }),
+    });
+
+    const raw = await resp.text();
+
+    if (!resp.ok) {
+      let errMsg;
+      try {
+        const parsed = JSON.parse(raw || "{}");
+        errMsg = parsed?.error || parsed?.details || JSON.stringify(parsed);
+      } catch {
+        errMsg = raw || resp.statusText;
+      }
+      setError(`Server error ${resp.status}: ${errMsg}`);
       return;
     }
 
-    setLoading(true);
-    try {
-      const url = `${import.meta.env.VITE_API_BASE}/api/generate`;
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ situation }),
-      });
-
-      const raw = await resp.text();
-
-      if (!resp.ok) {
-        let errMsg;
-        try {
-          const parsed = JSON.parse(raw || "{}");
-          errMsg = parsed?.error || parsed?.details || JSON.stringify(parsed);
-        } catch {
-          errMsg = raw || resp.statusText;
-        }
-        setError(`Server error ${resp.status}: ${errMsg}`);
-        return;
-      }
-
-      if (!raw) {
-        setError("Empty server response.");
-        return;
-      }
-
-      let data;
-      try {
-        data = JSON.parse(raw);
-      } catch (parseErr) {
-        // backend returned plain text or parsing failed — keep raw text
-        console.warn('TalkToFuture: JSON parse failed', parseErr);
-        setLetter(raw);
-        return;
-      }
-
-      if (data?.crisis) setLetter(data.message);
-      else if (data?.letter) setLetter(data.letter);
-      else setLetter(JSON.stringify(data));
-    } catch (err) {
-      console.error(err);
-      setError("Network error. Make sure backend is running and URL is correct.");
-    } finally {
-      setLoading(false);
+    if (!raw) {
+      setError("Empty server response.");
+      return;
     }
+
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (parseErr) {
+      console.warn('TalkToFuture: JSON parse failed', parseErr);
+      setLetter(raw);
+      
+      // Emit event even for plain text response
+      console.log('[TalkToFuture] Emitting futureLetterCreated event');
+      window.dispatchEvent(new CustomEvent('futureLetterCreated', { 
+        detail: { timestamp: new Date().toISOString() } 
+      }));
+      return;
+    }
+
+    if (data?.crisis) {
+      setLetter(data.message);
+    } else if (data?.letter) {
+      setLetter(data.letter);
+      
+      // Emit custom event to notify DailyTasksTracker
+      console.log('[TalkToFuture] Emitting futureLetterCreated event');
+      window.dispatchEvent(new CustomEvent('futureLetterCreated', { 
+        detail: { 
+          savedId: data.savedId,
+          timestamp: new Date().toISOString() 
+        } 
+      }));
+    } else {
+      setLetter(JSON.stringify(data));
+    }
+  } catch (err) {
+    console.error(err);
+    setError("Network error. Make sure backend is running and URL is correct.");
+  } finally {
+    setLoading(false);
   }
+}
 
   function resetAll() {
     setSituation("");
@@ -228,6 +251,20 @@ export default function TalkToFuture() {
     a.remove();
     URL.revokeObjectURL(url);
   }
+
+  // Add this function near the top of the component
+function getUserId() {
+  try {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      return user._id || user.id;
+    }
+  } catch (err) {
+    console.error('Error parsing user:', err);
+  }
+  return null;
+}
 
   return (
     <div className="page-root vintage-root">
