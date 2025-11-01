@@ -54,15 +54,18 @@ router.get("/:id", async (req, res) => {
 });
 
 /**
- * (Optional) POST /api/letters
- * If you want the frontend to be able to save letters as a separate step,
- * you can enable this. It accepts { title, situation, letter, model, owner }.
+ * POST /api/letters
+ * Save a letter to the database
  */
 router.post("/", async (req, res) => {
   try {
     const { title, situation, letter: text, model, owner } = req.body;
-    if (!situation || !situation.trim()) return res.status(400).json({ error: "situation required" });
-    if (!text || !text.trim()) return res.status(400).json({ error: "letter text required" });
+    if (!situation || !situation.trim()) {
+      return res.status(400).json({ error: "situation required" });
+    }
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: "letter text required" });
+    }
 
     const saved = await Letter.create({
       title: title ? String(title).slice(0, 140) : "Letter from Future",
@@ -81,9 +84,24 @@ router.post("/", async (req, res) => {
 });
 
 /**
- * Export router AND the Mongoose model so server.js can import the model as:
+ * DELETE /api/letters/:id
+ */
+router.delete("/:id", async (req, res) => {
+  try {
+    const deleted = await Letter.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: "Letter not found" });
+    res.json({ message: "Letter deleted", id: req.params.id });
+  } catch (err) {
+    console.error("Error deleting letter:", err);
+    res.status(500).json({ error: "Failed to delete letter" });
+  }
+});
+
+/**
+ * Export both the router and the Letter model
+ * This allows importing as:
  * const lettersRouter = require('./routes/letters');
- * const Letter = lettersRouter.Letter;
+ * const { Letter } = require('./routes/letters');
  */
 module.exports = router;
 module.exports.Letter = Letter;

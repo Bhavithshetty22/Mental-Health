@@ -2,7 +2,7 @@
 .cont{
   min-height: 100vh;
   width: 100%;
-  background: linear-gradient(to bottom, #f8faf9 0%, #f0fdf4 100%);
+ background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%);
 }
 
 .maincontainer {

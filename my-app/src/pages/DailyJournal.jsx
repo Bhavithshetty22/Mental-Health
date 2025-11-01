@@ -1,60 +1,47 @@
 import React, { useState } from 'react';
-
 import { 
   Type, 
   MessageSquare, 
-  Moon, 
-  Sun,
-  Send,
-  X,
-  Heart,
-  Lightbulb
+  Image,
+  Music,
+  FileText,
+  Send
 } from 'lucide-react';
-
 import './DailyJournal.css';
-
-const _getMoodEmoji = (mood) => {
-  const emojis = {
-    happy: "😊",
-    sad: "😢",
-    angry: "😡",
-    relaxed: "😌",
-    anxious: "😰",
-    neutral: "🙂",
-    excited: "🤩",
-    tired: "🥱",
-    lonely: "🥺",
-    love: "❤️",
-  };
-  return emojis[mood?.toLowerCase()] || "🤔";
-};
 
 const DailyJournal = () => {
   const [textInput, setTextInput] = useState("");
   const [selectedOption, setSelectedOption] = useState("");
   const [output, setOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-  
-  // Mood detection states
-  const [_isMoodDetecting, _setIsMoodDetecting] = useState(false);
-  const [_moodResult, _setMoodResult] = useState(null);
-  const [_showMoodPopup, _setShowMoodPopup] = useState(false);
-
   const [songs, setSongs] = useState([]);
   const [story, setStory] = useState("");
   const [poem, setPoem] = useState("");
 
-  const _toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle("dark");
-  };
+  const options = [
+    { 
+      value: 'image', 
+      label: 'Image', 
+      icon: Image,
+      gradient: 'gradient-purple'
+    },
+    { 
+      value: 'song', 
+      label: 'Song', 
+      icon: Music,
+      gradient: 'gradient-blue'
+    },
+    { 
+      value: 'poem', 
+      label: 'Poem/Story', 
+      icon: FileText,
+      gradient: 'gradient-green'
+    }
+  ];
 
-  // build YouTube search url fallback (same rules as backend)
   const buildYouTubeSearchUrl = (title = "", artist = "") => {
     let q = `${title || ""} ${artist || ""}`.trim();
     q = q.replace(/[\n\r]+/g, " ");
-    q = q.replace(/["'`''""]/g, "");
     q = q.replace(/["'`''""]/g, "");
     q = q.replace(/[\\/|]/g, " ");
     q = q.replace(/\s+/g, " ").trim();
@@ -62,40 +49,6 @@ const DailyJournal = () => {
     return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
   };
 
-  // Mood detection function
-  const _detectMood = async () => {
-    const textToAnalyze = textInput.trim();
-
-    if (!textToAnalyze) {
-      alert("Please enter some text first!");
-      return;
-    }
-
-    _setIsMoodDetecting(true);
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE}/api/detect-mood`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textToAnalyze }),
-      });
-
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-      const data = await response.json();
-      _setMoodResult(data);
-      _setShowMoodPopup(true);
-    } catch (error) {
-      console.error('Error detecting mood:', error);
-      alert('Failed to detect mood. Please make sure the server is running.');
-    } finally {
-      _setIsMoodDetecting(false);
-    }
-  };
-
-  const _closeMoodPopup = () => _setShowMoodPopup(false);
-
-  // Generate Output - now calls backend for images
   const generateOutput = async () => {
     if (!textInput.trim()) return;
     if (!selectedOption) return;
@@ -108,19 +61,13 @@ const DailyJournal = () => {
 
     try {
       if (selectedOption === "image") {
-        // Call backend API instead of Stability directly
         const response = await fetch(`${import.meta.env.VITE_API_BASE}/api/generate-image`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: textInput }),
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         
         if (data?.image) {
@@ -190,16 +137,24 @@ const DailyJournal = () => {
                 </div>
               </div>
 
-              <select
-                value={selectedOption}
-                onChange={(e) => setSelectedOption(e.target.value)}
-                className="select"
-              >
-                <option value="">Choose output format</option>
-                <option value="image">Image Description</option>
-                <option value="song">Song Suggestion</option>
-                <option value="poem">Poem or Story</option>
-              </select>
+              <div className="options-section">
+                <label className="options-label">Choose your creative output</label>
+                <div className="options-grid">
+                  {options.map((option) => {
+                    const OptionIcon = option.icon;
+                    return (
+                      <button
+                        key={option.value}
+                        onClick={() => setSelectedOption(option.value)}
+                        className={`option-btn ${selectedOption === option.value ? 'active ' + option.gradient : ''}`}
+                      >
+                        <OptionIcon className="option-icon" />
+                        <span className="option-label">{option.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               <button
                 className="generate-btn"
@@ -244,7 +199,7 @@ const DailyJournal = () => {
                               <div className="song-title">{title}</div>
                               <div className="song-artist">{artist}</div>
                             </a>
-                            <div style={{ marginTop: 8, fontSize: 12, color: "#666", wordBreak: "break-all" }}>{url}</div>
+                            <div style={{ marginTop: 8, fontSize: 12, color: "#059669", wordBreak: "break-all" }}>{url}</div>
                             {s.reason && <div className="song-reason">{s.reason}</div>}
                           </div>
                         );

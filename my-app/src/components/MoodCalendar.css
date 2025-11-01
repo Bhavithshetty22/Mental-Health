@@ -6,7 +6,8 @@
   background-color: white;
   border-radius: 1rem;
   max-height: 550px;
-  padding: 2.7rem;
+  padding: 1.5rem;
+   border: 2px solid rgba(16, 185, 129, 0.3);
 
 }
 
