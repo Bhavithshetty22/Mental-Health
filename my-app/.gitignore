@@ -24,4 +24,6 @@ dist-ssr
 *.sw?
 .env
 backend/.env
+# Sensitive credentials
 backend/vertex-key.json
+**/vertex-key.json
