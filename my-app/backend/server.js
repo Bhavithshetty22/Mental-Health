@@ -1,4 +1,4 @@
-// server.js (enhanced with better error handling and CORS)
+// server.js (enhanced with Vertex AI Imagen + Creative Endpoint)
 
 require("dotenv").config(); // Load .env first
 
@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 const axios = require("axios");
+const { GoogleAuth } = require('google-auth-library');
 
 const moodRoutes = require("./routes/moodRoutes"); 
 const lettersRouter = require("./routes/letters"); 
@@ -119,7 +120,10 @@ app.use("/api/", limiter);
 console.log("DEBUG MONGO_URI:", process.env.MONGO_URI ? "present" : "MISSING");
 console.log("DEBUG GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "present" : "MISSING");
 console.log("DEBUG HUGGING_FACE_TOKEN:", process.env.HUGGING_FACE_TOKEN ? "present" : "MISSING");
-console.log("DEBUG STABILITY_API_KEY:", process.env.STABILITY_API_KEY ? "present" : "MISSING");
+console.log("DEBUG VERTEX_PROJECT_ID:", process.env.VERTEX_PROJECT_ID ? "present" : "MISSING");
+console.log("DEBUG VERTEX_LOCATION:", process.env.VERTEX_LOCATION || "us-central1 (default)");
+console.log("DEBUG IMAGEN_MODEL:", process.env.IMAGEN_MODEL || "imagen-3.0-generate-001 (default)");
+console.log("DEBUG GOOGLE_APPLICATION_CREDENTIALS:", process.env.GOOGLE_APPLICATION_CREDENTIALS ? "present" : "MISSING");
 
 // ===== Enhanced MongoDB Connection =====
 if (process.env.MONGO_URI) {
@@ -215,7 +219,7 @@ try {
 
 // ===== Enhanced Generative AI setup =====
 const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const USE_FAKE = process.env.USE_FAKE === "true";
 
 if (!GEMINI_KEY && !USE_FAKE) {
@@ -538,6 +542,334 @@ function getMoodSuggestions(mood) {
   return suggestions[moodKey] || suggestions['neutral'];
 }
 
+// ===== NEW: Creative Content (Story + Poem) Endpoint =====
+app.post('/api/creative', async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ 
+        error: 'Text is required',
+        code: 'MISSING_TEXT'
+      });
+    }
+
+    if (text.length > 2000) {
+      return res.status(400).json({
+        error: 'Text too long (max 2000 characters)',
+        code: 'TEXT_TOO_LONG'
+      });
+    }
+
+    console.log(`Generating creative content for text (${text.length} chars)`);
+
+    if (!GEMINI_KEY) {
+      return res.status(500).json({
+        error: 'AI service not configured',
+        code: 'API_KEY_MISSING'
+      });
+    }
+
+    // Call Gemini API
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
+
+    const prompt = `Based on the following journal entry, create two things:
+
+1. A short inspirational story (2-3 paragraphs) that relates to the emotions and situation described. Make it uplifting and hopeful.
+
+2. A poem (8-12 lines) that captures the mood and feelings expressed.
+
+Journal entry:
+"""
+${text}
+"""
+
+Please format your response EXACTLY as follows (use these exact labels):
+
+SHORT STORY:
+[Your story here]
+
+POEM:
+[Your poem here]
+
+Important: Keep the story warm and encouraging. The poem should be reflective and meaningful.`;
+
+    const requestBody = {
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: prompt
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        maxOutputTokens: 2048,
+        temperature: 0.8,
+        topP: 0.9,
+        topK: 40
+      }
+    };
+
+    const response = await axios.post(geminiUrl, requestBody, {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000
+    });
+
+    // Extract the generated text
+    const candidates = response.data?.candidates;
+    if (!candidates || candidates.length === 0) {
+      throw new Error('No candidates in Gemini response');
+    }
+
+    const generatedText = candidates[0]?.content?.parts?.[0]?.text;
+    if (!generatedText) {
+      throw new Error('No text in Gemini response');
+    }
+
+    console.log('Generated creative content successfully');
+
+    // Parse the response to extract story and poem
+    const storyMatch = generatedText.match(/SHORT STORY:\s*\n([\s\S]*?)(?=\n\s*POEM:|$)/i);
+    const poemMatch = generatedText.match(/POEM:\s*\n([\s\S]*?)$/i);
+
+    let story = storyMatch ? storyMatch[1].trim() : '';
+    let poem = poemMatch ? poemMatch[1].trim() : '';
+
+    // Fallback: if parsing failed, try alternative splitting
+    if (!story && !poem) {
+      const parts = generatedText.split(/\n\s*\n/);
+      if (parts.length >= 2) {
+        story = parts[0].trim();
+        poem = parts.slice(1).join('\n\n').trim();
+      } else {
+        // Last resort: give them something
+        story = generatedText.trim();
+        poem = '';
+      }
+    }
+
+    console.log('Parsed story length:', story.length);
+    console.log('Parsed poem length:', poem.length);
+
+    res.json({
+      story: story || 'Unable to generate story at this time.',
+      poem: poem || 'Unable to generate poem at this time.',
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error in /api/creative:', error.message);
+    
+    if (error.response) {
+      console.error('Gemini API Error Response:', JSON.stringify(error.response.data, null, 2));
+      
+      // Check for specific error types
+      if (error.response.data?.error?.message?.includes('API key')) {
+        return res.status(401).json({
+          error: 'API key expired or invalid. Please renew the API key.',
+          code: 'API_KEY_ERROR'
+        });
+      }
+      
+      return res.status(error.response.status).json({
+        error: 'Failed to generate creative content',
+        details: error.response.data,
+        code: 'GEMINI_ERROR'
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to generate creative content',
+      message: error.message,
+      code: 'GENERATION_ERROR'
+    });
+  }
+});
+
+// ===== NEW: Vertex AI Imagen Image Generation Endpoint =====
+app.post('/api/generate-image', async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ 
+        error: 'Text is required',
+        code: 'MISSING_TEXT'
+      });
+    }
+
+    if (text.length > 2000) {
+      return res.status(400).json({
+        error: 'Text too long (max 2000 characters)',
+        code: 'TEXT_TOO_LONG'
+      });
+    }
+
+    console.log(`Generating image for journal entry (${text.length} chars)`);
+
+    // Step 1: Enhance the prompt using Gemini
+    let enhancedPrompt;
+    
+    if (!GEMINI_KEY) {
+      console.log("No Gemini API key, using default prompt");
+      enhancedPrompt = `A warm and comforting scene with soft light, nature, and peaceful colors that inspire hope and healing.`;
+    } else {
+      try {
+        const geminiResponse = await axios.post(
+          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`,
+          {
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `The user shared the following journal entry:\n\n"${text}"\n\n
+Transform these emotions into a positive, uplifting, and cinematic image prompt.  
+
+Guidelines:
+- Always turn sadness, anger, or loneliness into visuals of hope, peace, or renewal.  
+- Avoid disturbing or depressing imagery (no crying faces, violence, or dark visuals).  
+- Use nature, light, color, and artistic symbolism to create comforting scenes.  
+- Make it dreamy, painterly, and soothing — something that uplifts mental health.  
+- Style: soft, artistic, emotional yet hopeful, like a professional painting or photograph.  
+
+Output only the final artistic image prompt, nothing else.`,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            timeout: 10000
+          }
+        );
+
+        enhancedPrompt = geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text || 
+          `A warm and comforting scene with soft light, nature, and peaceful colors that inspire hope and healing.`;
+        
+        console.log("Enhanced prompt:", enhancedPrompt.substring(0, 100) + "...");
+      } catch (geminiError) {
+        console.error("Gemini enhancement failed:", geminiError.message);
+        enhancedPrompt = `A warm and comforting scene with soft light, nature, and peaceful colors that inspire hope and healing.`;
+      }
+    }
+
+    // Step 2: Generate image using Vertex AI Imagen
+    const projectId = process.env.VERTEX_PROJECT_ID;
+    const location = process.env.VERTEX_LOCATION || 'us-central1';
+    const imagenModel = process.env.IMAGEN_MODEL || 'imagen-3.0-generate-001';
+    
+    // Remove any :predict or :generateContent suffix if present
+    const model = imagenModel.replace(':predict', '').replace(':generateContent', '');
+
+    if (!projectId) {
+      return res.status(500).json({
+        error: 'Vertex AI not configured (missing VERTEX_PROJECT_ID)',
+        code: 'VERTEX_NOT_CONFIGURED'
+      });
+    }
+
+    console.log(`Calling Vertex AI Imagen (project: ${projectId}, location: ${location})`);
+
+    // Initialize Google Auth
+    const auth = new GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+      keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS
+    });
+
+    const client = await auth.getClient();
+    const accessToken = await client.getAccessToken();
+
+    if (!accessToken || !accessToken.token) {
+      throw new Error('Failed to get access token from Google Auth');
+    }
+
+    const vertexUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:predict`;
+
+    const vertexResponse = await axios.post(
+      vertexUrl,
+      {
+        instances: [
+          {
+            prompt: enhancedPrompt
+          }
+        ],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: "1:1",
+          safetyFilterLevel: "block_some",
+          personGeneration: "allow_adult"
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken.token}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000 // 30 second timeout for image generation
+      }
+    );
+
+    // Extract the base64 image from the response
+    const imageBase64 = vertexResponse.data?.predictions?.[0]?.bytesBase64Encoded;
+
+    if (!imageBase64) {
+      console.error('Vertex AI response:', JSON.stringify(vertexResponse.data));
+      throw new Error('No image data returned from Vertex AI');
+    }
+
+    console.log(`Image generated successfully (${imageBase64.length} chars)`);
+
+    res.json({
+      image: imageBase64,
+      prompt: enhancedPrompt,
+      model: model,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error generating image:', error);
+    
+    // Provide specific error messages
+    if (error.message?.includes('access token')) {
+      return res.status(500).json({ 
+        error: 'Authentication failed with Google Cloud',
+       details: 'Please check GOOGLE_APPLICATION_CREDENTIALS path and service account permissions',
+        code: 'AUTH_ERROR'
+      });
+    }
+
+    if (error.response?.status === 403) {
+      return res.status(403).json({
+        error: 'Vertex AI API access denied',
+        details: 'Please ensure Vertex AI API is enabled and service account has proper permissions',
+        code: 'PERMISSION_DENIED'
+      });
+    }
+
+    if (error.response?.status === 429) {
+      return res.status(429).json({
+        error: 'Vertex AI quota exceeded',
+        details: 'Too many requests. Please try again later.',
+        code: 'QUOTA_EXCEEDED'
+      });
+    }
+
+    res.status(500).json({ 
+      error: 'Failed to generate image',
+      details: error.message,
+      code: 'GENERATION_ERROR'
+    });
+  }
+});
+
 // ===== Enhanced /api/generate endpoint =====
 app.post("/api/generate", async (req, res) => {
   try {
@@ -706,7 +1038,10 @@ app.use((req, res, next) => {
       "GET /health", 
       "GET /api/health",
       "POST /api/generate",
+      "POST /api/generate-image",
+      "POST /api/creative",
       "POST /api/detect-mood",
+      "POST /api/songs",
       "POST /api/auth/signup",
       "POST /api/auth/login",
       "* /api/moods",
@@ -760,7 +1095,10 @@ app.listen(PORT, () => {
   console.log(`   GET  /health`);
   console.log(`   GET  /api/health`);
   console.log(`   POST /api/generate`);
+  console.log(`   POST /api/generate-image (Vertex AI Imagen)`);
+  console.log(`   POST /api/creative (NEW - Story + Poem)`);
   console.log(`   POST /api/detect-mood`);
+  console.log(`   POST /api/songs`);
   console.log(`   POST /api/auth/signup`);
   console.log(`   POST /api/auth/login`);
   console.log(`   *    /api/moods`);
@@ -768,11 +1106,3 @@ app.listen(PORT, () => {
   console.log(`   *    /api/mood-tracker`);
   console.log(`   *    /api/community`);
 });
-require('dotenv').config();
-
-// Add this debug log
-console.log('\n🔍 ENVIRONMENT CHECK:');
-console.log('VITE_STABILITY_API_KEY:', process.env.VITE_STABILITY_API_KEY ? '✅ Loaded' : '❌ Missing');
-console.log('API Key Length:', process.env.VITE_STABILITY_API_KEY ? process.env.VITE_STABILITY_API_KEY.length : 0);
-console.log('API Key Prefix:', process.env.VITE_STABILITY_API_KEY ? process.env.VITE_STABILITY_API_KEY.substring(0, 10) + '...' : 'N/A');
-console.log('\n');

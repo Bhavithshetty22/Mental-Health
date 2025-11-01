@@ -1,24 +1,15 @@
 // backend/routes/songs.js
-// Full rewritten file — normalizes YouTube links, verifies availability via YouTube oEmbed,
+// Uses direct Gemini API with API key
+// Normalizes YouTube links, verifies availability via YouTube oEmbed,
 // and falls back to a YouTube search URL when the video is removed/private or malformed.
 
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 const USE_FAKE = process.env.USE_FAKE === "true";
-
-let genAI = null;
-if (GEMINI_KEY) {
-  try {
-    genAI = new GoogleGenerativeAI(GEMINI_KEY);
-  } catch (err) {
-    console.warn("Could not instantiate GoogleGenerativeAI in songs route:", err?.message);
-  }
-}
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash-002";
 
 /* ---------- Helpers ---------- */
 function safeParseJson(text) {
@@ -101,8 +92,8 @@ function sanitizeUrl(raw) {
 function buildYouTubeSearchUrl(title = "", artist = "") {
   let q = `${title || ""} ${artist || ""}`.trim();
   q = q.replace(/[\n\r]+/g, " ");
-  q = q.replace(/["'`‘’“”]/g, "");
-    q = q.replace(new RegExp('\\\\/|\\\\|', 'g'), " ");
+  q = q.replace(/["'`''""]/g, "");
+  q = q.replace(/[\\/|]/g, " ");
   q = q.replace(/\s+/g, " ").trim();
   if (!q) q = "music";
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
@@ -122,11 +113,78 @@ async function isYouTubeAvailable(watchUrl) {
   }
 }
 
+// Call Gemini API directly with API key
+async function callGeminiAPI(prompt) {
+  if (!GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY not configured');
+  }
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+  console.log('Calling Gemini API with model:', GEMINI_MODEL);
+
+  // Different models support different parameters
+  // Gemini 2.0 models don't support topK
+  const isGemini2 = GEMINI_MODEL.includes('2.0') || GEMINI_MODEL.includes('2-0');
+  
+  const generationConfig = {
+    maxOutputTokens: 2048,
+    temperature: 0.7,
+    topP: 0.8
+  };
+  
+  // Only add topK for Gemini 1.5 and earlier
+  if (!isGemini2) {
+    generationConfig.topK = 40;
+  }
+
+  try {
+    const response = await axios.post(
+      endpoint,
+      {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: prompt
+              }
+            ]
+          }
+        ],
+        generationConfig
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000
+      }
+    );
+
+    const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      console.error('Gemini API Response:', JSON.stringify(response.data, null, 2));
+      throw new Error('No text in Gemini API response');
+    }
+
+    return text;
+  } catch (error) {
+    // Log the actual error response from Gemini
+    if (error.response?.data) {
+      console.error('Gemini API Error Response:', JSON.stringify(error.response.data, null, 2));
+    }
+    throw error;
+  }
+}
+
 /* ---------- Route: POST /api/songs ---------- */
 router.post("/", async (req, res) => {
   try {
     const { text } = req.body;
-    if (!text || !text.trim()) return res.status(400).json({ error: "text required" });
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: "text required" });
+    }
 
     if (USE_FAKE) {
       const fake = [
@@ -144,23 +202,24 @@ router.post("/", async (req, res) => {
       return res.json({ songs: fakeProcessed });
     }
 
-    if (!genAI) {
-      return res.status(500).json({ error: "AI client not initialized. Set GEMINI_API_KEY." });
+    if (!GEMINI_API_KEY) {
+      return res.status(500).json({ 
+        error: "Gemini API not configured. Set GEMINI_API_KEY.",
+        code: "GEMINI_NOT_CONFIGURED"
+      });
     }
 
-    const systemPrompt = `You are a friendly music recommender. Based on the user's short journal text, suggest up to 5 songs that match the mood, situation, or vibe described. Output must be valid JSON: an array of objects. Each object must have these keys: "title" (string), "artist" (string or empty), "url" (string or empty), "reason" (short explanation string). If you can, provide a YouTube video or short URL (https://www.youtube.com/watch?v/...) for each suggestion. Do not output additional prose outside the JSON.`;
+    const systemPrompt = `You are a friendly music recommender. Based on the user's short journal text, suggest up to 5 songs that match the mood, situation, or vibe described. Output must be valid JSON: an array of objects. Each object must have these keys: "title" (string), "artist" (string or empty), "url" (string or empty), "reason" (short explanation string). If you can, provide a YouTube video or short URL (https://www.youtube.com/watch?v=...) for each suggestion. Do not output additional prose outside the JSON.`;
 
-    const userPrompt = `Journal text:\n"""${text}"""\n\nReturn up to 5 suggestions as JSON. Example:\n[{"title":"Song Name","artist":"Artist Name","url":"https://www.youtube.com/watch?v/...","reason":"Short reason"}]`;
+    const userPrompt = `Journal text:\n"""${text}"""\n\nReturn up to 5 suggestions as JSON. Example:\n[{"title":"Song Name","artist":"Artist Name","url":"https://www.youtube.com/watch?v=...","reason":"Short reason"}]`;
 
     const combined = `${systemPrompt}\n\n${userPrompt}`;
 
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-    const result = await model.generateContent(combined);
-    const response = await result.response;
-    const raw = response.text();
+    console.log("Calling Gemini API for song suggestions...");
+    const raw = await callGeminiAPI(combined);
 
     // log raw LLM output for debugging
-    console.log("SONGS RAW OUTPUT FROM MODEL:\n", raw);
+    console.log("SONGS RAW OUTPUT FROM GEMINI API:\n", raw);
 
     // try parsing JSON output
     let parsed = safeParseJson(raw);
@@ -183,11 +242,21 @@ router.post("/", async (req, res) => {
         if (m) {
           const title = m[1].trim();
           const artist = m[2].trim();
-          suggestions.push({ title, artist, url: buildYouTubeSearchUrl(title, artist), reason: "" });
+          suggestions.push({ 
+            title, 
+            artist, 
+            url: buildYouTubeSearchUrl(title, artist), 
+            reason: "" 
+          });
         } else if (suggestions.length < 5) {
           const parts = line.split(/\s*[-—]\s*/);
           if (parts.length >= 2) {
-            suggestions.push({ title: parts[0].trim(), artist: parts[1].trim(), url: buildYouTubeSearchUrl(parts[0].trim(), parts[1].trim()), reason: "" });
+            suggestions.push({ 
+              title: parts[0].trim(), 
+              artist: parts[1].trim(), 
+              url: buildYouTubeSearchUrl(parts[0].trim(), parts[1].trim()), 
+              reason: "" 
+            });
           }
         }
         if (suggestions.length >= 5) break;
@@ -196,7 +265,11 @@ router.post("/", async (req, res) => {
 
     if (suggestions.length === 0) {
       console.log("SONGS PARSE FAILED, RAW:\n", raw);
-      return res.status(500).json({ error: "Could not parse model output", raw });
+      return res.status(500).json({ 
+        error: "Could not parse model output", 
+        raw,
+        code: "PARSE_FAILED"
+      });
     }
 
     // final ensure all suggestions have a safe URL and verify YouTube availability if applicable
@@ -231,10 +304,44 @@ router.post("/", async (req, res) => {
     // Log final suggestions so you can copy/paste problematic URLs
     console.log("FINAL SONGS ->", JSON.stringify(final, null, 2));
 
-    return res.json({ songs: final });
+    return res.json({ 
+      songs: final,
+      model: GEMINI_MODEL,
+      timestamp: new Date().toISOString()
+    });
   } catch (err) {
     console.error("Error in /api/songs:", err);
-    return res.status(500).json({ error: "Server error", details: err.message || String(err) });
+    
+    // Provide specific error messages for API issues
+    if (err.message?.includes('API key') || err.response?.status === 400) {
+      return res.status(500).json({
+        error: "Gemini API configuration error",
+        details: "Please check GEMINI_API_KEY",
+        code: "API_KEY_ERROR"
+      });
+    }
+
+    if (err.response?.status === 403) {
+      return res.status(403).json({
+        error: "Gemini API access denied",
+        details: "Please ensure API key has proper permissions",
+        code: "PERMISSION_DENIED"
+      });
+    }
+
+    if (err.response?.status === 429) {
+      return res.status(429).json({
+        error: "Rate limit exceeded",
+        details: "Too many requests. Please try again later.",
+        code: "RATE_LIMIT"
+      });
+    }
+
+    return res.status(500).json({ 
+      error: "Server error", 
+      details: err.message || String(err),
+      code: "SERVER_ERROR"
+    });
   }
 });
 
