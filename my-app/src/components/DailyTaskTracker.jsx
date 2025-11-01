@@ -62,7 +62,22 @@ const DailyTasksTracker = () => {
         }
       }
 
+      // Check daily journal (NEW: Check /api/daily-journal)
       let journalWritten = false;
+      const journalResponse = await fetch(`${API_BASE}/api/daily-journal/check/today`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (journalResponse.ok) {
+        const journalData = await journalResponse.json();
+        journalWritten = journalData.success && journalData.hasEntry;
+        console.log('[DailyTasksTracker] Journal check:', journalData);
+      }
+
+      // Check future letter
       let futureLetterWritten = false;
       
       if (userId) {
@@ -80,11 +95,10 @@ const DailyTasksTracker = () => {
             lettersData.forEach(entry => {
               const entryDate = new Date(entry.createdAt).toISOString().split('T')[0];
               if (entryDate === today) {
+                // Check if it's a future letter (has model field)
                 const hasModel = entry.model && entry.model !== '';
                 if (hasModel) {
                   futureLetterWritten = true;
-                } else {
-                  journalWritten = true;
                 }
               }
             });
@@ -97,6 +111,12 @@ const DailyTasksTracker = () => {
         { id: 'journal', label: 'Write daily journal', completed: journalWritten },
         { id: 'future', label: 'Talk to your future self', completed: futureLetterWritten }
       ]);
+
+      console.log('[DailyTasksTracker] Task status:', {
+        mood: moodTracked,
+        journal: journalWritten,
+        future: futureLetterWritten
+      });
 
     } catch (error) {
       console.error('[DailyTasksTracker] Error fetching task status:', error);
@@ -115,9 +135,20 @@ const DailyTasksTracker = () => {
   }, []);
 
   useEffect(() => {
-    const handleMoodUpdate = () => fetchTaskStatus();
-    const handleJournalUpdate = () => fetchTaskStatus();
-    const handleFutureLetterUpdate = () => fetchTaskStatus();
+    const handleMoodUpdate = () => {
+      console.log('[DailyTasksTracker] Mood updated event received');
+      fetchTaskStatus();
+    };
+    
+    const handleJournalUpdate = () => {
+      console.log('[DailyTasksTracker] Journal updated event received');
+      fetchTaskStatus();
+    };
+    
+    const handleFutureLetterUpdate = () => {
+      console.log('[DailyTasksTracker] Future letter updated event received');
+      fetchTaskStatus();
+    };
 
     window.addEventListener('moodUpdated', handleMoodUpdate);
     window.addEventListener('journalUpdated', handleJournalUpdate);
@@ -191,8 +222,16 @@ const DailyTasksTracker = () => {
               <div className="completion-message">
                 <div className="completion-card">
                   <div className="completion-emoji">✨</div>
-                  <h3 className="completion-title">Completed!</h3>
-                  <p className="completion-text">You're taking great care of yourself today</p>
+                  <h3 className="completion-title">All Tasks Completed!</h3>
+                  <p className="completion-text">You're taking great care of yourself today. Keep up the amazing work! 💪</p>
+                  <div style={{ 
+                    marginTop: '16px', 
+                    fontSize: '14px', 
+                    color: '#6b7280',
+                    textAlign: 'center' 
+                  }}>
+                    Come back tomorrow for new wellness tasks
+                  </div>
                 </div>
               </div>
             ) : (

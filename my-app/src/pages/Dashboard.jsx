@@ -317,10 +317,10 @@ function Dashboard() {
             variants={scaleInVariants}
             whileHover={{
               scale: 1.03,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-              transition: { duration: 0.2 },
+              
+              transition: { duration: 0.2 }
             }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0 }}
           >
             <WidgetTemplate
               theme="light"
@@ -336,10 +336,9 @@ function Dashboard() {
             variants={scaleInVariants}
             whileHover={{
               scale: 1.03,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-              transition: { duration: 0.2 },
+              transition: { duration: 0.2 }
             }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0 }}
           >
             <WidgetTemplate
               theme="light"
@@ -355,10 +354,9 @@ function Dashboard() {
             variants={scaleInVariants}
             whileHover={{
               scale: 1.03,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-              transition: { duration: 0.2 },
+              transition: { duration: 0.2 }
             }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0 }}
           >
             <WidgetTemplate
               theme="light"

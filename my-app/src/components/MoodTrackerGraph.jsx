@@ -246,7 +246,8 @@ const MoodTrackerGraph = ({ userMoods = {}, viewType = 'weekly' }) => {
     <div style={{
       borderRadius: '16px',
       padding: '24px',
-   
+      background:'rgba(255, 255, 255, 0.95)',
+      border: '2px solid rgba(16, 185, 129, 0.3)',
       position: 'relative'
     }}>
       {/* Header */}
