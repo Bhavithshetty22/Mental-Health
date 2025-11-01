@@ -145,12 +145,12 @@ const MoodProfile = ({ selectedDate = null }) => {
         className="mood-image-container"
         style={{
           position: 'relative',
-          width: '100px',
-          height: '100px',
+          width: '200px',
+          height: '200px',
           borderRadius: '20px',
           overflow: 'hidden',
           boxShadow: `0 4px 16px ${moodColors[currentMood]}40`,
-          border: `3px solid ${moodColors[currentMood]}`,
+ 
           background: loading || loadingImage ? `${moodColors[currentMood]}20` : 'white'
         }}
       >
@@ -210,21 +210,7 @@ const MoodProfile = ({ selectedDate = null }) => {
         )}
       </div>
 
-      {/* Optional: Mood label */}
-      <div 
-        className="mood-label"
-        style={{
-          marginTop: '8px',
-          textAlign: 'center',
-          fontSize: '12px',
-          fontWeight: '600',
-          color: moodColors[currentMood],
-          textTransform: 'capitalize',
-          letterSpacing: '0.5px'
-        }}
-      >
-        Mood: {currentMood}
-      </div>
+      
     </div>
   );
 };

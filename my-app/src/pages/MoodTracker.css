@@ -572,6 +572,7 @@
 .mood-trend-chart svg {
   min-width: 600px;
   display: block;
+  height: 250px;
 }
 
 /* Mood Distribution */

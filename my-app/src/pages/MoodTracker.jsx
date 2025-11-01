@@ -7,7 +7,7 @@ import { Calendar, TrendingUp, BarChart3, Plus, Sparkles, Activity, PieChart } f
 import { motion } from "framer-motion"
 import "./MoodTracker.css"
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000"
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000"
 
 const MoodTrackerPage = () => {
   const navigate = useNavigate()
@@ -20,18 +20,52 @@ const MoodTrackerPage = () => {
   const [sliderValue, setSliderValue] = useState(50)
 
   const [viewType, setViewType] = useState('weekly')
-  const [moodImages, setMoodImages] = useState({}) // Store mood images
-  const [loadingImage, setLoadingImage] = useState(false) // Image loading state
-  const [imageError, setImageError] = useState(null) // Track image errors
+  const [moodImages, setMoodImages] = useState({})
+  const [loadingImage, setLoadingImage] = useState(false)
+  const [imageError, setImageError] = useState(null)
   const hasFetched = useRef(false)
 
   const moodTypes = {
-    terrible: { color: "#ef4444", face: "😢", label: "Terrible", description: "Really struggling today", range: [0, 20] },
-    bad:     { color: "#f97316", face: "😕", label: "Bad",     description: "Not having a great day",    range: [20, 40] },
-    okay:    { color: "#f59e0b", face: "😐", label: "Okay",    description: "Feeling neutral",           range: [40, 60] },
-    good:    { color: "#3b82f6", face: "😊", label: "Good",    description: "Having a pleasant day",     range: [60, 80] },
-    amazing: { color: "#10b981", face: "😄", label: "Amazing", description: "Feeling fantastic!",        range: [80, 100] },
-
+    terrible: { 
+      color: "#ef4444", 
+      face: "😢", 
+      label: "Terrible", 
+      description: "Really struggling today", 
+      range: [0, 20],
+      value: 1
+    },
+    bad: { 
+      color: "#f97316", 
+      face: "😕", 
+      label: "Bad", 
+      description: "Not having a great day", 
+      range: [20, 40],
+      value: 2
+    },
+    okay: { 
+      color: "#f59e0b", 
+      face: "😐", 
+      label: "Okay", 
+      description: "Feeling neutral", 
+      range: [40, 60],
+      value: 3
+    },
+    good: { 
+      color: "#3b82f6", 
+      face: "😊", 
+      label: "Good", 
+      description: "Having a pleasant day", 
+      range: [60, 80],
+      value: 4
+    },
+    amazing: { 
+      color: "#10b981", 
+      face: "😄", 
+      label: "Amazing", 
+      description: "Feeling fantastic!", 
+      range: [80, 100],
+      value: 5
+    },
   }
 
   const getMoodFromSliderValue = (value) => {
@@ -63,6 +97,8 @@ const MoodTrackerPage = () => {
 
   // Fetch mood image from API with better error handling
   const fetchMoodImage = async (mood) => {
+    if (!mood || hasFetched.current) return null
+    
     try {
       setLoadingImage(true)
       setImageError(null)
@@ -119,8 +155,7 @@ const MoodTrackerPage = () => {
 
   const loadMoods = async (forceRefresh = false) => {
     if (hasFetched.current && !forceRefresh) return
-    hasFetched.current = true
-
+    
     try {
       setLoading(true)
       const token = localStorage.getItem("token")
@@ -152,18 +187,21 @@ const MoodTrackerPage = () => {
       }
 
       const data = await response.json()
+      console.log("Loaded moods from API:", data)
 
       if (data.success) {
         setUserMoods(data.moods || {})
+        hasFetched.current = true
 
         const todayKey = getTodayKey()
         const todayMoodData = data.moods?.[todayKey]
         if (todayMoodData) {
-          setTodayMood(todayMoodData.mood)
-          setSliderValue(getSliderValueFromMood(todayMoodData.mood))
+          const mood = typeof todayMoodData === 'string' ? todayMoodData : todayMoodData.mood
+          setTodayMood(mood)
+          setSliderValue(getSliderValueFromMood(mood))
           
           // Fetch image for today's mood
-          await fetchMoodImage(todayMoodData.mood)
+          await fetchMoodImage(mood)
         }
       }
     } catch (error) {
@@ -255,11 +293,13 @@ const MoodTrackerPage = () => {
     const moodEntries = Object.values(userMoods)
     const totalEntries = moodEntries.length
     if (totalEntries === 0) return null
+    
     const moodCounts = {}
     moodEntries.forEach((entry) => {
       const mood = typeof entry === "string" ? entry : entry?.mood
       if (mood) moodCounts[mood] = (moodCounts[mood] || 0) + 1
     })
+    
     const mostCommon = Object.entries(moodCounts).sort(([, a], [, b]) => b - a)[0]
     return {
       totalEntries,
@@ -270,21 +310,35 @@ const MoodTrackerPage = () => {
 
   // Get mood trend data for line chart
   const getMoodTrendData = () => {
+    console.log("=== GET MOOD TREND DATA ===")
+    console.log("userMoods:", userMoods)
+    
     const entries = Object.entries(userMoods)
       .map(([dateKey, moodData]) => {
+        console.log(`Processing: ${dateKey}`, moodData)
+        
         const [year, month, day] = dateKey.split('-').map(Number)
         const date = new Date(year, month - 1, day)
         const mood = typeof moodData === 'string' ? moodData : moodData?.mood
+        
+        console.log(`  -> Date: ${date}, Mood: ${mood}, Value: ${moodTypes[mood]?.value}`)
+        
         return { date, mood, dateKey }
       })
+      .filter(entry => entry.mood && moodTypes[entry.mood]) // Filter out invalid entries
       .sort((a, b) => a.date - b.date)
       .slice(-14) // Last 14 days
     
-    return entries.map(entry => ({
+    console.log("Filtered entries:", entries)
+    
+    const chartData = entries.map(entry => ({
       date: entry.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       value: moodTypes[entry.mood]?.value || 3,
       mood: entry.mood
     }))
+    
+    console.log("Final chart data:", chartData)
+    return chartData
   }
 
   // Get mood distribution for donut chart
@@ -329,6 +383,13 @@ const MoodTrackerPage = () => {
     }
     loadMoods()
   }, [])
+
+  // Debug effect
+  useEffect(() => {
+    console.log("=== MOOD DATA UPDATE ===")
+    console.log("userMoods:", userMoods)
+    console.log("Total entries:", Object.keys(userMoods).length)
+  }, [userMoods])
 
   const stats = getMoodStats()
   const trendData = getMoodTrendData()
@@ -459,14 +520,17 @@ const MoodTrackerPage = () => {
               <h2>Mood Analysis</h2>
               
               {/* Mood Trend Chart */}
-              {trendData.length > 0 && (
+              {trendData.length > 0 ? (
                 <div className="analysis-card">
                   <div className="analysis-card-header">
                     <Activity size={20} />
-                    <h3>14-Day Mood Trend</h3>
+                    <h3>14-Day Mood Trend ({trendData.length} days)</h3>
                   </div>
+                  
+                  
+                  
                   <div className="mood-trend-chart">
-                    <svg width="100%" height="200" viewBox="0 -14 600 200">
+                    <svg width="100%" height="200" viewBox="0 0 600 200">
                       {/* Grid lines */}
                       {[1, 2, 3, 4, 5].map(i => (
                         <motion.line
@@ -484,32 +548,34 @@ const MoodTrackerPage = () => {
                       ))}
                       
                       {/* Y-axis labels */}
-                      {['😢', '😔', '😐', '😊', '😄'].map((emoji, i) => (
+                      {['😢', '😕', '😐', '😊', '😄'].map((emoji, i) => (
                         <text key={i} x="15" y={165 - i * 40} fontSize="16" fill="#6b7280">
                           {emoji}
                         </text>
                       ))}
                       
                       {/* Line path */}
-                      <motion.path
-                        d={trendData.map((point, i) => {
-                          const x = 60 + (i * (500 / (trendData.length - 1)))
-                          const y = 160 - ((point.value - 1) * 40)
-                          return `${i === 0 ? 'M' : 'L'} ${x} ${y}`
-                        }).join(' ')}
-                        fill="none"
-                        stroke="#6366f1"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        initial={{ pathLength: 0 }}
-                        animate={{ pathLength: 1 }}
-                        transition={{ duration: 1.5, ease: "easeInOut" }}
-                      />
+                      {trendData.length > 1 && (
+                        <motion.path
+                          d={trendData.map((point, i) => {
+                            const x = 60 + (i * (500 / Math.max(trendData.length - 1, 1)))
+                            const y = 160 - ((point.value - 1) * 40)
+                            return `${i === 0 ? 'M' : 'L'} ${x} ${y}`
+                          }).join(' ')}
+                          fill="none"
+                          stroke="#6366f1"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          initial={{ pathLength: 0 }}
+                          animate={{ pathLength: 1 }}
+                          transition={{ duration: 1.5, ease: "easeInOut" }}
+                        />
+                      )}
                       
                       {/* Data points */}
                       {trendData.map((point, i) => {
-                        const x = 60 + (i * (500 / (trendData.length - 1)))
+                        const x = 60 + (i * (500 / Math.max(trendData.length - 1, 1)))
                         const y = 160 - ((point.value - 1) * 40)
                         return (
                           <motion.g key={i}>
@@ -524,7 +590,7 @@ const MoodTrackerPage = () => {
                               animate={{ scale: 1 }}
                               transition={{ delay: 0.5 + i * 0.05 }}
                             />
-                            {i % 2 === 0 && (
+                            {(trendData.length <= 7 || i % 2 === 0) && (
                               <text
                                 x={x}
                                 y="185"
@@ -539,6 +605,19 @@ const MoodTrackerPage = () => {
                         )
                       })}
                     </svg>
+                  </div>
+                </div>
+              ) : (
+                <div className="analysis-card">
+                  <div className="analysis-card-header">
+                    <Activity size={20} />
+                    <h3>14-Day Mood Trend</h3>
+                  </div>
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
+                    <p>Log at least 2 moods to see your trend chart</p>
+                    <p style={{ fontSize: '12px', marginTop: '8px' }}>
+                      Total moods logged: {Object.keys(userMoods).length}
+                    </p>
                   </div>
                 </div>
               )}

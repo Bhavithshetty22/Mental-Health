@@ -2,7 +2,7 @@
 
 .voice-therapy-container {
   min-height: 100vh;
-  background: url('/aitherapy.png') no-repeat center center;
+  background: url('/aitherapy2.png') no-repeat center center;
   background-size: cover;
   display: flex;
   justify-content: center;
@@ -150,7 +150,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.3));
+filter: drop-shadow(0 0 30px rgba(16, 185, 129, 0.6));
 }
 
 /* Avatar state animations */

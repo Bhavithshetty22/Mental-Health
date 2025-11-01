@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const FormData = require('form-data');
+const { GoogleAuth } = require('google-auth-library');
 const MoodImage = require('../models/MoodImage');
 const { authenticateToken } = require('./auth');
 
@@ -35,6 +35,19 @@ const MOOD_DESCRIPTIONS = {
   good: "Happy",
   amazing: "Ecstatic"
 };
+
+// Initialize Google Auth
+let authClient = null;
+async function getAuthToken() {
+  if (!authClient) {
+    authClient = new GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/cloud-platform']
+    });
+  }
+  const client = await authClient.getClient();
+  const token = await client.getAccessToken();
+  return token.token;
+}
 
 function generateFallbackImage(mood) {
   const color = MOOD_COLORS[mood] || "#999999";
@@ -128,18 +141,23 @@ function getMoodMouth(mood) {
 }
 
 // DEBUG ENDPOINT - Check API configuration
-router.get('/debug/config', authenticateToken, (req, res) => {
-  const STABILITY_API_KEY = process.env.VITE_STABILITY_API_KEY;
+router.get('/debug/config', authenticateToken, async (req, res) => {
+  const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID;
   
-  res.json({
-    apiKeyExists: !!STABILITY_API_KEY,
-    apiKeyLength: STABILITY_API_KEY ? STABILITY_API_KEY.length : 0,
-    apiKeyPrefix: STABILITY_API_KEY ? STABILITY_API_KEY.substring(0, 10) + '...' : 'NO KEY',
-    envVars: {
-      VITE_STABILITY_API_KEY: !!process.env.VITE_STABILITY_API_KEY,
-      STABILITY_API_KEY: !!process.env.STABILITY_API_KEY
-    }
-  });
+  try {
+    const hasAuth = !!process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    res.json({
+      projectIdExists: !!PROJECT_ID,
+      projectId: PROJECT_ID || 'NOT SET',
+      credentialsConfigured: hasAuth,
+      credentialsPath: process.env.GOOGLE_APPLICATION_CREDENTIALS || 'NOT SET'
+    });
+  } catch (error) {
+    res.json({
+      error: error.message,
+      projectIdExists: !!PROJECT_ID
+    });
+  }
 });
 
 // GET /api/mood-tracker/image/:mood - Check if mood image exists or generate new one
@@ -181,16 +199,16 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
     // No cached image - try to generate new one
     console.log(`[Mood Image] 🆕 No cached image found, attempting to generate...`);
     
-    const STABILITY_API_KEY = process.env.VITE_STABILITY_API_KEY;
+    const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID;
     
-    console.log(`[Mood Image] 🔑 API Key exists: ${!!STABILITY_API_KEY}`);
-    console.log(`[Mood Image] 🔑 API Key length: ${STABILITY_API_KEY ? STABILITY_API_KEY.length : 0}`);
-    console.log(`[Mood Image] 🔑 API Key prefix: ${STABILITY_API_KEY?.substring(0, 10)}...`);
+    console.log(`[Mood Image] 🔑 Project ID exists: ${!!PROJECT_ID}`);
+    console.log(`[Mood Image] 🔑 Project ID: ${PROJECT_ID}`);
     
-    // If no API key, use fallback immediately
-    if (!STABILITY_API_KEY) {
-      console.log(`[Mood Image] ❌ No STABILITY_API_KEY found!`);
-      console.log(`[Mood Image] 💡 Add VITE_STABILITY_API_KEY to your .env file`);
+    // If no project ID, use fallback immediately
+    if (!PROJECT_ID) {
+      console.log(`[Mood Image] ❌ No GOOGLE_CLOUD_PROJECT_ID found!`);
+      console.log(`[Mood Image] 💡 Add GOOGLE_CLOUD_PROJECT_ID to your .env file`);
+      console.log(`[Mood Image] 💡 Also set GOOGLE_APPLICATION_CREDENTIALS to your service account key path`);
       console.log(`[Mood Image] 🎨 Using fallback SVG image`);
       
       const fallbackUrl = generateFallbackImage(mood);
@@ -213,59 +231,80 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
         imageUrl: fallbackUrl,
         cached: false,
         fallback: true,
-        reason: 'No API key configured',
+        reason: 'No Google Cloud project configured',
         generatedAt: moodImage.generatedAt
       });
     }
 
     const prompt = MOOD_PROMPTS[mood];
     console.log(`[Mood Image] 📝 Prompt: ${prompt.substring(0, 80)}...`);
-    console.log(`[Mood Image] 🚀 Calling Stability AI API with multipart/form-data...`);
+    console.log(`[Mood Image] 🚀 Calling Google Imagen API...`);
 
     try {
-      // Create FormData for multipart/form-data request
-      const formData = new FormData();
-      formData.append('prompt', prompt);
-      formData.append('negative_prompt', "cartoon, anime, drawing, illustration, painting, sketch, ugly, blurry, low quality, distorted, deformed, text, watermark, signature, multiple faces");
-      formData.append('output_format', 'png');
-      formData.append('aspect_ratio', '1:1');
+      // Get auth token
+      const accessToken = await getAuthToken();
+      console.log(`[Mood Image] 🔐 Authentication successful`);
 
-      const stabilityResponse = await axios.post(
-        'https://api.stability.ai/v2beta/stable-image/generate/core',
-        formData,
+      // Choose model version (fast, standard, or ultra)
+      const MODEL = process.env.IMAGEN_MODEL || 'imagen-4.0-fast-generate-001';
+      const API_URL = `https://us-central1-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/us-central1/publishers/google/models/${MODEL}:predict`;
+
+      const requestBody = {
+        instances: [
+          {
+            prompt: prompt
+          }
+        ],
+        parameters: {
+          sampleCount: 1
+        }
+      };
+
+      const imagenResponse = await axios.post(
+        API_URL,
+        requestBody,
         {
           headers: {
-            'Authorization': `Bearer ${STABILITY_API_KEY}`,
-            'Accept': 'image/*',
-            ...formData.getHeaders()
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json; charset=utf-8'
           },
-          responseType: 'arraybuffer',
-          timeout: 60000
+          timeout: 90000 // 90 seconds for image generation
         }
       );
 
-      console.log(`[Mood Image] ✅ Stability API SUCCESS!`);
-      console.log(`[Mood Image] 📊 Status: ${stabilityResponse.status}`);
-      console.log(`[Mood Image] 📦 Response size: ${stabilityResponse.data.length} bytes`);
+      console.log(`[Mood Image] ✅ Google Imagen API SUCCESS!`);
+      console.log(`[Mood Image] 📊 Status: ${imagenResponse.status}`);
 
-      const imageBase64 = Buffer.from(stabilityResponse.data, 'binary').toString('base64');
+      // Extract base64 image from response
+      const predictions = imagenResponse.data.predictions;
+      if (!predictions || predictions.length === 0) {
+        throw new Error('No predictions returned from Imagen API');
+      }
+
+      // Imagen returns base64 encoded image in bytesBase64Encoded field
+      const imageBase64 = predictions[0].bytesBase64Encoded;
       const imageUrl = `data:image/png;base64,${imageBase64}`;
 
       console.log(`[Mood Image] 🎨 Successfully generated AI image for ${mood}`);
       console.log(`[Mood Image] 💾 Saving to database...`);
 
-      moodImage = new MoodImage({
-        userId,
-        mood,
-        imageUrl,
-        imageData: imageBase64,
-        prompt,
-        generatedAt: new Date(),
-        usageCount: 1,
-        lastUsed: new Date()
-      });
-
-      await moodImage.save();
+      // Use upsert to avoid race condition duplicates
+      moodImage = await MoodImage.findOneAndUpdate(
+        { userId, mood },
+        {
+          imageUrl,
+          imageData: imageBase64,
+          prompt,
+          generatedAt: new Date(),
+          usageCount: 1,
+          lastUsed: new Date()
+        },
+        { 
+          upsert: true, 
+          new: true,
+          setDefaultsOnInsert: true
+        }
+      );
       console.log(`[Mood Image] ✅ Saved AI-generated image to database`);
 
       return res.json({
@@ -273,45 +312,40 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
         imageUrl,
         cached: false,
         aiGenerated: true,
+        model: MODEL,
         generatedAt: moodImage.generatedAt
       });
 
-    } catch (stabilityError) {
+    } catch (imagenError) {
       console.log('\n========================================');
-      console.error('[Mood Image] ❌ STABILITY API ERROR');
+      console.error('[Mood Image] ❌ GOOGLE IMAGEN API ERROR');
       console.log('========================================');
-      console.error('[Mood Image] Error message:', stabilityError.message);
-      console.error('[Mood Image] Status code:', stabilityError.response?.status);
-      console.error('[Mood Image] Status text:', stabilityError.response?.statusText);
+      console.error('[Mood Image] Error message:', imagenError.message);
+      console.error('[Mood Image] Status code:', imagenError.response?.status);
+      console.error('[Mood Image] Status text:', imagenError.response?.statusText);
       
-      if (stabilityError.response?.data) {
-        try {
-          const errorText = Buffer.from(stabilityError.response.data).toString();
-          console.error('[Mood Image] Error details:', errorText);
-        } catch (e) {
-          console.error('[Mood Image] Could not parse error details');
-        }
+      if (imagenError.response?.data) {
+        console.error('[Mood Image] Error details:', JSON.stringify(imagenError.response.data, null, 2));
       }
 
       // Provide specific error messages
       let errorReason = 'Unknown error';
-      if (stabilityError.response?.status === 401) {
-        errorReason = 'Invalid API key';
-        console.error('[Mood Image] 🔑 Your API key is invalid or expired');
-        console.error('[Mood Image] 💡 Get a new key at: https://platform.stability.ai/account/keys');
-      } else if (stabilityError.response?.status === 402) {
-        errorReason = 'Insufficient credits';
-        console.error('[Mood Image] 💳 Your account has insufficient credits');
-        console.error('[Mood Image] 💡 Add credits at: https://platform.stability.ai/account/billing');
-      } else if (stabilityError.response?.status === 404) {
+      if (imagenError.response?.status === 401) {
+        errorReason = 'Authentication failed';
+        console.error('[Mood Image] 🔑 Authentication failed - check your service account credentials');
+      } else if (imagenError.response?.status === 403) {
+        errorReason = 'Permission denied';
+        console.error('[Mood Image] 🚫 Permission denied - ensure Vertex AI API is enabled');
+        console.error('[Mood Image] 💡 Enable at: https://console.cloud.google.com/apis/library/aiplatform.googleapis.com');
+      } else if (imagenError.response?.status === 404) {
         errorReason = 'Model not found';
-        console.error('[Mood Image] 🤖 The core model is not available');
-      } else if (stabilityError.response?.status === 400) {
+        console.error('[Mood Image] 🤖 Model not found or not available in your region');
+      } else if (imagenError.response?.status === 400) {
         errorReason = 'Bad request';
         console.error('[Mood Image] 📝 Request format error');
-      } else if (stabilityError.code === 'ECONNABORTED') {
+      } else if (imagenError.code === 'ECONNABORTED') {
         errorReason = 'Request timeout';
-        console.error('[Mood Image] ⏱️ Request timed out after 60 seconds');
+        console.error('[Mood Image] ⏱️ Request timed out');
       }
       
       console.log(`[Mood Image] 🎨 Falling back to SVG placeholder`);
@@ -340,7 +374,7 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
         reason: errorReason,
         generatedAt: moodImage.generatedAt,
         warning: 'Using placeholder image - AI generation unavailable',
-        error: stabilityError.message
+        error: imagenError.message
       });
     }
 
@@ -374,8 +408,8 @@ router.post('/image/generate', authenticateToken, async (req, res) => {
       });
     }
 
-    const STABILITY_API_KEY = process.env.VITE_STABILITY_API_KEY;
-    if (!STABILITY_API_KEY) {
+    const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID;
+    if (!PROJECT_ID) {
       return res.status(500).json({ 
         success: false, 
         error: 'Image generation service not configured'
@@ -384,28 +418,36 @@ router.post('/image/generate', authenticateToken, async (req, res) => {
 
     const prompt = MOOD_PROMPTS[mood];
     
-    // Create FormData for multipart/form-data request
-    const formData = new FormData();
-    formData.append('prompt', prompt);
-    formData.append('negative_prompt', "cartoon, anime, drawing, illustration, painting, sketch, ugly, blurry, low quality, distorted, deformed, text, watermark, signature, multiple faces");
-    formData.append('output_format', 'png');
-    formData.append('aspect_ratio', '1:1');
+    // Get auth token
+    const accessToken = await getAuthToken();
     
-    const stabilityResponse = await axios.post(
-      'https://api.stability.ai/v2beta/stable-image/generate/core',
-      formData,
+    const MODEL = process.env.IMAGEN_MODEL || 'imagen-4.0-fast-generate-001';
+    const API_URL = `https://us-central1-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/us-central1/publishers/google/models/${MODEL}:predict`;
+
+    const requestBody = {
+      instances: [
+        {
+          prompt: prompt
+        }
+      ],
+      parameters: {
+        sampleCount: 1
+      }
+    };
+
+    const imagenResponse = await axios.post(
+      API_URL,
+      requestBody,
       {
         headers: {
-          'Authorization': `Bearer ${STABILITY_API_KEY}`,
-          'Accept': 'image/*',
-          ...formData.getHeaders()
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json; charset=utf-8'
         },
-        responseType: 'arraybuffer',
-        timeout: 60000
+        timeout: 90000
       }
     );
 
-    const imageBase64 = Buffer.from(stabilityResponse.data, 'binary').toString('base64');
+    const imageBase64 = imagenResponse.data.predictions[0].bytesBase64Encoded;
     const imageUrl = `data:image/png;base64,${imageBase64}`;
 
     const moodImage = await MoodImage.findOneAndUpdate(
@@ -431,18 +473,14 @@ router.post('/image/generate', authenticateToken, async (req, res) => {
       success: true,
       imageUrl,
       regenerated: true,
+      model: MODEL,
       generatedAt: moodImage.generatedAt
     });
 
   } catch (error) {
     console.error('[Mood Image] ❌ Regeneration error:', error.message);
     if (error.response?.data) {
-      try {
-        const errorText = Buffer.from(error.response.data).toString();
-        console.error('[Mood Image] Error details:', errorText);
-      } catch (e) {
-        console.error('[Mood Image] Could not parse error');
-      }
+      console.error('[Mood Image] Error details:', JSON.stringify(error.response.data, null, 2));
     }
     res.status(500).json({ 
       success: false, 
