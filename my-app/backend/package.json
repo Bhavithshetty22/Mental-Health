@@ -9,6 +9,7 @@
     "dev-minimal": "nodemon server-minimal.js"
   },
   "dependencies": {
+    "@google-cloud/text-to-speech": "^6.4.0",
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.12.1",
     "bcryptjs": "^3.0.2",

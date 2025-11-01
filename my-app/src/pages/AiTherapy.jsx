@@ -5,7 +5,6 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import "./AiTherapy.css";
 
 const VoiceChatTherapy = () => {
   // Core state
@@ -33,8 +32,8 @@ const VoiceChatTherapy = () => {
   const processingTimeoutRef = useRef(null);
   const ttsTimeoutRef = useRef(null);
 
-  // Default ElevenLabs voice (Adam - calm, professional)
-  const defaultVoice = "pNInz6obpgDQGcFmaJgB";
+  // API URL - Update this to match your server
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   // Memoized constants
   const crisisKeywords = useMemo(
@@ -194,58 +193,51 @@ const VoiceChatTherapy = () => {
     };
   }, []);
 
-  // ElevenLabs TTS function
-  const callElevenLabsTTS = useCallback(async (text) => {
+  // Google Cloud TTS function
+  const callGoogleCloudTTS = useCallback(async (text) => {
     return new Promise(async (resolve) => {
       try {
-        const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
-        
-        if (!apiKey) {
-          console.warn("ElevenLabs API key not found, falling back to browser TTS");
-          await callBrowserTTS(text);
-          resolve();
-          return;
-        }
-
         if (!text?.trim()) {
           resolve();
           return;
         }
 
+        console.log("Calling Google Cloud TTS API...");
+        
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-        const response = await fetch(
-          `https://api.elevenlabs.io/v1/text-to-speech/${defaultVoice}`,
-          {
-            method: 'POST',
-            headers: {
-              'Accept': 'audio/mpeg',
-              'Content-Type': 'application/json',
-              'xi-api-key': apiKey
-            },
-            body: JSON.stringify({
-              text: text.trim(),
-              model_id: "eleven_monolingual_v1",
-              voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.75,
-                style: 0.0,
-                use_speaker_boost: true
-              }
-            }),
-            signal: controller.signal
-          }
-        );
+        const response = await fetch(`${API_URL}/api/text-to-speech`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            text: text.trim()
+          }),
+          signal: controller.signal
+        });
 
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-          throw new Error(`ElevenLabs API error: ${response.status}`);
+          const errorData = await response.json();
+          throw new Error(errorData.error || `TTS API error: ${response.status}`);
         }
 
-        const arrayBuffer = await response.arrayBuffer();
-        const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+        const data = await response.json();
+        
+        if (!data.audio) {
+          throw new Error('No audio data received from server');
+        }
+
+        // Convert base64 to blob
+        const binaryString = atob(data.audio);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'audio/mpeg' });
         const audioUrl = URL.createObjectURL(blob);
         
         if (audioRef.current) {
@@ -258,14 +250,14 @@ const VoiceChatTherapy = () => {
             URL.revokeObjectURL(audioUrl);
             resolve();
           };
-          audioRef.current.play().catch(() => resolve());
+          await audioRef.current.play().catch(() => resolve());
         } else {
           URL.revokeObjectURL(audioUrl);
           resolve();
         }
 
       } catch (error) {
-        console.error("ElevenLabs TTS error:", error);
+        console.error("Google Cloud TTS error:", error);
         // Fallback to browser TTS
         try {
           await callBrowserTTS(text);
@@ -276,7 +268,7 @@ const VoiceChatTherapy = () => {
         }
       }
     });
-  }, []);
+  }, [API_URL]);
 
   // Browser TTS fallback
   const callBrowserTTS = useCallback(async (text) => {
@@ -437,14 +429,14 @@ Respond as Alex the therapist to the user's most recent message.`;
 
       setIsPlaying(true);
       try {
-        await callElevenLabsTTS(text);
+        await callGoogleCloudTTS(text);
       } catch (error) {
         console.warn("TTS failed:", error);
       } finally {
         setIsPlaying(false);
       }
     },
-    [callElevenLabsTTS]
+    [callGoogleCloudTTS]
   );
 
   const suggestExercises = useCallback(() => {
@@ -660,7 +652,7 @@ Time: ${sessionTime}
 Duration: ${Math.round(
       (new Date() - conversationStartTime.current) / (1000 * 60)
     )} minutes
-TTS: ElevenLabs AI Voice
+TTS: Google Cloud Text-to-Speech
 
 CONVERSATION:
 ${conversationHistory}
@@ -675,7 +667,7 @@ ${
 }
 
 ---
-Generated by AI Therapy Assistant with ElevenLabs TTS`;
+Generated by AI Therapy Assistant with Google Cloud TTS`;
 
     const blob = new Blob([exportContent], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -754,47 +746,70 @@ Generated by AI Therapy Assistant with ElevenLabs TTS`;
     if (!showCrisisModal) return null;
 
     return (
-      <div className="crisis-modal-overlay">
-        <div className="crisis-modal">
-          <div className="crisis-header">
-            <h2>🚨 Immediate Support Available</h2>
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0.8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '30px',
+          borderRadius: '10px',
+          maxWidth: '600px',
+          maxHeight: '80vh',
+          overflow: 'auto'
+        }}>
+          <h2 style={{ color: '#dc3545', marginBottom: '20px' }}>🚨 Immediate Support Available</h2>
+          <p style={{ marginBottom: '20px' }}>
+            I'm concerned about what you've shared. You're not alone, and help
+            is available right now.
+          </p>
+
+          <div style={{ marginBottom: '20px' }}>
+            <h3>Crisis Helplines:</h3>
+            {Object.entries(helplines).map(([country, info]) => (
+              <div key={country} style={{ margin: '10px 0' }}>
+                <strong>
+                  {info.name} ({country}):
+                </strong>
+                <a href={`tel:${info.number}`} style={{ marginLeft: '10px', color: '#007bff' }}>
+                  {info.number}
+                </a>
+              </div>
+            ))}
           </div>
-          <div className="crisis-content">
-            <p>
-              I'm concerned about what you've shared. You're not alone, and help
-              is available right now.
-            </p>
 
-            <div className="helplines">
-              <h3>Crisis Helplines:</h3>
-              {Object.entries(helplines).map(([country, info]) => (
-                <div key={country} className="helpline-item">
-                  <strong>
-                    {info.name} ({country}):
-                  </strong>
-                  <a href={`tel:${info.number}`} className="helpline-number">
-                    {info.number}
-                  </a>
-                </div>
-              ))}
-            </div>
-
-            <div className="crisis-actions">
-              <p>
-                <strong>Please consider:</strong>
-              </p>
-              <ul>
-                <li>Calling one of these helplines immediately</li>
-                <li>Going to your nearest emergency room</li>
-                <li>Contacting a trusted friend or family member</li>
-                <li>Reaching out to your therapist or doctor</li>
-              </ul>
-            </div>
-
-            <button className="crisis-close-btn" onClick={closeCrisisModal}>
-              I understand - Continue Session
-            </button>
+          <div style={{ marginBottom: '20px' }}>
+            <p><strong>Please consider:</strong></p>
+            <ul>
+              <li>Calling one of these helplines immediately</li>
+              <li>Going to your nearest emergency room</li>
+              <li>Contacting a trusted friend or family member</li>
+              <li>Reaching out to your therapist or doctor</li>
+            </ul>
           </div>
+
+          <button
+            onClick={closeCrisisModal}
+            style={{
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              width: '100%'
+            }}
+          >
+            I understand - Continue Session
+          </button>
         </div>
       </div>
     );
@@ -805,273 +820,322 @@ Generated by AI Therapy Assistant with ElevenLabs TTS`;
       if (sessionEnded)
         return {
           text: "Session Ended - Review your summary below",
-          className: "session-ended",
+          color: "#6c757d",
         };
       if (crisisDetected)
         return {
           text: "Crisis support activated - Help is available",
-          className: "crisis-status",
+          color: "#dc3545",
         };
-      if (isListening) return { text: "Listening...", className: "" };
+      if (isListening) return { text: "Listening...", color: "#28a745" };
       if (isProcessing)
-        return { text: "Processing your message...", className: "" };
+        return { text: "Processing your message...", color: "#ffc107" };
       if (isPlaying) return { 
-        text: "Speaking with ElevenLabs AI voice...", 
-        className: "" 
+        text: "Speaking with Google Cloud AI voice...", 
+        color: "#17a2b8" 
       };
-      return { text: "Ready to listen", className: "" };
+      return { text: "Ready to listen", color: "#007bff" };
     };
 
     const status = getStatusText();
-    return <p className={`status-text ${status.className}`}>{status.text}</p>;
+    return <p style={{ color: status.color, fontSize: '18px', fontWeight: 'bold' }}>{status.text}</p>;
   }, [sessionEnded, crisisDetected, isListening, isProcessing, isPlaying]);
 
   return (
-    <div className="voice-therapy-container">
-      <div className="therapy-interface">
-        {CrisisModal}
+    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
+      {CrisisModal}
 
-        {/* AI Avatar */}
-        <div className="ai-avatar">
-          <div
-            className={`avatar-orb ${isListening ? "listening" : ""} ${
-              isProcessing ? "processing" : ""
-            } ${isPlaying ? "speaking" : ""} ${
-              crisisDetected ? "crisis" : ""
-            } ${sessionEnded ? "ended" : ""}`}
-          >
-           <iframe
-  title="Spline Scene - Meeet"
-  src="https://my.spline.design/meeet-mJCMHlwEum7Q9VDg1lMSTzes/"
-  frameBorder="0"
-  allowFullScreen
-  style={{
-    position: "absolute",
-    inset: 0,
-    width: "100%",
-    height: "100%",
-    border: 0,
-   filter: "hue-rotate(240deg) saturate(1.3) brightness(1.1)"
-  }}
-/>
-          </div>
+      {/* AI Avatar */}
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <div style={{
+          width: '200px',
+          height: '200px',
+          margin: '0 auto',
+          borderRadius: '50%',
+          background: isListening ? 'linear-gradient(45deg, #28a745, #20c997)' :
+                      isProcessing ? 'linear-gradient(45deg, #ffc107, #fd7e14)' :
+                      isPlaying ? 'linear-gradient(45deg, #17a2b8, #007bff)' :
+                      crisisDetected ? 'linear-gradient(45deg, #dc3545, #c82333)' :
+                      sessionEnded ? 'linear-gradient(45deg, #6c757d, #495057)' :
+                      'linear-gradient(45deg, #007bff, #6610f2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <iframe
+            title="Spline Scene - Meeet"
+            src="https://my.spline.design/meeet-mJCMHlwEum7Q9VDg1lMSTzes/"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              border: 0,
+              filter: "hue-rotate(240deg) saturate(1.3) brightness(1.1)"
+            }}
+          />
         </div>
+      </div>
 
-        {/* Status Display */}
-        <div className="status-display">{StatusDisplay}</div>
+      {/* Status Display */}
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        {StatusDisplay}
+      </div>
 
-        {/* Transcript Display */}
-        {transcript && !sessionEnded && (
-          <div className="transcript-display">
-            <p>You said: "{transcript}"</p>
-          </div>
-        )}
+      {/* Transcript Display */}
+      {transcript && !sessionEnded && (
+        <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+          <p>You said: "{transcript}"</p>
+        </div>
+      )}
 
-        {/* Error Display */}
-        {error && (
-          <div className="error-display">
-            <p>{error}</p>
-          </div>
-        )}
+      {/* Error Display */}
+      {error && (
+        <div style={{ background: '#f8d7da', color: '#721c24', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+          <p>{error}</p>
+        </div>
+      )}
 
-        {/* Control Buttons */}
-        <div className="control-buttons">
-          {!sessionEnded ? (
-            <>
+      {/* Control Buttons */}
+      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+        {!sessionEnded ? (
+          <>
+            <button
+              onClick={isListening ? stopListening : startListening}
+              disabled={isProcessing || isPlaying}
+              style={{
+                backgroundColor: isListening ? '#dc3545' : '#28a745',
+                color: 'white',
+                padding: '15px 30px',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: isProcessing || isPlaying ? 'not-allowed' : 'pointer',
+                fontSize: '16px',
+                marginRight: '10px',
+                opacity: isProcessing || isPlaying ? 0.6 : 1
+              }}
+            >
+              {isListening ? "Stop Talking" : "Start Talking"}
+            </button>
+
+            <button
+              onClick={endConversation}
+              disabled={isProcessing || isPlaying}
+              style={{
+                backgroundColor: '#dc3545',
+                color: 'white',
+                padding: '15px 30px',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: isProcessing || isPlaying ? 'not-allowed' : 'pointer',
+                fontSize: '16px',
+                marginRight: '10px',
+                opacity: isProcessing || isPlaying ? 0.6 : 1
+              }}
+            >
+              End Conversation
+            </button>
+
+            {conversationHistory && (
               <button
-                className={`voice-button ${isListening ? "active" : ""}`}
-                onClick={isListening ? stopListening : startListening}
-                disabled={isProcessing || isPlaying}
-              >
-                {isListening ? "Stop Talking" : "Start Talking"}
-              </button>
-
-              <button
-                className="end-conversation-button"
-                onClick={endConversation}
-                disabled={isProcessing || isPlaying}
-                style={{
-                  backgroundColor: "#dc3545",
-                  color: "white",
-                  marginLeft: "10px",
-                  padding: "10px 20px",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                }}
-              >
-                End Conversation
-              </button>
-
-              {conversationHistory && (
-                <button
-                  className="export-button"
-                  onClick={exportTranscript}
-                  style={{
-                    backgroundColor: "#28a745",
-                    color: "white",
-                    marginLeft: "10px",
-                    padding: "10px 20px",
-                    border: "none",
-                    borderRadius: "5px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Export Transcript
-                </button>
-              )}
-            </>
-          ) : (
-            <div>
-              <button
-                className="new-session-button"
-                onClick={startNewSession}
-                style={{ marginRight: "10px" }}
-              >
-                Start New Session
-              </button>
-              <button
-                className="export-button"
                 onClick={exportTranscript}
                 style={{
-                  backgroundColor: "#28a745",
-                  color: "white",
-                  padding: "10px 20px",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer",
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  padding: '15px 30px',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '16px'
                 }}
               >
-                Export Final Transcript
+                Export Transcript
               </button>
+            )}
+          </>
+        ) : (
+          <div>
+            <button
+              onClick={startNewSession}
+              style={{
+                backgroundColor: '#007bff',
+                color: 'white',
+                padding: '15px 30px',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                marginRight: '10px'
+              }}
+            >
+              Start New Session
+            </button>
+            <button
+              onClick={exportTranscript}
+              style={{
+                backgroundColor: '#28a745',
+                color: 'white',
+                padding: '15px 30px',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '16px'
+              }}
+            >
+              Export Final Transcript
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Live Conversation History Display */}
+      {conversationHistory && (
+        <div style={{ marginBottom: '30px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h3>Live Conversation History</h3>
+            <div>
+              <button
+                onClick={() => setShowFullTranscript(!showFullTranscript)}
+                style={{
+                  background: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  padding: '5px 15px',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  marginRight: '10px'
+                }}
+              >
+                {showFullTranscript ? "Hide" : "Show"} History
+              </button>
+              <span style={{ marginRight: '10px', fontWeight: 'bold' }}>
+                Messages: {conversation.length}
+              </span>
+              {!sessionEnded && (
+                <button
+                  onClick={clearConversation}
+                  style={{
+                    backgroundColor: '#ffc107',
+                    color: '#000',
+                    border: 'none',
+                    padding: '5px 15px',
+                    borderRadius: '3px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Clear History
+                </button>
+              )}
+            </div>
+          </div>
+
+          {showFullTranscript && (
+            <div style={{
+              maxHeight: '400px',
+              overflowY: 'auto',
+              backgroundColor: '#f8f9fa',
+              padding: '15px',
+              borderRadius: '8px',
+              border: '1px solid #dee2e6'
+            }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '14px', lineHeight: '1.5' }}>
+                {conversationHistory.split("\n").map((line, index) => {
+                  const isUser = line.startsWith("User:");
+                  const isAI = line.startsWith("AI:");
+                  return (
+                    <div
+                      key={index}
+                      style={{
+                        marginBottom: '10px',
+                        padding: '8px',
+                        borderRadius: '5px',
+                        backgroundColor: isUser
+                          ? '#424b52'
+                          : isAI
+                          ? '#412f44'
+                          : 'transparent',
+                        borderLeft: isUser
+                          ? '4px solid #2196f3'
+                          : isAI
+                          ? '4px solid #9c27b0'
+                          : 'none',
+                        color: isUser || isAI ? '#fff' : '#000'
+                      }}
+                    >
+                      {line}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
+      )}
 
-        {/* Live Conversation History Display */}
-        {conversationHistory && (
-          <div className="conversation-transcript">
-            <div className="transcript-header">
-              <h3>Live Conversation History</h3>
-              <div className="transcript-actions">
-                <button
-                  className="toggle-transcript-btn"
-                  onClick={() => setShowFullTranscript(!showFullTranscript)}
-                >
-                  {showFullTranscript ? "Hide" : "Show"} History
-                </button>
-                <div className="conversation-counter">
-                  <span>Messages: {conversation.length}</span>
-                </div>
-                {!sessionEnded && (
-                  <button
-                    className="clear-button"
-                    onClick={clearConversation}
-                    style={{
-                      backgroundColor: "#ffc107",
-                      color: "#000",
-                      border: "none",
-                      padding: "5px 10px",
-                      borderRadius: "3px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Clear History
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {showFullTranscript && (
+      {/* Suggested Exercises */}
+      {suggestedExercises.length > 0 && (
+        <div style={{ marginBottom: '30px' }}>
+          <h3>Recommended Exercises for You</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+            {suggestedExercises.slice(0, 3).map((exercise, index) => (
               <div
-                className="transcript-content"
+                key={index}
                 style={{
-                  maxHeight: "400px",
-                  overflowY: "auto",
-                  backgroundColor: "#f8f9fa",
-                  padding: "15px",
-                  borderRadius: "8px",
-                  marginTop: "10px",
-                  border: "1px solid #dee2e6",
+                  background: '#fff',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '8px',
+                  padding: '15px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}
               >
-                <div
-                  style={{
-                    whiteSpace: "pre-line",
-                    fontFamily: "monospace",
-                    fontSize: "14px",
-                    lineHeight: "1.5",
-                  }}
-                >
-                  {conversationHistory.split("\n").map((line, index) => {
-                    const isUser = line.startsWith("User:");
-                    const isAI = line.startsWith("AI:");
-                    return (
-                      <div
-                        key={index}
-                        style={{
-                          marginBottom: "10px",
-                          padding: "8px",
-                          borderRadius: "5px",
-                          backgroundColor: isUser
-                            ? "#424b52ff"
-                            : isAI
-                            ? "#412f44ff"
-                            : "transparent",
-                          borderLeft: isUser
-                            ? "4px solid #2196f3"
-                            : isAI
-                            ? "4px solid #9c27b0"
-                            : "none",
-                        }}
-                      >
-                        {line}
-                      </div>
-                    );
-                  })}
-                </div>
+                <h4 style={{ marginTop: 0, color: '#007bff' }}>{exercise.name}</h4>
+                <p>{exercise.description}</p>
+                <span style={{
+                  display: 'inline-block',
+                  background: '#e7f3ff',
+                  color: '#0056b3',
+                  padding: '5px 10px',
+                  borderRadius: '3px',
+                  fontSize: '12px',
+                  fontWeight: 'bold'
+                }}>
+                  {exercise.duration}
+                </span>
               </div>
-            )}
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Suggested Exercises */}
-        {suggestedExercises.length > 0 && (
-          <div className="exercises-container">
-            <h3>Recommended Exercises for You</h3>
-            <div className="exercises-grid">
-              {suggestedExercises.slice(0, 3).map((exercise, index) => (
-                <div key={index} className="exercise-card">
-                  <h4>{exercise.name}</h4>
-                  <p>{exercise.description}</p>
-                  <span className="exercise-duration">{exercise.duration}</span>
-                </div>
-              ))}
-            </div>
+      {/* Session Summary */}
+      {showSummary && (
+        <div style={{
+          background: '#fff',
+          border: '1px solid #dee2e6',
+          borderRadius: '8px',
+          padding: '20px',
+          marginBottom: '30px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          <h3 style={{ marginTop: 0, color: '#007bff' }}>Session Summary</h3>
+          <div>
+            {conversationSummary.split("\n").map((line, index) => (
+              <p key={index}>{line}</p>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Session Summary */}
-        {showSummary && (
-          <div className="summary-container">
-            <div className="summary-header">
-              <h3>Session Summary</h3>
-            </div>
-            <div className="summary-content">
-              {conversationSummary.split("\n").map((line, index) => (
-                <p key={index}>{line}</p>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Hidden audio element */}
-        <audio
-          ref={audioRef}
-          onEnded={handleAudioEnd}
-          style={{ display: "none" }}
-        />
-      </div>
+      {/* Hidden audio element */}
+      <audio
+        ref={audioRef}
+        onEnded={handleAudioEnd}
+        style={{ display: "none" }}
+      />
     </div>
   );
 };

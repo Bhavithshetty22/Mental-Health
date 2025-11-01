@@ -27,3 +27,5 @@ backend/.env
 # Sensitive credentials
 backend/vertex-key.json
 **/vertex-key.json
+backend/google-credentials.json
+**/google-credentials.json

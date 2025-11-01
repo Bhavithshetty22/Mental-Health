@@ -1,4 +1,4 @@
-// server.js (enhanced with Vertex AI Imagen + Creative Endpoint)
+// server.js (enhanced with Vertex AI Imagen + Creative Endpoint + Google Cloud TTS)
 
 require("dotenv").config(); // Load .env first
 
@@ -8,6 +8,7 @@ const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 const axios = require("axios");
 const { GoogleAuth } = require('google-auth-library');
+const textToSpeech = require('@google-cloud/text-to-speech');
 
 const moodRoutes = require("./routes/moodRoutes"); 
 const lettersRouter = require("./routes/letters"); 
@@ -115,6 +116,17 @@ const limiter = rateLimit({
 });
 
 app.use("/api/", limiter);
+
+// ===== Initialize Google Cloud Text-to-Speech =====
+let ttsClient = null;
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  try {
+    ttsClient = new textToSpeech.TextToSpeechClient();
+    console.log("✅ Google Cloud Text-to-Speech client initialized");
+  } catch (err) {
+    console.error("❌ Could not instantiate Text-to-Speech client:", err?.message);
+  }
+}
 
 // ===== Debug .env =====
 console.log("DEBUG MONGO_URI:", process.env.MONGO_URI ? "present" : "MISSING");
@@ -542,6 +554,97 @@ function getMoodSuggestions(mood) {
   return suggestions[moodKey] || suggestions['neutral'];
 }
 
+// ===== Google Cloud Text-to-Speech Endpoint =====
+app.post('/api/text-to-speech', async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ 
+        error: 'Text is required',
+        code: 'MISSING_TEXT'
+      });
+    }
+
+    if (text.length > 5000) {
+      return res.status(400).json({
+        error: 'Text too long (max 5000 characters)',
+        code: 'TEXT_TOO_LONG'
+      });
+    }
+
+    if (!ttsClient) {
+      return res.status(500).json({
+        error: 'Text-to-Speech service not configured',
+        details: 'Please ensure GOOGLE_APPLICATION_CREDENTIALS is set and Text-to-Speech API is enabled',
+        code: 'TTS_NOT_CONFIGURED'
+      });
+    }
+
+    console.log(`Generating speech for text (${text.length} chars)`);
+
+    // Construct the request
+    const request = {
+      input: { text: text.trim() },
+      voice: {
+        languageCode: 'en-US',
+        name: 'en-US-Neural2-D', // Calm, professional male voice
+        ssmlGender: 'MALE'
+      },
+      audioConfig: {
+        audioEncoding: 'MP3',
+        speakingRate: 1.0,
+        pitch: 0.0,
+        volumeGainDb: 0.0,
+        effectsProfileId: ['handset-class-device'] // Optimized for voice
+      }
+    };
+
+    // Perform the text-to-speech request
+    const [response] = await ttsClient.synthesizeSpeech(request);
+
+    if (!response.audioContent) {
+      throw new Error('No audio content returned from Google TTS');
+    }
+
+    // Convert the audio content to base64
+    const audioBase64 = response.audioContent.toString('base64');
+
+    console.log(`Speech generated successfully (${audioBase64.length} chars)`);
+
+    res.json({
+      audio: audioBase64,
+      contentType: 'audio/mpeg',
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error in text-to-speech:', error);
+
+    if (error.code === 7) { // PERMISSION_DENIED
+      return res.status(403).json({
+        error: 'Text-to-Speech API access denied',
+        details: 'Please ensure Text-to-Speech API is enabled and service account has proper permissions',
+        code: 'PERMISSION_DENIED'
+      });
+    }
+
+    if (error.code === 8) { // RESOURCE_EXHAUSTED
+      return res.status(429).json({
+        error: 'Text-to-Speech quota exceeded',
+        details: 'Too many requests. Please try again later.',
+        code: 'QUOTA_EXCEEDED'
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to generate speech',
+      details: error.message,
+      code: 'TTS_ERROR'
+    });
+  }
+});
+
 // ===== NEW: Creative Content (Story + Poem) Endpoint =====
 app.post('/api/creative', async (req, res) => {
   try {
@@ -841,7 +944,7 @@ Output only the final artistic image prompt, nothing else.`,
     if (error.message?.includes('access token')) {
       return res.status(500).json({ 
         error: 'Authentication failed with Google Cloud',
-       details: 'Please check GOOGLE_APPLICATION_CREDENTIALS path and service account permissions',
+        details: 'Please check GOOGLE_APPLICATION_CREDENTIALS path and service account permissions',
         code: 'AUTH_ERROR'
       });
     }
@@ -1041,6 +1144,7 @@ app.use((req, res, next) => {
       "POST /api/generate-image",
       "POST /api/creative",
       "POST /api/detect-mood",
+      "POST /api/text-to-speech",
       "POST /api/songs",
       "POST /api/auth/signup",
       "POST /api/auth/login",
@@ -1096,8 +1200,9 @@ app.listen(PORT, () => {
   console.log(`   GET  /api/health`);
   console.log(`   POST /api/generate`);
   console.log(`   POST /api/generate-image (Vertex AI Imagen)`);
-  console.log(`   POST /api/creative (NEW - Story + Poem)`);
+  console.log(`   POST /api/creative (Story + Poem)`);
   console.log(`   POST /api/detect-mood`);
+  console.log(`   POST /api/text-to-speech (Google Cloud TTS)`);
   console.log(`   POST /api/songs`);
   console.log(`   POST /api/auth/signup`);
   console.log(`   POST /api/auth/login`);
