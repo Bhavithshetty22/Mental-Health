@@ -4,20 +4,21 @@ const router = express.Router();
 const axios = require('axios');
 const { GoogleAuth } = require('google-auth-library');
 const MoodImage = require('../models/MoodImage');
+const User = require('../models/User');
 const { authenticateToken } = require('./auth');
 
-const BASE_CHARACTER = "portrait of a young Asian person with medium-length dark hair, soft natural lighting, consistent character design, photorealistic, cinematic lighting, 4k ultra detail, realistic skin texture, same person in all moods, upper body shot";
+const BASE_CHARACTER = "Disney Pixar style 3D character of the same person, consistent facial features and proportions, expressive eyes, detailed 3D rendering, cinematic lighting, soft subsurface skin scattering, vibrant color palette, upper body shot, high quality CGI render, Pixar-quality detail";
 
 const MOOD_PROMPTS = {
-  terrible: `${BASE_CHARACTER}, crying softly, eyes red and teary, expression of deep sadness and emotional pain, dim cool lighting, empathetic atmosphere, cinematic realism, subtle tears on face, muted tones`,
+  terrible: `${BASE_CHARACTER}, softly crying, glossy teary eyes, trembling lips, expression of deep sadness and heartbreak, cool blue ambient lighting, emotional Pixar atmosphere, soft rain or mist in background, cinematic depth of field`,
   
-  bad: `${BASE_CHARACTER}, worried and anxious expression, slightly furrowed brows, eyes looking down, low contrast lighting, somber atmosphere, emotional realism, muted background colors`,
+  bad: `${BASE_CHARACTER}, worried or anxious expression, eyebrows furrowed, subtle frown, gentle downcast eyes, moody soft lighting, muted color palette, emotional storytelling vibe, warm-cool contrast lighting`,
   
-  okay: `${BASE_CHARACTER}, neutral relaxed expression, gentle eye contact, calm breathing, balanced soft lighting, natural background blur, peaceful composition, warm and cool tones balanced`,
+  okay: `${BASE_CHARACTER}, neutral calm face, relaxed posture, subtle smile, balanced soft lighting, cozy natural setting, gentle background blur, emotionally grounded and peaceful feel`,
   
-  good: `${BASE_CHARACTER}, gentle happy smile, warm eyes, positive calm energy, golden hour lighting, soft shadows, vibrant yet natural tones, cinematic depth of field`,
+  good: `${BASE_CHARACTER}, gentle confident smile, bright eyes, soft warm lighting like sunset glow, joyful subtle expression, Pixar-like depth and texture, slightly colorful background, cinematic atmosphere`,
   
-  amazing: `${BASE_CHARACTER}, laughing joyfully, radiant smile, bright eyes, expressive face full of energy, vivid colorful lighting, warm golden tones, cinematic portrait with sparkle in eyes`
+  amazing: `${BASE_CHARACTER}, laughing with joy, big expressive smile, sparkling eyes, dynamic 3D lighting, vibrant Pixar color palette, warm golden tones, playful energy, cinematic close-up with magical sparkle or bokeh light effects`
 };
 
 const MOOD_COLORS = {
@@ -140,6 +141,92 @@ function getMoodMouth(mood) {
   }
 }
 
+// Helper function to clean base64 image
+function cleanBase64Image(base64String) {
+  if (base64String.startsWith('data:')) {
+    return base64String.split(',')[1];
+  }
+  return base64String;
+}
+
+// Helper function to call Imagen 3 Edit API with mask
+async function generateMoodImageWithReference(accessToken, projectId, userImageBase64, mood, prompt) {
+  const MODEL = 'imagegeneration@006'; // Imagen 3
+  const API_URL = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/${MODEL}:predict`;
+
+  // Clean the base64 image
+  const cleanedImage = cleanBase64Image(userImageBase64);
+
+  const requestBody = {
+    instances: [
+      {
+        prompt: prompt,
+        image: {
+          bytesBase64Encoded: cleanedImage
+        }
+      }
+    ],
+    parameters: {
+      sampleCount: 1,
+      mode: "mask-free-edit",
+      guidanceScale: 15,
+      numberOfImages: 1
+    }
+  };
+
+  console.log('[Mood Image] 🎨 Using Imagen 3 Edit mode with user reference image');
+
+  const response = await axios.post(
+    API_URL,
+    requestBody,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=utf-8'
+      },
+      timeout: 120000 // 2 minutes
+    }
+  );
+
+  return response;
+}
+
+// Helper function to call standard Imagen generation
+async function generateMoodImageStandard(accessToken, projectId, prompt) {
+  const MODEL = process.env.IMAGEN_MODEL || 'imagen-4.0-fast-generate-001';
+  const API_URL = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/${MODEL}:predict`;
+
+  const requestBody = {
+    instances: [
+      {
+        prompt: prompt
+      }
+    ],
+    parameters: {
+      sampleCount: 1,
+      aspectRatio: "1:1",
+      personGeneration: "allow_adult",
+      safetySetting: "block_some"
+    }
+  };
+
+  console.log('[Mood Image] 🎨 Using standard Imagen generation');
+
+  const response = await axios.post(
+    API_URL,
+    requestBody,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=utf-8'
+      },
+      timeout: 90000
+    }
+  );
+
+  return response;
+}
+
 // DEBUG ENDPOINT - Check API configuration
 router.get('/debug/config', authenticateToken, async (req, res) => {
   const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID;
@@ -199,10 +286,14 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
     // No cached image - try to generate new one
     console.log(`[Mood Image] 🆕 No cached image found, attempting to generate...`);
     
+    // Fetch user's profile image
+    const user = await User.findById(userId).select('profileImage name');
+    console.log(`[Mood Image] 👤 User found: ${user?.name}`);
+    console.log(`[Mood Image] 🖼️ Profile image exists: ${!!user?.profileImage}`);
+    
     const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID;
     
     console.log(`[Mood Image] 🔑 Project ID exists: ${!!PROJECT_ID}`);
-    console.log(`[Mood Image] 🔑 Project ID: ${PROJECT_ID}`);
     
     // If no project ID, use fallback immediately
     if (!PROJECT_ID) {
@@ -245,32 +336,36 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
       const accessToken = await getAuthToken();
       console.log(`[Mood Image] 🔐 Authentication successful`);
 
-      // Choose model version (fast, standard, or ultra)
-      const MODEL = process.env.IMAGEN_MODEL || 'imagen-4.0-fast-generate-001';
-      const API_URL = `https://us-central1-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/us-central1/publishers/google/models/${MODEL}:predict`;
+      let imagenResponse;
+      let usedProfileImage = false;
 
-      const requestBody = {
-        instances: [
-          {
-            prompt: prompt
-          }
-        ],
-        parameters: {
-          sampleCount: 1
+      // Try to use user's profile image if available
+      if (user?.profileImage && process.env.USE_IMAGE_EDIT === 'true') {
+        try {
+          console.log(`[Mood Image] 🖼️ Attempting to use profile image with Imagen 3 Edit...`);
+          imagenResponse = await generateMoodImageWithReference(
+            accessToken, 
+            PROJECT_ID, 
+            user.profileImage, 
+            mood, 
+            prompt
+          );
+          usedProfileImage = true;
+          console.log(`[Mood Image] ✅ Successfully used profile image reference`);
+        } catch (editError) {
+          console.log(`[Mood Image] ⚠️ Image edit failed, falling back to standard generation`);
+          console.error('[Mood Image] Edit error:', editError.message);
+          imagenResponse = await generateMoodImageStandard(accessToken, PROJECT_ID, prompt);
         }
-      };
-
-      const imagenResponse = await axios.post(
-        API_URL,
-        requestBody,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json; charset=utf-8'
-          },
-          timeout: 90000 // 90 seconds for image generation
+      } else {
+        // Standard generation without reference image
+        if (!user?.profileImage) {
+          console.log(`[Mood Image] ℹ️ No profile image found, using standard generation`);
+        } else {
+          console.log(`[Mood Image] ℹ️ USE_IMAGE_EDIT not enabled, using standard generation`);
         }
-      );
+        imagenResponse = await generateMoodImageStandard(accessToken, PROJECT_ID, prompt);
+      }
 
       console.log(`[Mood Image] ✅ Google Imagen API SUCCESS!`);
       console.log(`[Mood Image] 📊 Status: ${imagenResponse.status}`);
@@ -288,31 +383,41 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
       console.log(`[Mood Image] 🎨 Successfully generated AI image for ${mood}`);
       console.log(`[Mood Image] 💾 Saving to database...`);
 
-      // Use upsert to avoid race condition duplicates
-      moodImage = await MoodImage.findOneAndUpdate(
-        { userId, mood },
-        {
+      // Check if image already exists and update or create
+      const existingImage = await MoodImage.findOne({ userId, mood });
+      
+      if (existingImage) {
+        // Update existing image
+        existingImage.imageUrl = imageUrl;
+        existingImage.imageData = imageBase64;
+        existingImage.prompt = prompt;
+        existingImage.generatedAt = new Date();
+        existingImage.usageCount = 1;
+        existingImage.lastUsed = new Date();
+        moodImage = await existingImage.save();
+        console.log(`[Mood Image] ✅ Updated existing image in database`);
+      } else {
+        // Create new image
+        moodImage = new MoodImage({
+          userId,
+          mood,
           imageUrl,
           imageData: imageBase64,
           prompt,
           generatedAt: new Date(),
           usageCount: 1,
           lastUsed: new Date()
-        },
-        { 
-          upsert: true, 
-          new: true,
-          setDefaultsOnInsert: true
-        }
-      );
-      console.log(`[Mood Image] ✅ Saved AI-generated image to database`);
+        });
+        await moodImage.save();
+        console.log(`[Mood Image] ✅ Saved new AI-generated image to database`);
+      }
 
       return res.json({
         success: true,
         imageUrl,
         cached: false,
         aiGenerated: true,
-        model: MODEL,
+        usedProfileImage,
         generatedAt: moodImage.generatedAt
       });
 
@@ -353,18 +458,28 @@ router.get('/image/:mood', authenticateToken, async (req, res) => {
       
       const fallbackUrl = generateFallbackImage(mood);
       
-      moodImage = new MoodImage({
-        userId,
-        mood,
-        imageUrl: fallbackUrl,
-        imageData: 'fallback',
-        prompt,
-        generatedAt: new Date(),
-        usageCount: 1,
-        lastUsed: new Date()
-      });
-
-      await moodImage.save();
+      const existingFallback = await MoodImage.findOne({ userId, mood });
+      
+      if (existingFallback) {
+        existingFallback.imageUrl = fallbackUrl;
+        existingFallback.imageData = 'fallback';
+        existingFallback.prompt = MOOD_PROMPTS[mood];
+        existingFallback.generatedAt = new Date();
+        existingFallback.lastUsed = new Date();
+        moodImage = await existingFallback.save();
+      } else {
+        moodImage = new MoodImage({
+          userId,
+          mood,
+          imageUrl: fallbackUrl,
+          imageData: 'fallback',
+          prompt: MOOD_PROMPTS[mood],
+          generatedAt: new Date(),
+          usageCount: 1,
+          lastUsed: new Date()
+        });
+        await moodImage.save();
+      }
       
       return res.json({
         success: true,
@@ -416,56 +531,64 @@ router.post('/image/generate', authenticateToken, async (req, res) => {
       });
     }
 
+    // Fetch user's profile image
+    const user = await User.findById(userId).select('profileImage name');
+    console.log(`[Mood Image] 👤 Regenerating for user: ${user?.name}`);
+    console.log(`[Mood Image] 🖼️ Profile image available: ${!!user?.profileImage}`);
+
     const prompt = MOOD_PROMPTS[mood];
     
     // Get auth token
     const accessToken = await getAuthToken();
     
-    const MODEL = process.env.IMAGEN_MODEL || 'imagen-4.0-fast-generate-001';
-    const API_URL = `https://us-central1-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/us-central1/publishers/google/models/${MODEL}:predict`;
+    let imagenResponse;
+    let usedProfileImage = false;
 
-    const requestBody = {
-      instances: [
-        {
-          prompt: prompt
-        }
-      ],
-      parameters: {
-        sampleCount: 1
+    // Try to use user's profile image if available
+    if (user?.profileImage && process.env.USE_IMAGE_EDIT === 'true') {
+      try {
+        imagenResponse = await generateMoodImageWithReference(
+          accessToken, 
+          PROJECT_ID, 
+          user.profileImage, 
+          mood, 
+          prompt
+        );
+        usedProfileImage = true;
+      } catch (editError) {
+        console.log(`[Mood Image] ⚠️ Image edit failed, falling back to standard generation`);
+        imagenResponse = await generateMoodImageStandard(accessToken, PROJECT_ID, prompt);
       }
-    };
-
-    const imagenResponse = await axios.post(
-      API_URL,
-      requestBody,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json; charset=utf-8'
-        },
-        timeout: 90000
-      }
-    );
+    } else {
+      imagenResponse = await generateMoodImageStandard(accessToken, PROJECT_ID, prompt);
+    }
 
     const imageBase64 = imagenResponse.data.predictions[0].bytesBase64Encoded;
     const imageUrl = `data:image/png;base64,${imageBase64}`;
 
-    const moodImage = await MoodImage.findOneAndUpdate(
-      { userId, mood },
-      {
+    const existingMoodImage = await MoodImage.findOne({ userId, mood });
+    
+    if (existingMoodImage) {
+      existingMoodImage.imageUrl = imageUrl;
+      existingMoodImage.imageData = imageBase64;
+      existingMoodImage.prompt = prompt;
+      existingMoodImage.generatedAt = new Date();
+      existingMoodImage.usageCount = 1;
+      existingMoodImage.lastUsed = new Date();
+      moodImage = await existingMoodImage.save();
+    } else {
+      moodImage = new MoodImage({
+        userId,
+        mood,
         imageUrl,
         imageData: imageBase64,
         prompt,
         generatedAt: new Date(),
         usageCount: 1,
         lastUsed: new Date()
-      },
-      { 
-        upsert: true, 
-        new: true,
-        setDefaultsOnInsert: true
-      }
-    );
+      });
+      await moodImage.save();
+    }
 
     console.log(`[Mood Image] ✅ Force regenerated and saved image for ${mood}`);
 
@@ -473,7 +596,7 @@ router.post('/image/generate', authenticateToken, async (req, res) => {
       success: true,
       imageUrl,
       regenerated: true,
-      model: MODEL,
+      usedProfileImage,
       generatedAt: moodImage.generatedAt
     });
 

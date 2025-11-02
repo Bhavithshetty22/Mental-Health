@@ -12,25 +12,67 @@ export default function ProfileNew() {
     username: "",
     email: "",
     avatar: "👤",
+    profileImage: null, // Added for profile image
+    bio: "",
     smsAlerts: true,
   })
   
-  // Load user data from localStorage on component mount
+  // Load user data from localStorage and fetch complete profile from API
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setProfile(prevProfile => ({
-          ...prevProfile,
-          name: parsedUser.name || "",
-          username: parsedUser.username || "",
-          email: parsedUser.email || ""
-        }));
-      } catch (error) {
-        console.error("Error parsing user data:", error);
+    const fetchUserProfile = async () => {
+      const userData = localStorage.getItem("user");
+      const token = localStorage.getItem("token");
+      
+      // First, load from localStorage for immediate display
+      if (userData) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          setProfile(prevProfile => ({
+            ...prevProfile,
+            name: parsedUser.name || "",
+            username: parsedUser.username || "",
+            email: parsedUser.email || ""
+          }));
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
       }
-    }
+      
+      // Then fetch complete profile from API
+      if (token) {
+        try {
+          const response = await fetch(`${API_BASE}/api/auth/profile-status`, {
+            headers: {
+              "Authorization": `Bearer ${token}`
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.user) {
+              setProfile(prevProfile => ({
+                ...prevProfile,
+                name: data.user.name || prevProfile.name,
+                username: data.user.username || prevProfile.username,
+                email: data.user.email || prevProfile.email,
+                profileImage: data.user.profileImage || null,
+                bio: data.user.bio || "",
+                avatar: data.user.profileImage ? null : prevProfile.avatar
+              }));
+              
+              // Update localStorage with complete user data
+              localStorage.setItem("user", JSON.stringify(data.user));
+            }
+          } else {
+            console.error("Failed to fetch profile:", response.status);
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+        }
+      }
+    };
+    
+    fetchUserProfile();
   }, [])
 
   const [isEditing, setIsEditing] = useState(false)
@@ -58,7 +100,7 @@ export default function ProfileNew() {
     setIsEditing(false)
   }
   
-  // Fetch user's community posts - FIXED ENDPOINT
+  // Fetch user's community posts
   const fetchUserPosts = async () => {
     setLoading(true)
     try {
@@ -69,7 +111,6 @@ export default function ProfileNew() {
         return
       }
       
-      // Changed from /api/community/my-posts to /api/community/user
       const resp = await fetch(`${API_BASE}/api/community/user`, {
         headers: {
           "Authorization": `Bearer ${token}`
@@ -79,16 +120,13 @@ export default function ProfileNew() {
       if (!resp.ok) {
         if (resp.status === 401) {
           console.error("Authentication failed - token may be invalid")
-          // Optionally clear invalid token
-          // localStorage.removeItem("token")
         }
         throw new Error(`Failed to fetch user posts: ${resp.status}`)
       }
       
       const data = await resp.json()
-      console.log("Fetched posts:", data) // Debug log
+      console.log("Fetched posts:", data)
       
-      // Handle the response structure from backend
       const posts = Array.isArray(data.posts) ? [...data.posts].reverse() : []
       setUserPosts(posts)
     } catch (err) {
@@ -124,7 +162,6 @@ export default function ProfileNew() {
         throw new Error(errorData.error || "Failed to delete post")
       }
       
-      // Remove post from state
       setUserPosts(prev => prev.filter(post => post._id !== postId))
       alert("Post deleted successfully")
     } catch (err) {
@@ -192,7 +229,25 @@ export default function ProfileNew() {
         <div className="profile-left">
           <div className="profile-card">
             <div className="profile-avatar-large">
-              {profile.avatar || "👤"}
+              {profile.profileImage ? (
+                <img 
+                  src={profile.profileImage} 
+                  alt={profile.name || "Profile"} 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: 'inherit'
+                  }}
+                  onError={(e) => {
+                    console.error("Error loading profile image");
+                    e.target.style.display = 'none';
+                    e.target.parentElement.textContent = profile.avatar || "👤";
+                  }}
+                />
+              ) : (
+                profile.avatar || "👤"
+              )}
             </div>
             
             <div className="profile-details">
@@ -203,6 +258,11 @@ export default function ProfileNew() {
                   <div className="profile-name">{profile.name || "Anonymous User"}</div>
                   <div className="profile-contact">@{profile.username || "username"}</div>
                   <div className="profile-contact">{profile.email || "user@example.com"}</div>
+                  {profile.bio && (
+                    <div className="profile-bio" style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+                      {profile.bio}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="edit-form">
