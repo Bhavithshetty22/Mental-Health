@@ -132,7 +132,7 @@ app.use("/api/", limiter);
 
 // ===== Initialize Google Cloud Text-to-Speech =====
 let ttsClient = null;
-if (process.env.GOOGLE_APPLICATION_CREDENTIALS1) {
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
   try {
     ttsClient = new textToSpeech.TextToSpeechClient();
     console.log("✅ Google Cloud Text-to-Speech client initialized");
