@@ -1,48 +1,58 @@
-/* Profile.css - Consistent with Community theme */
+/* ================================
+   Profile.css — Green & White Theme
+   Cleaned & Optimized Version
+================================== */
 
 :root {
-  --bg-primary: #faf9f7;
-  --bg-secondary: #f3ede3;
+  /* Color Palette */
+  --bg-primary: #f0f9f4;
+  --bg-secondary: #e6f4ea;
   --card: #ffffff;
-  --text-primary: #1a1a1a;
-  --text-secondary: #4a4a4a;
-  --text-muted: #8a8a8a;
-  --accent: #4299e1;
-  --accent-hover: #3182ce;
-  --accent-light: #ebf8ff;
-  --accent-subtle: #f0f7ff;
-  --border: #e8e0d5;
-  --border-hover: #ddd0c5;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.12);
-  --radius: 10px;
-  --radius-lg: 14px;
+  --text-primary: #1a3a2e;
+  --text-secondary: #2d5a4a;
+  --text-muted: #6b8e7f;
+
+  /* Accent Colors */
+  --accent: #6b9080;
+  --accent-hover: #5a7a6b;
+  --accent-light: #d4e7df;
+  --accent-subtle: #e8f3ed;
+
+  /* Border & Shadows */
+  --border: #c8ddd4;
+  --border-hover: #b3cec2;
+  --shadow-sm: 0 2px 4px rgba(107, 144, 128, 0.08);
+  --shadow-md: 0 6px 16px rgba(107, 144, 128, 0.12);
+  --shadow-lg: 0 12px 28px rgba(107, 144, 128, 0.16);
+
+  /* Layout */
+  --radius: 12px;
+  --radius-lg: 16px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ========== Page Layout ========== */
 .profile-new-page {
   max-width: 100%;
+  min-height: calc(100vh - 80px);
   margin: 0 auto;
   padding: 48px 32px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background: linear-gradient(135deg, #faf9f7 0%, #f3ede3 50%, #faf9f7 100%);
-  min-height: calc(100vh - 80px);
+  background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 .profile-container {
   display: flex;
-  gap: 32px;
   flex-wrap: wrap;
+  gap: 32px;
   max-width: 1400px;
   margin: 0 auto;
 }
 
+/* ========== Left / Right Sections ========== */
 .profile-left {
   flex: 1;
   min-width: 320px;
-  display: block;
 }
 
 .profile-right {
@@ -50,99 +60,112 @@
   min-width: 320px;
 }
 
+/* ========== Profile Card ========== */
 .profile-card {
   background: var(--card);
+  border: 2px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 32px;
+  padding: 40px;
   box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  text-align: center;
   transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
 }
 
 .profile-card:hover {
+  border-color: var(--accent);
   box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
 }
 
+/* Avatar */
 .profile-avatar-large {
-  font-size: 4rem;
+  width: 130px;
+  height: 130px;
   margin-bottom: 1.5rem;
-  width: 120px;
-  height: 120px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent-subtle) 100%);
+  border: 4px solid var(--accent);
+  background: linear-gradient(135deg, var(--accent-light), var(--accent-subtle));
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3px solid var(--accent);
+  font-size: 4rem;
+  box-shadow: 0 8px 20px rgba(107, 144, 128, 0.25);
+  transition: var(--transition);
 }
 
-.profile-details {
-  width: 100%;
-  text-align: center;
-  display: block;
+.profile-card:hover .profile-avatar-large {
+  transform: scale(1.05);
+  box-shadow: 0 12px 28px rgba(107, 144, 128, 0.35);
 }
 
+/* ========== Text & Info ========== */
 .profile-title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 800;
-  color: var(--text-primary);
-  margin: 0 0 24px 0;
+  color: var(--accent);
+  margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 3px solid var(--accent);
+  text-transform: uppercase;
   letter-spacing: -0.02em;
 }
 
 .profile-info {
-  margin-bottom: 24px;
-  display: block;
+  background: var(--accent-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 28px;
 }
 
 .profile-name {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 8px;
   color: var(--text-primary);
-  display: block;
+  margin-bottom: 10px;
 }
 
 .profile-contact {
+  font-size: 16px;
+  font-weight: 500;
   color: var(--text-secondary);
-  margin-bottom: 6px;
-  font-size: 15px;
-  display: block;
+  margin-bottom: 8px;
 }
 
+/* ========== Buttons ========== */
 .btn {
-  padding: 13px 28px;
+  width: 100%;
+  padding: 14px 32px;
   border-radius: var(--radius);
-  cursor: pointer;
-  border: 2px solid transparent;
   font-weight: 700;
-  font-size: 15px;
+  text-transform: uppercase;
+  border: 2px solid transparent;
+  cursor: pointer;
   transition: var(--transition);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-family: inherit;
-  letter-spacing: 0.3px;
 }
 
 .btn-save {
   background: var(--accent);
-  color: white;
+  color: #fff;
   border-color: var(--accent);
-  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.25);
+  box-shadow: 0 4px 12px rgba(107, 144, 128, 0.3);
 }
 
 .btn-save:hover {
   background: var(--accent-hover);
-  border-color: var(--accent-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(66, 153, 225, 0.35);
 }
 
 .btn-cancel {
@@ -155,233 +178,254 @@
 
 .btn-cancel:hover {
   background: var(--bg-primary);
-  border-color: var(--border-hover);
+  border-color: var(--accent);
   transform: translateY(-1px);
 }
 
-.edit-form {
-  width: 100%;
-  margin-bottom: 20px;
-}
-
-/* Profile Tabs */
+/* ========== Tabs ========== */
 .profile-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: 12px;
   padding: 8px;
+  margin-bottom: 24px;
   background: var(--card);
+  border: 2px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
   overflow-x: auto;
 }
 
-.profile-tabs .tab-btn {
-  padding: 12px 24px;
-  border: none;
-  background: transparent;
+.tab-btn {
+  padding: 14px 28px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  border-radius: var(--radius);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   transition: var(--transition);
   white-space: nowrap;
 }
 
-.profile-tabs .tab-btn:hover {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+.tab-btn:hover {
+  background: var(--accent-subtle);
+  color: var(--accent);
 }
 
-.profile-tabs .tab-btn.active {
+.tab-btn.active {
   background: var(--accent);
-  color: white;
-  box-shadow: 0 2px 8px rgba(66, 153, 225, 0.3);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(107, 144, 128, 0.3);
 }
 
-/* Section Cards */
+/* ========== Section Cards ========== */
 .section-card {
   background: var(--card);
+  border: 2px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 28px;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
+  padding: 32px;
   margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
   transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.section-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
 }
 
 .section-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
 .section-card h2 {
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0 0 20px 0;
-  padding-bottom: 12px;
-  border-bottom: 2px solid var(--accent);
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--accent);
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 3px solid var(--accent);
+  text-transform: uppercase;
 }
 
-/* Mood Section */
+/* ========== Mood Section ========== */
 .mood-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 1rem;
+  padding: 20px;
+  margin-top: 1.5rem;
+  background: var(--accent-subtle);
+  border-radius: var(--radius);
+  border: 2px dashed var(--border);
 }
 
-.mood-container .mood-profile-div {
-  width: 250px;
-  height: 250px;
+.mood-profile-div {
+  width: 280px;
+  height: 280px;
 }
 
-/* User Posts Styling */
-.user-posts-container {
-  margin-top: 1rem;
-}
-
+/* ========== User Posts ========== */
 .posts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
 }
 
 .user-post-item {
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  position: relative;
-  transition: var(--transition);
   box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  position: relative;
 }
 
 .user-post-item:hover {
-  transform: translateY(-6px);
+  border-color: var(--accent);
+  transform: translateY(-8px);
   box-shadow: var(--shadow-lg);
 }
 
+/* Post Image */
 .post-image {
-  height: 180px;
+  height: 200px;
+  background: linear-gradient(135deg, var(--accent-subtle), var(--accent-light));
   overflow: hidden;
-  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  position: relative;
+}
+
+.post-image::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--accent);
 }
 
 .post-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.4s ease;
 }
 
 .user-post-item:hover .post-image img {
   transform: scale(1.08);
 }
 
+/* Post Content */
 .post-content {
-  padding: 16px;
+  padding: 20px;
 }
 
 .post-content h3 {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
-  margin: 0 0 8px 0;
   color: var(--text-primary);
-  line-height: 1.4;
+  margin-bottom: 10px;
 }
 
 .post-content p {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-secondary);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  line-height: 1.6;
   overflow: hidden;
-  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
 }
 
+/* Delete Button */
 .delete-post-btn {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 16px;
+  right: 16px;
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 600;
+  border: 2px solid var(--accent);
+  border-radius: 24px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent);
   cursor: pointer;
   opacity: 0;
-  transition: all 0.3s ease;
-  color: var(--text-secondary);
-  backdrop-filter: blur(10px);
+  transition: var(--transition);
+  box-shadow: 0 4px 12px rgba(107, 144, 128, 0.3);
 }
 
 .user-post-item:hover .delete-post-btn {
   opacity: 1;
-  transform: translateY(0);
 }
 
 .delete-post-btn:hover {
-  background: #ff4d4d;
-  color: white;
-  border-color: #ff4d4d;
-  transform: translateY(-1px);
+  background: #e74c3c;
+  border-color: #e74c3c;
+  color: #fff;
+  transform: scale(1.05);
 }
 
-/* Form Styles */
-.form-row {
-  margin-bottom: 16px;
-}
-
+/* ========== Form Inputs ========== */
 .form-input {
   width: 100%;
-  padding: 12px 16px;
+  padding: 14px 18px;
+  border: 2px solid var(--border);
   border-radius: var(--radius);
-  border: 1px solid var(--border);
-  font-size: 15px;
-  font-family: inherit;
+  font-size: 16px;
+  color: var(--text-primary);
+  background: var(--card);
   transition: var(--transition);
-  background: var(--bg-primary);
 }
 
 .form-input:focus {
-  outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+  box-shadow: 0 0 0 4px rgba(107, 144, 128, 0.15);
+  background: var(--accent-subtle);
 }
 
-.loading-posts, .no-posts {
-  padding: 40px 20px;
-  text-align: center;
+.form-input::placeholder {
   color: var(--text-muted);
-  font-size: 16px;
-  background: var(--bg-primary);
-  border-radius: var(--radius);
-  border: 2px dashed var(--border);
 }
 
-.no-posts {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+/* ========== Empty States ========== */
+.loading-posts, .no-posts {
+  text-align: center;
+  padding: 60px 30px;
+  background: var(--accent-subtle);
+  border: 3px dashed var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .no-posts::before {
-  content: "📝";
-  font-size: 32px;
-  opacity: 0.7;
+  content: "🌱";
+  font-size: 48px;
+  display: block;
+  margin-bottom: 10px;
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
+/* ========== Responsive ========== */
+@media (max-width: 1024px) {
   .profile-container {
+    flex-direction: column;
     gap: 24px;
   }
 }
@@ -391,60 +435,262 @@
     padding: 36px 24px;
   }
 
-  .profile-container {
-    flex-direction: column;
-  }
-
-  .profile-card {
-    padding: 24px;
-  }
-
   .profile-title {
-    font-size: 24px;
+    font-size: 26px;
   }
 
-  .section-card {
-    padding: 24px;
+  .section-card h2 {
+    font-size: 22px;
   }
 
   .posts-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  }
-
-  .profile-tabs .tab-btn {
-    padding: 10px 18px;
-    font-size: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
 }
 
 @media (max-width: 480px) {
   .profile-new-page {
-    padding: 28px 18px;
+    padding: 24px 16px;
   }
 
-  .profile-card {
-    padding: 20px;
+  .profile-avatar-large {
+    width: 110px;
+    height: 110px;
+    font-size: 3rem;
   }
 
   .profile-title {
     font-size: 22px;
   }
 
-  .section-card {
-    padding: 20px;
-  }
-
-  .posts-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .profile-tabs .tab-btn {
-    padding: 9px 16px;
-    font-size: 13px;
+  .mood-profile-div {
+    width: 220px;
+    height: 220px;
   }
 
   .btn {
-    padding: 11px 20px;
+    padding: 12px 20px;
     font-size: 14px;
   }
+
+  .tab-btn {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+}
+/* ===== Edit Profile — Improved ===== */
+
+/* container for the edit form */
+.edit-form {
+  width: 100%;
+  max-width: 900px; /* keeps the form readable on very wide screens */
+  margin: 0 auto 24px;
+  display: block;
+  background: transparent;
+}
+
+/* form layout rows */
+.form-row {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  width: 100%;
+}
+
+/* For form rows that should stack vertically on small screens */
+.form-row.stack-on-mobile {
+  flex-wrap: nowrap;
+}
+
+/* labels */
+.form-label {
+  width: 180px;
+  min-width: 120px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+/* form controls container (input + helper text) */
+.form-control {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* standard inputs */
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: calc(var(--radius) - 2px);
+  border: 2px solid var(--border);
+  font-size: 15px;
+  color: var(--text-primary);
+  background: var(--card);
+  transition: var(--transition);
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+/* textarea */
+.form-textarea {
+  min-height: 110px;
+  resize: vertical;
+  line-height: 1.5;
+  padding-top: 14px;
+}
+
+/* select */
+.form-select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+                    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px);
+  background-size: 8px 8px, 8px 8px;
+  background-repeat: no-repeat;
+  padding-right: 44px;
+}
+
+/* input focus */
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 6px rgba(107,144,128,0.08);
+  background: var(--accent-subtle);
+}
+
+/* helper / error text */
+.form-help {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.form-error {
+  color: #e74c3c;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Avatar / upload area */
+.avatar-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.avatar-preview {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  background: linear-gradient(135deg, var(--accent-light), var(--accent-subtle));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(107,144,128,0.12);
+}
+
+.avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* hidden file input with styled label acting as button */
+.file-input {
+  display: none;
+}
+.file-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-primary);
+  transition: var(--transition);
+}
+.file-label:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+/* actions (buttons) */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+/* when inside left column, make buttons full width for mobile */
+.form-actions.stacked {
+  flex-direction: column;
+  width: 100%;
+}
+
+/* small inline group (eg. cancel + save) */
+.form-actions .btn {
+  min-width: 140px;
+  max-width: 220px;
+}
+
+/* compact layout for two-column forms where label should be above on mobile */
+@media (max-width: 780px) {
+  .form-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .form-label {
+    width: 100%;
+    font-size: 14px;
+    padding-top: 0;
+  }
+  .avatar-row {
+    justify-content: flex-start;
+  }
+  .form-actions {
+    justify-content: stretch;
+  }
+  .form-actions .btn {
+    width: 100%;
+  }
+}
+
+/* optional small tweaks for long forms */
+.form-row .half {
+  width: 48%;
+}
+@media (max-width: 780px) {
+  .form-row .half { width: 100%; }
+}
+
+/* subtle required star */
+.form-label .required {
+  color: #d9534f;
+  font-weight: 900;
+  margin-left: 6px;
+  font-size: 12px;
+}
+
+/* inline validation success */
+.form-valid {
+  border-color: #2ecc71 !important;
+  box-shadow: 0 0 0 6px rgba(46,204,113,0.06);
 }

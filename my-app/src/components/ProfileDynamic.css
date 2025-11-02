@@ -2,7 +2,7 @@
   width: 55%;
   height: 300px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.95);
+   background: url('/headerbackground.png') no-repeat center bottom;
   border: 2px solid rgba(16, 185, 129, 0.3);
   transition: all 0.5s ease-in-out;
   display: flex;
@@ -16,7 +16,7 @@
   align-items: flex-start;
   justify-content: center;
   padding: 20px;
-  color: black;
+  color: white;
   
 }
 .mood-welcome-text{
