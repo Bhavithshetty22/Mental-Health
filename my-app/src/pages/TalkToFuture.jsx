@@ -356,6 +356,7 @@ function getUserId() {
           <strong>Note:</strong> This tool provides supportive messages only. If you or someone is in crisis, contact local emergency services or a crisis hotline immediately.
         </footer>
       </div>
+      
     </div>
   );
 }

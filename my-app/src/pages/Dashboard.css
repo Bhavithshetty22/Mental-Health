@@ -160,7 +160,8 @@
 .profileicon{
   height: 130px;
   width: 130px;
-  background-color: #D9D9D9;
+background: url('/public/profile.png') no-repeat center center;
+background-size: 130%;
   border-radius: 24px;
   cursor: pointer;
   transition: transform 0.3s ease;
@@ -173,7 +174,10 @@
 .notifications{
   height: 130px;
   width: 130px;
-  background-color: #D9D9D9;
+background: url('/public/notif.png') no-repeat center center;
+background-size: 130%;
+
+
   border-radius: 24px;
   cursor: pointer;
   transition: transform 0.3s ease;
@@ -283,5 +287,60 @@ gap: 15px;
   .middledashdiv1 {
     flex-direction: column;
     gap: 20px;
+  }
+}
+.dashboard-footer {
+  background: linear-gradient(180deg, #0d0d0d, #000);
+  color: #e6e6e6;
+  padding: 2rem 3rem;
+  margin-top: 3rem;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  z-index: 10;
+  position: relative;
+  font-family: 'Inter', sans-serif;
+}
+
+.footer-content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.footer-left h3 {
+  color: #00ff99;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.footer-left p {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.footer-links a {
+  color: #e6e6e6;
+  text-decoration: none;
+  margin: 0 1rem;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: #00ff99;
+}
+
+.footer-right p {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
   }
 }

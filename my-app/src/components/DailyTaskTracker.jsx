@@ -283,24 +283,7 @@ const DailyTasksTracker = () => {
             </div>
           )}
 
-          <div className="quick-overview">
-            <h3 className="quick-overview-title">Quick Overview</h3>
-            <div className="overview-tasks">
-              {tasks.map((task) => (
-                <div key={task.id} className="overview-task">
-                  <div className={`overview-icon ${task.completed ? 'overview-icon-completed' : 'overview-icon-pending'}`}>
-                    {task.completed && <Check size={12} strokeWidth={3} color="#047857" />}
-                  </div>
-                  <span className={`overview-label ${task.completed ? 'overview-label-completed' : 'overview-label-pending'}`}>
-                    {task.label}
-                  </span>
-                  {task.completed && (
-                    <span className="overview-badge">Done</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          
         </div>
       </div>
     </div>

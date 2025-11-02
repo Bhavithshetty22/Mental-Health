@@ -145,11 +145,11 @@ const MoodProfile = ({ selectedDate = null }) => {
         className="mood-image-container"
         style={{
           position: 'relative',
-          width: '200px',
-          height: '200px',
+          width: '300px',
+          height: '300px',
           borderRadius: '20px',
           overflow: 'hidden',
-          boxShadow: `0 4px 16px ${moodColors[currentMood]}40`,
+        
  
           background: loading || loadingImage ? `${moodColors[currentMood]}20` : 'white'
         }}

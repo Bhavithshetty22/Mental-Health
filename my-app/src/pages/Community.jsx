@@ -62,7 +62,7 @@ export default function CommunityPage() {
     }
   }
   
-  // Function to handle support/like
+  // Function to handle support/unsupport toggle
   const handleSupport = async (postId) => {
     try {
       const token = localStorage.getItem("token")
@@ -72,17 +72,14 @@ export default function CommunityPage() {
         return
       }
       
-      // Check if user already supported this post (from backend data)
+      // Check if user already supported this post
       const post = posts.find(p => p._id === postId)
-      if (post && post.hasSupported) {
-        alert("You have already supported this post")
-        return
-      }
+      const isSupported = post && post.hasSupported
       
       const url = `${API_BASE}/api/community/${postId}/support`
       
       const resp = await fetch(url, {
-        method: 'POST',
+        method: isSupported ? 'DELETE' : 'POST',
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
@@ -92,17 +89,17 @@ export default function CommunityPage() {
       const data = await resp.json()
       
       if (!resp.ok) {
-        throw new Error(data.error || "Failed to support post")
+        throw new Error(data.error || `Failed to ${isSupported ? 'unsupport' : 'support'} post`)
       }
       
       // Update post in state with new like count and hasSupported flag
       setPosts(posts.map(p => 
-        p._id === postId ? {...p, likes: data.likes, hasSupported: true} : p
+        p._id === postId ? {...p, likes: data.likes, hasSupported: !isSupported} : p
       ))
       
     } catch (err) {
-      console.error("Could not support post", err)
-      alert(err.message || "Failed to support post. Please try again.")
+      console.error("Could not toggle support", err)
+      alert(err.message || "Failed to update support. Please try again.")
     }
   }
 
@@ -149,8 +146,7 @@ export default function CommunityPage() {
             <button 
               className={`support-btn ${p.hasSupported ? 'supported' : ''}`}
               onClick={() => handleSupport(p._id)}
-              disabled={p.hasSupported}
-              aria-label="Support post"
+              aria-label={p.hasSupported ? "Unsupport post" : "Support post"}
             >
               ❤️ {p.hasSupported ? 'Supported' : 'Support'} {p.likes > 0 && `(${p.likes})`}
             </button>

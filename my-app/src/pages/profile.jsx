@@ -326,14 +326,7 @@ export default function ProfileNew() {
         {/* Right Column - Content */}
         <div className="profile-right">
           {/* Mood Profile Section */}
-          <div className="section-card">
-            <h2>Mood Profile</h2>
-            <div className="mood-container">
-              <div className="mood-profile-div">
-                <MoodProfile />
-              </div>
-            </div>
-          </div>
+          
 
           {/* My Posts Section */}
           <div className="section-card">

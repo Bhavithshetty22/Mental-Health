@@ -50,6 +50,7 @@ router.post("/signup", async (req, res) => {
     });
     await user.save();
 
+
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
     const safeUser = { 
       id: user._id, 
@@ -58,6 +59,7 @@ router.post("/signup", async (req, res) => {
       username: user.username,
       profileComplete: user.profileComplete
     };
+
 
     res.json({ token, user: safeUser });
   } catch (err) {
@@ -83,6 +85,7 @@ router.post("/login", async (req, res) => {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(400).json({ message: "Invalid credentials" });
 
+
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
     const safeUser = { 
       id: user._id, 
@@ -91,6 +94,7 @@ router.post("/login", async (req, res) => {
       username: user.username,
       profileComplete: user.profileComplete
     };
+
     res.json({ token, user: safeUser });
   } catch (err) {
     console.error(err);
