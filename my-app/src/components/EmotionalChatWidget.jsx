@@ -64,26 +64,8 @@ const DashboardEmotionBots = ({ onBotSelect }) => {
       bgColorClass: "bg-red-dark",
       image: "/thunderbolt.png"
     },
-    { 
-      id: 7, 
-      name: "Fearless", 
-      mood: "Afraid",
-      color: "#6B9080", 
-      description: "Face fears and build courage together",
-      colorClass: "color-gray-dark",
-      bgColorClass: "bg-gray-dark",
-      image: "/fear.png"
-    },
-    {
-      id: 8,
-      name: "CalmBot",
-      mood: "Calm",
-      color: "#6B9080",
-      description: "Maintain tranquility and mindfulness",
-      colorClass: "color-blue-light",
-      bgColorClass: "bg-blue-light",
-      image: "/calmbot.png"
-    }
+   
+   
   ];
 
   const tabs = [
