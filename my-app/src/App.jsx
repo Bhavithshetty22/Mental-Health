@@ -5,6 +5,7 @@ import "@fontsource/poppins";
 import "@fontsource/poppins/600.css";
 import React, { Suspense, lazy, useState, useEffect } from 'react';
 
+
 // Lazy-loaded components to reduce initial bundle
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const MoodTrackerPage = lazy(() => import('./pages/MoodTracker'));
@@ -14,8 +15,7 @@ const DailyJournal = lazy(() => import('./pages/DailyJournal'));
 const AiTherapy = lazy(() => import('./pages/AiTherapy'));
 const LoginSignup = lazy(() => import('./pages/LoginSignup'));
 const CommunityPage = lazy(() => import('./pages/Community'));
-const Profile = lazy(() => import('./pages/Profile'));
-const ProfileSetup = lazy(() => import('./pages/ProfileSetup'));
+const Profile = lazy(() => import('./pages/profile'));
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -62,7 +62,7 @@ function App() {
     </div>
   );
 
-  // Protected Route Component - requires auth AND complete profile
+  // Protected Route Component - requires auth only
   const ProtectedRoute = ({ children }) => {
     if (isLoading) {
       return <LoadingScreen />;
@@ -74,35 +74,7 @@ function App() {
       return <Navigate to="/login" replace />;
     }
     
-    // Authenticated but profile not complete - go to profile setup
-    if (!user?.profileComplete) {
-      console.log("Profile incomplete, redirecting to profile-setup");
-      return <Navigate to="/profile-setup" replace />;
-    }
-    
     // All good - show the page
-    return children;
-  };
-
-  // Profile Setup Route - requires auth but not complete profile
-  const ProfileSetupRoute = ({ children }) => {
-    if (isLoading) {
-      return <LoadingScreen />;
-    }
-    
-    // Not authenticated - go to login
-    if (!isAuthenticated) {
-      console.log("Not authenticated on profile setup, redirecting to login");
-      return <Navigate to="/login" replace />;
-    }
-    
-    // If profile is already complete, redirect to home
-    if (user?.profileComplete) {
-      console.log("Profile already complete, redirecting to home");
-      return <Navigate to="/" replace />;
-    }
-    
-    // Show profile setup
     return children;
   };
 
@@ -111,36 +83,21 @@ function App() {
       <div className="App">
         <Suspense fallback={<LoadingScreen />}>
           <Routes>
-            {/* Public auth route - ALWAYS accessible when not authenticated */}
+            {/* Public auth route - accessible when not authenticated */}
             <Route 
               path="/login" 
               element={
                 isLoading ? (
                   <LoadingScreen />
                 ) : isAuthenticated ? (
-                  // If already authenticated, check profile status
-                  user?.profileComplete ? (
-                    <Navigate to="/" replace />
-                  ) : (
-                    <Navigate to="/profile-setup" replace />
-                  )
+                  <Navigate to="/" replace />
                 ) : (
                   <LoginSignup />
                 )
               } 
             />
-
-            {/* Profile Setup Route - only accessible when authenticated but profile incomplete */}
-            <Route 
-              path="/profile-setup" 
-              element={
-                <ProfileSetupRoute>
-                  <ProfileSetup />
-                </ProfileSetupRoute>
-              } 
-            />
             
-            {/* Protected layout - only accessible when authenticated AND profile complete */}
+            {/* Protected layout - only accessible when authenticated */}
             <Route 
               path="/" 
               element={
@@ -159,7 +116,7 @@ function App() {
               <Route path="analytics" element={<div>Analytics Page (Coming Soon)</div>} />
             </Route>
             
-            {/* Fallback route - redirect based on auth and profile status */}
+            {/* Fallback route - redirect based on auth status */}
             <Route 
               path="*" 
               element={
@@ -167,8 +124,6 @@ function App() {
                   <LoadingScreen />
                 ) : !isAuthenticated ? (
                   <Navigate to="/login" replace />
-                ) : !user?.profileComplete ? (
-                  <Navigate to="/profile-setup" replace />
                 ) : (
                   <Navigate to="/" replace />
                 )

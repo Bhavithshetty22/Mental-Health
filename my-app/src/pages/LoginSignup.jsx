@@ -1,10 +1,8 @@
 // src/pages/LoginSignup.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import "./GenAIAuth.css";
 
 export default function LoginSignup() {
-  const navigate = useNavigate();
   const [mode, setMode] = useState("login");
 
   // login state
@@ -55,14 +53,9 @@ export default function LoginSignup() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Force page reload to update App.js state
-      if (!data.user.profileComplete) {
-        console.log("Profile incomplete, redirecting to profile-setup");
-        window.location.href = "/profile-setup";
-      } else {
-        console.log("Profile complete, redirecting to home");
-        window.location.href = "/";
-      }
+      // Redirect to home
+      console.log("Login successful, redirecting to home");
+      window.location.href = "/";
     } catch (err) {
       setLoginError(err.message || "Login failed");
       setIsLoggingIn(false);
@@ -109,9 +102,9 @@ export default function LoginSignup() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Force page reload to update App.js state
-      console.log("Signup successful, redirecting to profile-setup");
-      window.location.href = "/profile-setup";
+      // Redirect to home
+      console.log("Signup successful, redirecting to home");
+      window.location.href = "/";
     } catch (err) {
       setSignupErrors({ general: err.message || "Signup failed" });
       setIsSigningUp(false);
