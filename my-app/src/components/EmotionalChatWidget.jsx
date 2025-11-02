@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, X, Plus, Star, TrendingUp, Clock, Users, Smile } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
 const EmotionChatApp = () => {
   const [selectedBot, setSelectedBot] = useState(null);
