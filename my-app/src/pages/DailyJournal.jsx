@@ -5,18 +5,40 @@ import {
   Image,
   Music,
   FileText,
-  Send
+  Save,
+  Check
 } from 'lucide-react';
 import './DailyJournal.css';
+
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+
+const _getMoodEmoji = (mood) => {
+  const emojis = {
+    happy: "😊",
+    sad: "😢",
+    angry: "😡",
+    relaxed: "😌",
+    anxious: "😰",
+    neutral: "🙂",
+    excited: "🤩",
+    tired: "🥱",
+    lonely: "🥺",
+    love: "❤️",
+  };
+  return emojis[mood?.toLowerCase()] || "🤔";
+};
 
 const DailyJournal = () => {
   const [textInput, setTextInput] = useState("");
   const [selectedOption, setSelectedOption] = useState("");
   const [output, setOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [songs, setSongs] = useState([]);
   const [story, setStory] = useState("");
   const [poem, setPoem] = useState("");
+  const [currentGeneratedContent, setCurrentGeneratedContent] = useState(null);
 
   const options = [
     { 
@@ -43,10 +65,70 @@ const DailyJournal = () => {
     let q = `${title || ""} ${artist || ""}`.trim();
     q = q.replace(/[\n\r]+/g, " ");
     q = q.replace(/["'`''""]/g, "");
+    q = q.replace(/["'`''""]/g, "");
     q = q.replace(/[\\/|]/g, " ");
     q = q.replace(/\s+/g, " ").trim();
     if (!q) q = "music";
     return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+  };
+
+  const saveToDatabase = async () => {
+    if (!textInput.trim() || !currentGeneratedContent) {
+      console.warn("Cannot save: missing text or generated content");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaved(false);
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        alert("Please log in to save your journal entry");
+        setIsSaving(false);
+        return;
+      }
+
+      const response = await fetch(`${API_BASE}/api/daily-journal`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          text: textInput,
+          generatedContent: currentGeneratedContent
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Journal entry saved:", data);
+
+      setSaved(true);
+      
+      // Dispatch custom event to notify DailyTaskTracker
+      window.dispatchEvent(new CustomEvent('journalUpdated', {
+        detail: { 
+          date: new Date().toISOString(),
+          entryId: data.entry?.id 
+        }
+      }));
+
+      // Show success for 3 seconds
+      setTimeout(() => setSaved(false), 3000);
+
+    } catch (error) {
+      console.error("Error saving to database:", error);
+      alert(`Failed to save: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const generateOutput = async () => {
@@ -58,10 +140,12 @@ const DailyJournal = () => {
     setSongs([]);
     setStory("");
     setPoem("");
+    setCurrentGeneratedContent(null);
+    setSaved(false);
 
     try {
       if (selectedOption === "image") {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE}/api/generate-image`, {
+        const response = await fetch(`${API_BASE}/api/generate-image`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: textInput }),
@@ -71,31 +155,62 @@ const DailyJournal = () => {
         const data = await response.json();
         
         if (data?.image) {
-          setOutput({
+          const imageData = {
             type: "image",
             content: `data:image/png;base64,${data.image}`,
             prompt: data.prompt,
+          };
+          
+          setOutput(imageData);
+          
+          // Set generated content for saving
+          setCurrentGeneratedContent({
+            type: 'image',
+            imageUrl: imageData.content,
+            imagePrompt: data.prompt
           });
         } else {
           setOutput({ type: "text", content: "❌ No image returned." });
         }
       } else if (selectedOption === "song") {
-        const resp = await fetch(`${import.meta.env.VITE_API_BASE}/api/songs`, {
+        const resp = await fetch(`${API_BASE}/api/songs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: textInput }),
         });
         const data = await resp.json();
-        setSongs(Array.isArray(data.songs) ? data.songs : []);
+        const songList = Array.isArray(data.songs) ? data.songs : [];
+        setSongs(songList);
+        
+        // Set generated content for saving
+        setCurrentGeneratedContent({
+          type: 'song',
+          songs: songList.map(s => ({
+            title: s.title,
+            artist: s.artist,
+            url: s.url || buildYouTubeSearchUrl(s.title, s.artist),
+            reason: s.reason
+          }))
+        });
       } else if (selectedOption === "poem") {
-        const resp = await fetch(`${import.meta.env.VITE_API_BASE}/api/creative`, {
+        const resp = await fetch(`${API_BASE}/api/creative`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: textInput }),
         });
         const data = await resp.json();
-        setStory(data.story || "");
-        setPoem(data.poem || "");
+        const storyText = data.story || "";
+        const poemText = data.poem || "";
+        
+        setStory(storyText);
+        setPoem(poemText);
+        
+        // Set generated content for saving
+        setCurrentGeneratedContent({
+          type: 'poem',
+          story: storyText,
+          poem: poemText
+        });
       }
     } catch (err) {
       console.error("generateOutput error:", err);
@@ -107,6 +222,8 @@ const DailyJournal = () => {
       setIsGenerating(false);
     }
   };
+
+  const hasGeneratedContent = currentGeneratedContent !== null;
 
   return (
     <div className="container">
@@ -136,7 +253,6 @@ const DailyJournal = () => {
                   />
                 </div>
               </div>
-
               <div className="options-section">
                 <label className="options-label">Choose your creative output</label>
                 <div className="options-grid">
@@ -156,13 +272,53 @@ const DailyJournal = () => {
                 </div>
               </div>
 
-              <button
-                className="generate-btn"
-                onClick={generateOutput}
-                disabled={!textInput.trim() || !selectedOption || isGenerating}
-              >
-                {isGenerating ? "Generating..." : "Generate"}
-              </button>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  className="generate-btn"
+                  onClick={generateOutput}
+                  disabled={!textInput.trim() || !selectedOption || isGenerating}
+                  style={{ flex: 1 }}
+                >
+                  {isGenerating ? "Generating..." : "Generate"}
+                </button>
+
+                {hasGeneratedContent && (
+                  <button
+                    className={`save-btn ${saved ? 'saved' : ''}`}
+                    onClick={saveToDatabase}
+                    disabled={isSaving || saved}
+                    style={{ 
+                      minWidth: '120px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      background: saved ? '#10b981' : '#3b82f6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '12px 24px',
+                      cursor: isSaving || saved ? 'not-allowed' : 'pointer',
+                      opacity: isSaving || saved ? 0.7 : 1,
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    {saved ? (
+                      <>
+                        <Check size={18} />
+                        <span>Saved!</span>
+                      </>
+                    ) : isSaving ? (
+                      <span>Saving...</span>
+                    ) : (
+                      <>
+                        <Save size={18} />
+                        <span>Save</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -199,7 +355,6 @@ const DailyJournal = () => {
                               <div className="song-title">{title}</div>
                               <div className="song-artist">{artist}</div>
                             </a>
-                            <div style={{ marginTop: 8, fontSize: 12, color: "#059669", wordBreak: "break-all" }}>{url}</div>
                             {s.reason && <div className="song-reason">{s.reason}</div>}
                           </div>
                         );
@@ -252,10 +407,6 @@ const DailyJournal = () => {
                         {output.content || output}
                       </div>
                     )}
-                    <div className="action-buttons">
-                      <button className="save-btn">Save</button>
-                      <button className="share-btn">Share</button>
-                    </div>
                   </div>
                 ) : (
                   <div className="empty-state">
