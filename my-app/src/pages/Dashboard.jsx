@@ -309,10 +309,9 @@ function Dashboard() {
             variants={scaleInVariants}
             whileHover={{
               scale: 1.03,
-
               transition: { duration: 0.2 },
             }}
-            whileTap={{ scale: 0 }}
+            whileTap={{ scale: 0.98 }}
           >
             <WidgetTemplate
               theme="light"
@@ -330,7 +329,7 @@ function Dashboard() {
               scale: 1.03,
               transition: { duration: 0.2 },
             }}
-            whileTap={{ scale: 0 }}
+            whileTap={{ scale: 0.98 }}
           >
             <WidgetTemplate
               theme="light"
@@ -348,7 +347,7 @@ function Dashboard() {
               scale: 1.03,
               transition: { duration: 0.2 },
             }}
-            whileTap={{ scale: 0 }}
+            whileTap={{ scale: 0.98 }}
           >
             <WidgetTemplate
               theme="light"

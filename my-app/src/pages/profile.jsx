@@ -12,18 +12,16 @@ export default function ProfileNew() {
     username: "",
     email: "",
     avatar: "👤",
-    profileImage: null, // Added for profile image
+    profileImage: null,
     bio: "",
     smsAlerts: true,
   })
   
-  // Load user data from localStorage and fetch complete profile from API
   useEffect(() => {
     const fetchUserProfile = async () => {
       const userData = localStorage.getItem("user");
       const token = localStorage.getItem("token");
       
-      // First, load from localStorage for immediate display
       if (userData) {
         try {
           const parsedUser = JSON.parse(userData);
@@ -38,7 +36,6 @@ export default function ProfileNew() {
         }
       }
       
-      // Then fetch complete profile from API
       if (token) {
         try {
           const response = await fetch(`${API_BASE}/api/auth/profile-status`, {
@@ -60,7 +57,6 @@ export default function ProfileNew() {
                 avatar: data.user.profileImage ? null : prevProfile.avatar
               }));
               
-              // Update localStorage with complete user data
               localStorage.setItem("user", JSON.stringify(data.user));
             }
           } else {
@@ -79,7 +75,7 @@ export default function ProfileNew() {
   const [formData, setFormData] = useState(profile)
   const [userPosts, setUserPosts] = useState([])
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState("images") // "images", "text"
+  const [activeTab, setActiveTab] = useState("images")
   
 
   const handleInputChange = (e) => {
@@ -100,7 +96,6 @@ export default function ProfileNew() {
     setIsEditing(false)
   }
   
-  // Fetch user's community posts
   const fetchUserPosts = async () => {
     setLoading(true)
     try {
@@ -137,7 +132,6 @@ export default function ProfileNew() {
     }
   }
   
-  // Delete a post
   const handleDeletePost = async (postId) => {
     if (!confirm("Are you sure you want to delete this post?")) {
       return
@@ -170,34 +164,32 @@ export default function ProfileNew() {
     }
   }
   
-  // Load user posts when component mounts
   useEffect(() => {
     fetchUserPosts()
   }, [])
 
-  // Separate posts into images and text
   const imagePosts = userPosts.filter(p => p.type === "image" || p.image)
   const textPosts = userPosts.filter(p => p.type === "text" || (!p.image && p.content))
 
   const renderUserPosts = (postList) => {
     if (loading) {
-      return <div className="loading-posts">Loading your posts...</div>
+      return <div className="moodora-loading-posts">Loading your posts...</div>
     }
     
     if (postList.length === 0) {
       return (
-        <div className="no-posts">
+        <div className="moodora-no-posts">
           You haven't posted anything yet.
         </div>
       )
     }
 
     return (
-      <div className="posts-grid">
+      <div className="moodora-posts-grid">
         {postList.map((post) => (
-          <div key={post._id} className="user-post-item">
+          <div key={post._id} className="moodora-user-post-item">
             {post.image && (
-              <div className="post-image">
+              <div className="moodora-post-image">
                 <img
                   src={post.image || "/placeholder.svg"}
                   alt={post.title || "Your post"}
@@ -205,12 +197,12 @@ export default function ProfileNew() {
                 />
               </div>
             )}
-            <div className="post-content">
+            <div className="moodora-post-content">
               {post.title && <h3>{post.title}</h3>}
               {post.content && <p>{post.content}</p>}
             </div>
             <button 
-              className="delete-post-btn"
+              className="moodora-delete-post-btn"
               onClick={() => handleDeletePost(post._id)}
               aria-label="Delete post"
             >
@@ -223,12 +215,12 @@ export default function ProfileNew() {
   }
 
   return (
-    <div className="profile-new-page">
-      <div className="profile-container">
+    <div className="moodora-profile-page">
+      <div className="moodora-profile-container">
         {/* Left Column - Profile Card */}
-        <div className="profile-left">
-          <div className="profile-card">
-            <div className="profile-avatar-large">
+        <div className="moodora-profile-left">
+          <div className="moodora-profile-card">
+            <div className="moodora-profile-avatar-large">
               {profile.profileImage ? (
                 <img 
                   src={profile.profileImage} 
@@ -250,50 +242,50 @@ export default function ProfileNew() {
               )}
             </div>
             
-            <div className="profile-details">
-              <h1 className="profile-title">Profile</h1>
+            <div className="moodora-profile-details">
+              <h1 className="moodora-profile-title">Profile</h1>
               
               {!isEditing ? (
-                <div className="profile-info">
-                  <div className="profile-name">{profile.name || "Anonymous User"}</div>
-                  <div className="profile-contact">@{profile.username || "username"}</div>
-                  <div className="profile-contact">{profile.email || "user@example.com"}</div>
+                <div className="moodora-profile-info">
+                  <div className="moodora-profile-name">{profile.name || "Anonymous User"}</div>
+                  <div className="moodora-profile-contact">@{profile.username || "username"}</div>
+                  <div className="moodora-profile-contact">{profile.email || "user@example.com"}</div>
                   {profile.bio && (
-                    <div className="profile-bio" style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+                    <div className="moodora-profile-bio" style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
                       {profile.bio}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="edit-form">
-                  <div className="form-row">
+                <div className="moodora-edit-form">
+                  <div className="moodora-form-row">
                     <input
                       type="text"
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
                       placeholder="Your name"
-                      className="form-input"
+                      className="moodora-form-input"
                     />
                   </div>
-                  <div className="form-row">
+                  <div className="moodora-form-row">
                     <input
                       type="text"
                       name="username"
                       value={formData.username}
                       onChange={handleInputChange}
                       placeholder="Username"
-                      className="form-input"
+                      className="moodora-form-input"
                     />
                   </div>
-                  <div className="form-row">
+                  <div className="moodora-form-row">
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder="Email"
-                      className="form-input"
+                      className="moodora-form-input"
                     />
                   </div>
                 </div>
@@ -301,7 +293,7 @@ export default function ProfileNew() {
 
               {!isEditing ? (
                 <button
-                  className="btn btn-save"
+                  className="moodora-btn moodora-btn-save"
                   onClick={() => {
                     setFormData(profile)
                     setIsEditing(true)
@@ -311,10 +303,10 @@ export default function ProfileNew() {
                 </button>
               ) : (
                 <>
-                  <button className="btn btn-save" onClick={handleSave}>
+                  <button className="moodora-btn moodora-btn-save" onClick={handleSave}>
                     💾 Save Changes
                   </button>
-                  <button className="btn btn-cancel" onClick={handleCancel}>
+                  <button className="moodora-btn moodora-btn-cancel" onClick={handleCancel}>
                     Cancel
                   </button>
                 </>
@@ -324,31 +316,28 @@ export default function ProfileNew() {
         </div>
 
         {/* Right Column - Content */}
-        <div className="profile-right">
-          {/* Mood Profile Section */}
-          
-
+        <div className="moodora-profile-right">
           {/* My Posts Section */}
-          <div className="section-card">
+          <div className="moodora-section-card">
             <h2>My Posts</h2>
             
             {/* Tabs for image/text posts */}
-            <div className="profile-tabs">
+            <div className="moodora-profile-tabs">
               <button
-                className={`tab-btn ${activeTab === "images" ? "active" : ""}`}
+                className={`moodora-tab-btn ${activeTab === "images" ? "moodora-active" : ""}`}
                 onClick={() => setActiveTab("images")}
               >
                 🖼️ Images ({imagePosts.length})
               </button>
               <button
-                className={`tab-btn ${activeTab === "text" ? "active" : ""}`}
+                className={`moodora-tab-btn ${activeTab === "text" ? "moodora-active" : ""}`}
                 onClick={() => setActiveTab("text")}
               >
                 📝 Text & Poems ({textPosts.length})
               </button>
             </div>
             
-            <div className="user-posts-container">
+            <div className="moodora-user-posts-container">
               {activeTab === "images" && renderUserPosts(imagePosts)}
               {activeTab === "text" && renderUserPosts(textPosts)}
             </div>

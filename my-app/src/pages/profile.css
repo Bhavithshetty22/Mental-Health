@@ -1,696 +1,386 @@
-/* ================================
-   Profile.css — Green & White Theme
-   Cleaned & Optimized Version
-================================== */
+/* profile.css - Green & White Theme */
 
-:root {
-  /* Color Palette */
-  --bg-primary: #f0f9f4;
-  --bg-secondary: #e6f4ea;
-  --card: #ffffff;
-  --text-primary: #1a3a2e;
-  --text-secondary: #2d5a4a;
-  --text-muted: #6b8e7f;
-
-  /* Accent Colors */
-  --accent: #6b9080;
-  --accent-hover: #5a7a6b;
-  --accent-light: #d4e7df;
-  --accent-subtle: #e8f3ed;
-
-  /* Border & Shadows */
-  --border: #c8ddd4;
-  --border-hover: #b3cec2;
-  --shadow-sm: 0 2px 4px rgba(107, 144, 128, 0.08);
-  --shadow-md: 0 6px 16px rgba(107, 144, 128, 0.12);
-  --shadow-lg: 0 12px 28px rgba(107, 144, 128, 0.16);
-
-  /* Layout */
-  --radius: 12px;
-  --radius-lg: 16px;
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.moodora-profile-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #ffffff 0%, #ccffc2 100%);
+  padding: 2rem;
 }
 
-/* ========== Page Layout ========== */
-.profile-new-page {
-  max-width: 100%;
-  min-height: calc(100vh - 80px);
-  margin: 0 auto;
-  padding: 48px 32px;
-  background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-}
-
-.profile-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 32px;
+.moodora-profile-container {
   max-width: 1400px;
   margin: 0 auto;
-}
-
-/* ========== Left / Right Sections ========== */
-.profile-left {
-  flex: 1;
-  min-width: 320px;
-}
-
-.profile-right {
-  flex: 2;
-  min-width: 320px;
-}
-
-/* ========== Profile Card ========== */
-.profile-card {
-  background: var(--card);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 40px;
-  box-shadow: var(--shadow-md);
-  text-align: center;
-  transition: var(--transition);
-  position: relative;
-  overflow: hidden;
-}
-
-.profile-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-light));
-}
-
-.profile-card:hover {
-  border-color: var(--accent);
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-4px);
-}
-
-/* Avatar */
-.profile-avatar-large {
-  width: 130px;
-  height: 130px;
-  margin-bottom: 1.5rem;
-  border-radius: 50%;
-  border: 4px solid var(--accent);
-  background: linear-gradient(135deg, var(--accent-light), var(--accent-subtle));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 4rem;
-  box-shadow: 0 8px 20px rgba(107, 144, 128, 0.25);
-  transition: var(--transition);
-}
-
-.profile-card:hover .profile-avatar-large {
-  transform: scale(1.05);
-  box-shadow: 0 12px 28px rgba(107, 144, 128, 0.35);
-}
-
-/* ========== Text & Info ========== */
-.profile-title {
-  font-size: 32px;
-  font-weight: 800;
-  color: var(--accent);
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 3px solid var(--accent);
-  text-transform: uppercase;
-  letter-spacing: -0.02em;
-}
-
-.profile-info {
-  background: var(--accent-subtle);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 28px;
-}
-
-.profile-name {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 10px;
-}
-
-.profile-contact {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-}
-
-/* ========== Buttons ========== */
-.btn {
-  width: 100%;
-  padding: 14px 32px;
-  border-radius: var(--radius);
-  font-weight: 700;
-  text-transform: uppercase;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.btn-save {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-  box-shadow: 0 4px 12px rgba(107, 144, 128, 0.3);
-}
-
-.btn-save:hover {
-  background: var(--accent-hover);
-  transform: translateY(-2px);
-}
-
-.btn-cancel {
-  background: var(--card);
-  color: var(--text-primary);
-  border-color: var(--border);
-  box-shadow: var(--shadow-sm);
-  margin-top: 12px;
-}
-
-.btn-cancel:hover {
-  background: var(--bg-primary);
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-
-/* ========== Tabs ========== */
-.profile-tabs {
-  display: flex;
-  gap: 12px;
-  padding: 8px;
-  margin-bottom: 24px;
-  background: var(--card);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow-x: auto;
-}
-
-.tab-btn {
-  padding: 14px 28px;
-  font-size: 15px;
-  font-weight: 700;
-  border: none;
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: var(--transition);
-  white-space: nowrap;
-}
-
-.tab-btn:hover {
-  background: var(--accent-subtle);
-  color: var(--accent);
-}
-
-.tab-btn.active {
-  background: var(--accent);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(107, 144, 128, 0.3);
-}
-
-/* ========== Section Cards ========== */
-.section-card {
-  background: var(--card);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 32px;
-  margin-bottom: 24px;
-  box-shadow: var(--shadow-md);
-  transition: var(--transition);
-  position: relative;
-  overflow: hidden;
-}
-
-.section-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-light));
-}
-
-.section-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-
-.section-card h2 {
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--accent);
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 3px solid var(--accent);
-  text-transform: uppercase;
-}
-
-/* ========== Mood Section ========== */
-.mood-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  margin-top: 1.5rem;
-  background: var(--accent-subtle);
-  border-radius: var(--radius);
-  border: 2px dashed var(--border);
-}
-
-.mood-profile-div {
-  width: 280px;
-  height: 280px;
-}
-
-/* ========== User Posts ========== */
-.posts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: 350px 1fr;
+  gap: 2rem;
+  align-items: start;
 }
 
-.user-post-item {
-  background: var(--card);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-lg);
+/* Left Column - Profile Card */
+.moodora-profile-left {
+  position: sticky;
+  top: 2rem;
+}
+
+.moodora-profile-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 40px rgba(16, 185, 129, 0.15);
+  text-align: center;
+  border: 2px solid #d1fae5;
+}
+
+.moodora-profile-avatar-large {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60px;
+  margin: 0 auto 1.5rem;
+  box-shadow: 0 5px 20px rgba(16, 185, 129, 0.3);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  transition: var(--transition);
+  border: 3px solid #d1fae5;
+}
+
+.moodora-profile-details {
+  margin-top: 1rem;
+}
+
+.moodora-profile-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #047857;
+  margin-bottom: 1rem;
+}
+
+.moodora-profile-info {
+  margin-bottom: 1.5rem;
+}
+
+.moodora-profile-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #065f46;
+  margin-bottom: 0.5rem;
+}
+
+.moodora-profile-contact {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin-bottom: 0.3rem;
+}
+
+.moodora-profile-bio {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f0fdf4;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #065f46;
+  line-height: 1.6;
+  text-align: left;
+  border: 1px solid #d1fae5;
+}
+
+/* Edit Form */
+.moodora-edit-form {
+  margin-bottom: 1.5rem;
+}
+
+.moodora-form-row {
+  margin-bottom: 1rem;
+}
+
+.moodora-form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #d1fae5;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.moodora-form-input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  background: #f0fdf4;
+}
+
+/* Buttons */
+.moodora-btn {
+  width: 100%;
+  padding: 0.85rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
+}
+
+.moodora-btn-save {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.moodora-btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.moodora-btn-cancel {
+  background: #f0fdf4;
+  color: #065f46;
+  border: 2px solid #d1fae5;
+}
+
+.moodora-btn-cancel:hover {
+  background: #d1fae5;
+  border-color: #10b981;
+}
+
+/* Right Column */
+.moodora-profile-right {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.moodora-section-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 40px rgba(16, 185, 129, 0.15);
+  border: 2px solid #d1fae5;
+}
+
+.moodora-section-card h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #047857;
+  margin-bottom: 1.5rem;
+}
+
+/* Tabs */
+.moodora-profile-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #d1fae5;
+}
+
+.moodora-tab-btn {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: -2px;
+}
+
+.moodora-tab-btn:hover {
+  color: #10b981;
+  background: #f0fdf4;
+}
+
+.moodora-tab-btn.moodora-active {
+  color: #10b981;
+  border-bottom-color: #10b981;
+  background: #f0fdf4;
+}
+
+/* Posts Grid */
+.moodora-user-posts-container {
+  min-height: 300px;
+}
+
+.moodora-posts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.moodora-user-post-item {
+  background: #f0fdf4;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.12);
+  transition: all 0.3s ease;
   position: relative;
+  border: 2px solid #d1fae5;
 }
 
-.user-post-item:hover {
-  border-color: var(--accent);
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-lg);
+.moodora-user-post-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
 }
 
-/* Post Image */
-.post-image {
+.moodora-post-image {
+  width: 100%;
   height: 200px;
-  background: linear-gradient(135deg, var(--accent-subtle), var(--accent-light));
   overflow: hidden;
-  position: relative;
+  background: #d1fae5;
 }
 
-.post-image::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--accent);
-}
-
-.post-image img {
+.moodora-post-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  transition: transform 0.3s ease;
 }
 
-.user-post-item:hover .post-image img {
-  transform: scale(1.08);
-}
-
-/* Post Content */
-.post-content {
-  padding: 20px;
-}
-
-.post-content h3 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 10px;
-}
-
-.post-content p {
-  font-size: 15px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-}
-
-/* Delete Button */
-.delete-post-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 2px solid var(--accent);
-  border-radius: 24px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--accent);
-  cursor: pointer;
-  opacity: 0;
-  transition: var(--transition);
-  box-shadow: 0 4px 12px rgba(107, 144, 128, 0.3);
-}
-
-.user-post-item:hover .delete-post-btn {
-  opacity: 1;
-}
-
-.delete-post-btn:hover {
-  background: #e74c3c;
-  border-color: #e74c3c;
-  color: #fff;
+.moodora-user-post-item:hover .moodora-post-image img {
   transform: scale(1.05);
 }
 
-/* ========== Form Inputs ========== */
-.form-input {
-  width: 100%;
-  padding: 14px 18px;
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 16px;
-  color: var(--text-primary);
-  background: var(--card);
-  transition: var(--transition);
+.moodora-post-content {
+  padding: 1.25rem;
+  background: white;
 }
 
-.form-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(107, 144, 128, 0.15);
-  background: var(--accent-subtle);
-}
-
-.form-input::placeholder {
-  color: var(--text-muted);
-}
-
-/* ========== Empty States ========== */
-.loading-posts, .no-posts {
-  text-align: center;
-  padding: 60px 30px;
-  background: var(--accent-subtle);
-  border: 3px dashed var(--border);
-  border-radius: var(--radius-lg);
-  color: var(--text-muted);
-  font-size: 18px;
+.moodora-post-content h3 {
+  font-size: 1.1rem;
   font-weight: 600;
+  color: #065f46;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
 }
 
-.no-posts::before {
-  content: "🌱";
-  font-size: 48px;
-  display: block;
-  margin-bottom: 10px;
+.moodora-post-content p {
+  font-size: 0.9rem;
+  color: #6b7280;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-/* ========== Responsive ========== */
+.moodora-delete-post-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(239, 68, 68, 0.95);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.moodora-user-post-item:hover .moodora-delete-post-btn {
+  opacity: 1;
+}
+
+.moodora-delete-post-btn:hover {
+  background: rgba(220, 38, 38, 1);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+/* Loading and Empty States */
+.moodora-loading-posts {
+  text-align: center;
+  padding: 3rem;
+  color: #10b981;
+  font-size: 1.1rem;
+  background: #f0fdf4;
+  border-radius: 15px;
+  border: 2px dashed #d1fae5;
+}
+
+.moodora-no-posts {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #059669;
+  font-size: 1.1rem;
+  background: #f0fdf4;
+  border-radius: 15px;
+  border: 2px dashed #d1fae5;
+}
+
+/* Responsive Design */
 @media (max-width: 1024px) {
-  .profile-container {
-    flex-direction: column;
-    gap: 24px;
+  .moodora-profile-container {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .moodora-profile-left {
+    position: relative;
+    top: 0;
   }
 }
 
 @media (max-width: 768px) {
-  .profile-new-page {
-    padding: 36px 24px;
+  .moodora-profile-page {
+    padding: 1rem;
   }
 
-  .profile-title {
-    font-size: 26px;
+  .moodora-profile-card,
+  .moodora-section-card {
+    padding: 1.5rem;
   }
 
-  .section-card h2 {
-    font-size: 22px;
+  .moodora-posts-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
-  .posts-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  .moodora-profile-tabs {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .moodora-tab-btn {
+    width: 100%;
+    text-align: left;
+    border-bottom: none;
+    border-left: 3px solid transparent;
+    padding-left: 1rem;
+  }
+
+  .moodora-tab-btn.moodora-active {
+    border-left-color: #10b981;
+    border-bottom-color: transparent;
   }
 }
 
 @media (max-width: 480px) {
-  .profile-new-page {
-    padding: 24px 16px;
+  .moodora-profile-avatar-large {
+    width: 100px;
+    height: 100px;
+    font-size: 50px;
   }
 
-  .profile-avatar-large {
-    width: 110px;
-    height: 110px;
-    font-size: 3rem;
+  .moodora-profile-title {
+    font-size: 1.25rem;
   }
 
-  .profile-title {
-    font-size: 22px;
+  .moodora-profile-name {
+    font-size: 1.1rem;
   }
 
-  .mood-profile-div {
-    width: 220px;
-    height: 220px;
+  .moodora-section-card h2 {
+    font-size: 1.25rem;
   }
-
-  .btn {
-    padding: 12px 20px;
-    font-size: 14px;
-  }
-
-  .tab-btn {
-    padding: 10px 14px;
-    font-size: 13px;
-  }
-}
-/* ===== Edit Profile — Improved ===== */
-
-/* container for the edit form */
-.edit-form {
-  width: 100%;
-  max-width: 900px; /* keeps the form readable on very wide screens */
-  margin: 0 auto 24px;
-  display: block;
-  background: transparent;
-}
-
-/* form layout rows */
-.form-row {
-  display: flex;
-  gap: 18px;
-  align-items: flex-start;
-  margin-bottom: 18px;
-  width: 100%;
-}
-
-/* For form rows that should stack vertically on small screens */
-.form-row.stack-on-mobile {
-  flex-wrap: nowrap;
-}
-
-/* labels */
-.form-label {
-  width: 180px;
-  min-width: 120px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  font-size: 15px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 6px;
-}
-
-/* form controls container (input + helper text) */
-.form-control {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* standard inputs */
-.form-input,
-.form-select,
-.form-textarea {
-  width: 100%;
-  padding: 12px 16px;
-  border-radius: calc(var(--radius) - 2px);
-  border: 2px solid var(--border);
-  font-size: 15px;
-  color: var(--text-primary);
-  background: var(--card);
-  transition: var(--transition);
-  box-sizing: border-box;
-  font-family: inherit;
-}
-
-/* textarea */
-.form-textarea {
-  min-height: 110px;
-  resize: vertical;
-  line-height: 1.5;
-  padding-top: 14px;
-}
-
-/* select */
-.form-select {
-  appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
-                    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
-  background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px);
-  background-size: 8px 8px, 8px 8px;
-  background-repeat: no-repeat;
-  padding-right: 44px;
-}
-
-/* input focus */
-.form-input:focus,
-.form-select:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 6px rgba(107,144,128,0.08);
-  background: var(--accent-subtle);
-}
-
-/* helper / error text */
-.form-help {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-.form-error {
-  color: #e74c3c;
-  font-weight: 700;
-  font-size: 13px;
-}
-
-/* Avatar / upload area */
-.avatar-row {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-}
-
-.avatar-preview {
-  width: 110px;
-  height: 110px;
-  border-radius: 50%;
-  border: 3px solid var(--accent);
-  background: linear-gradient(135deg, var(--accent-light), var(--accent-subtle));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  box-shadow: 0 8px 20px rgba(107,144,128,0.12);
-}
-
-.avatar-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* hidden file input with styled label acting as button */
-.file-input {
-  display: none;
-}
-.file-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 2px solid var(--border);
-  background: var(--card);
-  cursor: pointer;
-  font-weight: 700;
-  color: var(--text-primary);
-  transition: var(--transition);
-}
-.file-label:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-}
-
-/* actions (buttons) */
-.form-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-  justify-content: flex-end;
-}
-
-/* when inside left column, make buttons full width for mobile */
-.form-actions.stacked {
-  flex-direction: column;
-  width: 100%;
-}
-
-/* small inline group (eg. cancel + save) */
-.form-actions .btn {
-  min-width: 140px;
-  max-width: 220px;
-}
-
-/* compact layout for two-column forms where label should be above on mobile */
-@media (max-width: 780px) {
-  .form-row {
-    flex-direction: column;
-    gap: 10px;
-  }
-  .form-label {
-    width: 100%;
-    font-size: 14px;
-    padding-top: 0;
-  }
-  .avatar-row {
-    justify-content: flex-start;
-  }
-  .form-actions {
-    justify-content: stretch;
-  }
-  .form-actions .btn {
-    width: 100%;
-  }
-}
-
-/* optional small tweaks for long forms */
-.form-row .half {
-  width: 48%;
-}
-@media (max-width: 780px) {
-  .form-row .half { width: 100%; }
-}
-
-/* subtle required star */
-.form-label .required {
-  color: #d9534f;
-  font-weight: 900;
-  margin-left: 6px;
-  font-size: 12px;
-}
-
-/* inline validation success */
-.form-valid {
-  border-color: #2ecc71 !important;
-  box-shadow: 0 0 0 6px rgba(46,204,113,0.06);
 }

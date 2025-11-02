@@ -145,8 +145,8 @@ const MoodProfile = ({ selectedDate = null }) => {
         className="mood-image-container"
         style={{
           position: 'relative',
-          width: '300px',
-          height: '300px',
+          width: '280px',
+          height: '280px',
           borderRadius: '20px',
           overflow: 'hidden',
         

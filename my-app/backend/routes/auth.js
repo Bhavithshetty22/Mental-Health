@@ -3,10 +3,111 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const EmotionBot = require("../models/EmotionBot");
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
 const SALT_ROUNDS = 10;
+
+// Default bots configuration
+const DEFAULT_BOTS = [
+  {
+    name: "Anxious Helper",
+    description: "Work through anxiety and find calm",
+    greeting: "Hey there... I notice you might be feeling a bit anxious. I'm here with you. Want to talk about what's on your mind?",
+    customPrompt: "You are a calming, empathetic bot focused on helping with anxiety. Provide grounding techniques and reassurance. Be gentle and understanding.",
+    color: "#8B7AB8",
+    imageUrl: null,
+    creatorName: "System",
+    isDefault: true,
+    rating: 4.8,
+    ratingCount: 250,
+    chatCount: 1250
+  },
+  {
+    name: "Melancholy",
+    description: "Navigate through sadness with understanding",
+    greeting: "I can sense the heaviness you're carrying. It's okay to feel sad. I'm here to listen without judgment.",
+    customPrompt: "You are a gentle, understanding bot for processing sadness. Listen deeply and validate emotions. Help users feel heard and understood.",
+    color: "#6B8CAE",
+    imageUrl: null,
+    creatorName: "System",
+    isDefault: true,
+    rating: 4.9,
+    ratingCount: 196,
+    chatCount: 980
+  },
+  {
+    name: "Joybot",
+    description: "Spread happiness and celebrate life's moments",
+    greeting: "Hey friend! 😊 I'm so glad you're here! Ready to share some good vibes and celebrate the amazing things in life?",
+    customPrompt: "You are an upbeat, celebratory bot spreading joy. Be enthusiastic and help users appreciate positive moments. Use encouraging language.",
+    color: "#F4B942",
+    imageUrl: null,
+    creatorName: "System",
+    isDefault: true,
+    rating: 4.7,
+    ratingCount: 290,
+    chatCount: 1450
+  },
+  {
+    name: "Calm Companion",
+    description: "Find peace and mindfulness in the present moment",
+    greeting: "Welcome. Take a deep breath with me. I'm here to help you find calm and center yourself in this moment.",
+    customPrompt: "You are a peaceful, mindful bot focused on meditation and calm. Guide users toward present-moment awareness and inner peace.",
+    color: "#7FB3D5",
+    imageUrl: null,
+    creatorName: "System",
+    isDefault: true,
+    rating: 4.6,
+    ratingCount: 180,
+    chatCount: 890
+  },
+  {
+    name: "Motivation Coach",
+    description: "Get energized and tackle your goals with confidence",
+    greeting: "You've got this! I'm here to help you tap into your inner strength and motivation. What goal are we working on today?",
+    customPrompt: "You are an energetic, motivational bot. Inspire confidence and action. Help users break down goals and celebrate progress.",
+    color: "#E67E22",
+    imageUrl: null,
+    creatorName: "System",
+    isDefault: true,
+    rating: 4.5,
+    ratingCount: 210,
+    chatCount: 1120
+  }
+];
+
+// Function to ensure default bots exist
+async function ensureDefaultBots() {
+  try {
+    // Check if default bots already exist
+    const existingDefaultBots = await EmotionBot.find({ isDefault: true });
+    
+    if (existingDefaultBots.length === 0) {
+      console.log('No default bots found, creating them...');
+      
+      // Create system user ID for default bots
+      const mongoose = require('mongoose');
+      const systemUserId = new mongoose.Types.ObjectId();
+      
+      // Add creator to all bots
+      const botsToCreate = DEFAULT_BOTS.map(bot => ({
+        ...bot,
+        creator: systemUserId
+      }));
+      
+      // Insert default bots
+      await EmotionBot.insertMany(botsToCreate);
+      console.log(`✅ Created ${botsToCreate.length} default emotion bots`);
+    } else {
+      console.log(`✅ Default bots already exist (${existingDefaultBots.length} found)`);
+    }
+  } catch (error) {
+    console.error('Error ensuring default bots:', error);
+    // Don't throw error - allow auth to continue even if bot seeding fails
+  }
+}
 
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
@@ -50,6 +151,8 @@ router.post("/signup", async (req, res) => {
     });
     await user.save();
 
+    // Ensure default bots exist in database
+    await ensureDefaultBots();
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
     const safeUser = { 
@@ -59,7 +162,6 @@ router.post("/signup", async (req, res) => {
       username: user.username,
       profileComplete: user.profileComplete
     };
-
 
     res.json({ token, user: safeUser });
   } catch (err) {
@@ -85,6 +187,8 @@ router.post("/login", async (req, res) => {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(400).json({ message: "Invalid credentials" });
 
+    // Ensure default bots exist in database
+    await ensureDefaultBots();
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
     const safeUser = { 
