@@ -1,11 +1,11 @@
 // src/pages/LoginSignup.jsx
 import React, { useState } from "react";
-import { useNavigate as _useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "./GenAIAuth.css";
 
 export default function LoginSignup() {
-  // navigate not used in this component currently
-  const [mode, setMode] = useState("login"); // "login" or "signup"
+  const navigate = useNavigate();
+  const [mode, setMode] = useState("login");
 
   // login state
   const [loginEmailOrUsername, setLoginEmailOrUsername] = useState("");
@@ -49,12 +49,20 @@ export default function LoginSignup() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");
 
+      console.log("Login response:", data);
+
       // Save token + user
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Force a page reload to trigger the App.js authentication check
-      window.location.href = "/";
+      // Force page reload to update App.js state
+      if (!data.user.profileComplete) {
+        console.log("Profile incomplete, redirecting to profile-setup");
+        window.location.href = "/profile-setup";
+      } else {
+        console.log("Profile complete, redirecting to home");
+        window.location.href = "/";
+      }
     } catch (err) {
       setLoginError(err.message || "Login failed");
       setIsLoggingIn(false);
@@ -96,11 +104,14 @@ export default function LoginSignup() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Signup failed");
 
+      console.log("Signup response:", data);
+
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Force a page reload to trigger the App.js authentication check
-      window.location.href = "/";
+      // Force page reload to update App.js state
+      console.log("Signup successful, redirecting to profile-setup");
+      window.location.href = "/profile-setup";
     } catch (err) {
       setSignupErrors({ general: err.message || "Signup failed" });
       setIsSigningUp(false);

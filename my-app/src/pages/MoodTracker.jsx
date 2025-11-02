@@ -824,7 +824,9 @@ const saveMood = async (date, moodType, notes = "") => {
           </div>
         )}
       </div>
+      
     </div>
+    
   )
 }
 

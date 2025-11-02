@@ -236,16 +236,8 @@ function Dashboard() {
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 300 }}
-              />
-              <motion.div
-                className="notifications"
-                whileHover={{ scale: 1.1, rotate: -5 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
+                onClick={() => navigate("/profile")}
+                style={{ cursor: "pointer" }}
               />
             </div>
           </motion.div>
@@ -317,8 +309,8 @@ function Dashboard() {
             variants={scaleInVariants}
             whileHover={{
               scale: 1.03,
-              
-              transition: { duration: 0.2 }
+
+              transition: { duration: 0.2 },
             }}
             whileTap={{ scale: 0 }}
           >
@@ -336,7 +328,7 @@ function Dashboard() {
             variants={scaleInVariants}
             whileHover={{
               scale: 1.03,
-              transition: { duration: 0.2 }
+              transition: { duration: 0.2 },
             }}
             whileTap={{ scale: 0 }}
           >
@@ -354,7 +346,7 @@ function Dashboard() {
             variants={scaleInVariants}
             whileHover={{
               scale: 1.03,
-              transition: { duration: 0.2 }
+              transition: { duration: 0.2 },
             }}
             whileTap={{ scale: 0 }}
           >
@@ -368,7 +360,32 @@ function Dashboard() {
             />
           </motion.div>
         </motion.div>
+        {/* Footer Section */}
       </motion.div>
+      {/* Footer Section */}
+      <motion.footer
+        className="dashboard-footer"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.5 }}
+      >
+        <div className="footer-content">
+          <div className="footer-left">
+            <h3>Moodora</h3>
+            <p>Your daily companion for emotional wellness 💚</p>
+          </div>
+
+          <div className="footer-links">
+            <a href="/about">About</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/contact">Contact</a>
+          </div>
+
+          <div className="footer-right">
+            <p>© {new Date().getFullYear()} Moodora. All rights reserved.</p>
+          </div>
+        </div>
+      </motion.footer>
     </div>
   );
 }
