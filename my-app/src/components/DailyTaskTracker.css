@@ -8,10 +8,10 @@
 .daily-tasks-container {
  
   border-radius: 24px;
-  
-  overflow: hidden;
+  margin-top: -20px;
   height: 100%;
   min-height: 300px;
+  margin-bottom: 20px;
   
 }
 
@@ -283,11 +283,10 @@
 }
 
 .completion-card {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+   background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(16, 185, 129, 0.3);
   border-radius: 16px;
-  padding: 24px;
+  padding: 44px;
   width: 100%;
 }
 
@@ -299,13 +298,13 @@
 .completion-title {
   font-size: 20px;
   font-weight: 700;
-  color: white;
+  color: black;
   margin: 0 0 8px 0;
 }
 
 .completion-text {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(46, 46, 46, 0.85);
   margin: 0;
 }
 

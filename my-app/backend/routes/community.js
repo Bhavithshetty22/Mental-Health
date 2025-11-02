@@ -138,6 +138,61 @@ router.post("/:postId/support", authenticateToken, async (req, res) => {
   }
 });
 
+// DELETE /api/community/:postId/support - remove support/unlike a post
+router.delete("/:postId/support", authenticateToken, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ success: false, error: "Authentication required" });
+    }
+
+    const postId = req.params.postId;
+    const userId = req.user.id;
+    
+    // Find the post
+    const post = await CommunityPost.findById(postId);
+    
+    if (!post) {
+      return res.status(404).json({ success: false, error: "Post not found" });
+    }
+    
+    // Initialize supporters array if it doesn't exist
+    if (!post.supporters) {
+      post.supporters = [];
+    }
+    
+    // Convert all supporter IDs to strings for comparison
+    const supportersStrings = post.supporters.map(s => s.toString());
+    
+    // Check if user has supported this post
+    if (!supportersStrings.includes(userId.toString())) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "You haven't supported this post yet",
+        likes: post.likes || 0
+      });
+    }
+    
+    // Remove user from supporters array
+    post.supporters = post.supporters.filter(
+      id => id.toString() !== userId.toString()
+    );
+    
+    // Decrement likes count (ensure it doesn't go below 0)
+    post.likes = Math.max((post.likes || 0) - 1, 0);
+    await post.save();
+    
+    res.json({ 
+      success: true, 
+      likes: post.likes,
+      hasSupported: false,
+      message: "Post unsupported successfully"
+    });
+  } catch (err) {
+    console.error("Failed to unsupport post", err);
+    res.status(500).json({ success: false, error: "Failed to unsupport post" });
+  }
+});
+
 // POST /api/community - create new post (supports anonymous)
 router.post("/", authenticateToken, async (req, res) => {
   try {

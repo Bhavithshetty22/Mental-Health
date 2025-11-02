@@ -1,4 +1,4 @@
-// server.js (enhanced with Vertex AI Imagen + Creative Endpoint + Google Cloud TTS)
+// server.js (Complete version with Emotion Bots)
 
 require("dotenv").config(); // Load .env first
 
@@ -11,10 +11,11 @@ const { GoogleAuth } = require("google-auth-library");
 const textToSpeech = require("@google-cloud/text-to-speech");
 const moodRoutes = require("./routes/moodRoutes");
 const lettersRouter = require("./routes/letters");
-const moodTrackerRouter = require("./routes/mood-tracker"); // Mood image routes
+const moodTrackerRouter = require("./routes/mood-tracker");
 const authRoutes = require("./routes/auth");
 const communityRoutes = require("./routes/community");
 const dailyJournalRouter = require("./routes/dailyJournal");
+const emotionBotsRoutes = require("./routes/emotion-bots"); // NEW
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
@@ -23,7 +24,6 @@ const PORT = process.env.PORT || 5000;
 
 // ===== Enhanced CORS Configuration =====
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
-// ===== Simplified CORS Configuration for Development =====
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -39,7 +39,7 @@ app.use(
       const allowedOrigins = [
         process.env.CLIENT_ORIGIN,
         "http://localhost:5173",
-        "http://localhost:5000", // Allow server to call itself
+        "http://localhost:5000",
         "http://localhost:3000",
         "http://localhost:8080",
       ];
@@ -119,7 +119,6 @@ const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  // Custom handler for rate limit exceeded
   handler: (req, res) => {
     console.log(`Rate limit exceeded for IP: ${req.ip}`);
     res.status(429).json({
@@ -171,15 +170,19 @@ console.log(
   "DEBUG GOOGLE_APPLICATION_CREDENTIALS:",
   process.env.GOOGLE_APPLICATION_CREDENTIALS ? "present" : "MISSING"
 );
+console.log(
+  "DEBUG JWT_SECRET:",
+  process.env.JWT_SECRET ? "present" : "MISSING"
+);
 
 // ===== Enhanced MongoDB Connection =====
 if (process.env.MONGO_URI) {
   mongoose
     .connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
-      maxPoolSize: 10, // Maintain up to 10 socket connections
-      bufferCommands: false, // Disable mongoose buffering
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      bufferCommands: false,
     })
     .then(() => {
       console.log("✅ MongoDB connected successfully");
@@ -188,7 +191,6 @@ if (process.env.MONGO_URI) {
       console.error("❌ MongoDB connection error:", err.message);
     });
 
-  // Handle MongoDB connection events
   mongoose.connection.on("error", (err) => {
     console.error("MongoDB connection error:", err);
   });
@@ -242,7 +244,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/community", communityRoutes);
 app.use("/api/letters", lettersRouter);
 app.use("/api/mood-tracker", moodTrackerRouter);
-app.use("/api/daily-journal", dailyJournalRouter); // ⬅️ ADD THIS LINE
+app.use("/api/daily-journal", dailyJournalRouter);
+app.use("/api/emotion-bots", emotionBotsRoutes); // NEW: Emotion Bots
 
 // Use mood routes with error handling
 if (process.env.MONGO_URI) {
@@ -406,11 +409,9 @@ function detectEmotionFallback(text) {
   const textLower = text.toLowerCase();
   const scores = {};
 
-  // Calculate weighted scores
   Object.keys(emotionKeywords).forEach((emotion) => {
     scores[emotion] = 0;
     emotionKeywords[emotion].forEach((keyword, index) => {
-      // Give higher weight to matches found earlier in keyword list (more important words)
       const weight =
         Math.max(1, emotionKeywords[emotion].length - index) /
         emotionKeywords[emotion].length;
@@ -467,12 +468,12 @@ async function detectMoodWithFallback(text) {
       );
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const response = await axios.post(
         `https://api-inference.huggingface.co/models/${modelUrl}`,
         {
-          inputs: text.substring(0, 500), // Limit input length
+          inputs: text.substring(0, 500),
           options: {
             wait_for_model: true,
             use_cache: false,
@@ -524,7 +525,6 @@ async function detectMoodWithFallback(text) {
         console.log("Rate limited, trying next model...");
       }
 
-      // Don't try more models if this is the last one
       if (i === EMOTION_MODELS.length - 1) break;
     }
   }
@@ -714,12 +714,11 @@ app.post("/api/text-to-speech", async (req, res) => {
 
     console.log(`Generating speech for text (${text.length} chars)`);
 
-    // Construct the request
     const request = {
       input: { text: text.trim() },
       voice: {
         languageCode: "en-US",
-        name: "en-US-Neural2-D", // Calm, professional male voice
+        name: "en-US-Neural2-D",
         ssmlGender: "MALE",
       },
       audioConfig: {
@@ -727,18 +726,16 @@ app.post("/api/text-to-speech", async (req, res) => {
         speakingRate: 1.0,
         pitch: 0.0,
         volumeGainDb: 0.0,
-        effectsProfileId: ["handset-class-device"], // Optimized for voice
+        effectsProfileId: ["handset-class-device"],
       },
     };
 
-    // Perform the text-to-speech request
     const [response] = await ttsClient.synthesizeSpeech(request);
 
     if (!response.audioContent) {
       throw new Error("No audio content returned from Google TTS");
     }
 
-    // Convert the audio content to base64
     const audioBase64 = response.audioContent.toString("base64");
 
     console.log(`Speech generated successfully (${audioBase64.length} chars)`);
@@ -752,7 +749,6 @@ app.post("/api/text-to-speech", async (req, res) => {
     console.error("Error in text-to-speech:", error);
 
     if (error.code === 7) {
-      // PERMISSION_DENIED
       return res.status(403).json({
         error: "Text-to-Speech API access denied",
         details:
@@ -762,7 +758,6 @@ app.post("/api/text-to-speech", async (req, res) => {
     }
 
     if (error.code === 8) {
-      // RESOURCE_EXHAUSTED
       return res.status(429).json({
         error: "Text-to-Speech quota exceeded",
         details: "Too many requests. Please try again later.",
@@ -778,7 +773,7 @@ app.post("/api/text-to-speech", async (req, res) => {
   }
 });
 
-// ===== NEW: Creative Content (Story + Poem) Endpoint =====
+// ===== Creative Content (Story + Poem) Endpoint =====
 app.post("/api/creative", async (req, res) => {
   try {
     const { text } = req.body;
@@ -806,7 +801,6 @@ app.post("/api/creative", async (req, res) => {
       });
     }
 
-    // Call Gemini API
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
 
     const prompt = `Based on the following journal entry, create two things:
@@ -856,7 +850,6 @@ Important: Keep the story warm and encouraging. The poem should be reflective an
       timeout: 30000,
     });
 
-    // Extract the generated text
     const candidates = response.data?.candidates;
     if (!candidates || candidates.length === 0) {
       throw new Error("No candidates in Gemini response");
@@ -869,7 +862,6 @@ Important: Keep the story warm and encouraging. The poem should be reflective an
 
     console.log("Generated creative content successfully");
 
-    // Parse the response to extract story and poem
     const storyMatch = generatedText.match(
       /SHORT STORY:\s*\n([\s\S]*?)(?=\n\s*POEM:|$)/i
     );
@@ -878,14 +870,12 @@ Important: Keep the story warm and encouraging. The poem should be reflective an
     let story = storyMatch ? storyMatch[1].trim() : "";
     let poem = poemMatch ? poemMatch[1].trim() : "";
 
-    // Fallback: if parsing failed, try alternative splitting
     if (!story && !poem) {
       const parts = generatedText.split(/\n\s*\n/);
       if (parts.length >= 2) {
         story = parts[0].trim();
         poem = parts.slice(1).join("\n\n").trim();
       } else {
-        // Last resort: give them something
         story = generatedText.trim();
         poem = "";
       }
@@ -908,7 +898,6 @@ Important: Keep the story warm and encouraging. The poem should be reflective an
         JSON.stringify(error.response.data, null, 2)
       );
 
-      // Check for specific error types
       if (error.response.data?.error?.message?.includes("API key")) {
         return res.status(401).json({
           error: "API key expired or invalid. Please renew the API key.",
@@ -931,7 +920,7 @@ Important: Keep the story warm and encouraging. The poem should be reflective an
   }
 });
 
-// ===== NEW: Vertex AI Imagen Image Generation Endpoint =====
+// ===== Vertex AI Imagen Image Generation Endpoint =====
 app.post("/api/generate-image", async (req, res) => {
   try {
     const { text } = req.body;
@@ -952,7 +941,6 @@ app.post("/api/generate-image", async (req, res) => {
 
     console.log(`Generating image for journal entry (${text.length} chars)`);
 
-    // Step 1: Enhance the prompt using Gemini
     let enhancedPrompt;
 
     if (!GEMINI_KEY) {
@@ -1005,12 +993,10 @@ Output only the final artistic image prompt, nothing else.`,
       }
     }
 
-    // Step 2: Generate image using Vertex AI Imagen
     const projectId = process.env.VERTEX_PROJECT_ID;
     const location = process.env.VERTEX_LOCATION || "us-central1";
     const imagenModel = process.env.IMAGEN_MODEL || "imagen-3.0-generate-001";
 
-    // Remove any :predict or :generateContent suffix if present
     const model = imagenModel
       .replace(":predict", "")
       .replace(":generateContent", "");
@@ -1026,7 +1012,6 @@ Output only the final artistic image prompt, nothing else.`,
       `Calling Vertex AI Imagen (project: ${projectId}, location: ${location})`
     );
 
-    // Initialize Google Auth
     const auth = new GoogleAuth({
       scopes: ["https://www.googleapis.com/auth/cloud-platform"],
       keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
@@ -1061,11 +1046,10 @@ Output only the final artistic image prompt, nothing else.`,
           Authorization: `Bearer ${accessToken.token}`,
           "Content-Type": "application/json",
         },
-        timeout: 30000, // 30 second timeout for image generation
+        timeout: 30000,
       }
     );
 
-    // Extract the base64 image from the response
     const imageBase64 =
       vertexResponse.data?.predictions?.[0]?.bytesBase64Encoded;
 
@@ -1085,7 +1069,6 @@ Output only the final artistic image prompt, nothing else.`,
   } catch (error) {
     console.error("Error generating image:", error);
 
-    // Provide specific error messages
     if (error.message?.includes("access token")) {
       return res.status(500).json({
         error: "Authentication failed with Google Cloud",
@@ -1202,7 +1185,7 @@ Trust the process, and remember that future you is rooting for present you.
       });
     }
 
-    const systemPrompt = `You are an empathetic, hopeful, and realistic future version of the user. Write a warm short letter (3-6 short paragraphs) from their future self about how the current situation turned out, what small practical steps were taken, and encouraging lessons learned. 
+    const systemPrompt = `You are an empathetic, hopeful, and realistic future version of the user. Write a warm short letter (1-3 short paragraphs) from their future self about how the current situation turned out, what small practical steps were taken, and encouraging lessons learned. 
 
 Guidelines:
 - Be supportive but realistic
@@ -1231,7 +1214,6 @@ Guidelines:
 
     console.log(`Generated letter (${letterText.length} chars)`);
 
-    // Save to DB with error handling
     let savedDoc = null;
     if (process.env.MONGO_URI) {
       try {
@@ -1261,7 +1243,6 @@ Guidelines:
   } catch (err) {
     console.error("Server error in /api/generate:", err);
 
-    // Check if it's a Gemini API error
     if (err.message?.includes("API key")) {
       return res.status(500).json({
         error: "AI service configuration error",
@@ -1290,23 +1271,32 @@ app.use((req, res, next) => {
   res.status(404).json({
     error: `Route not found: ${req.method} ${req.path}`,
     availableRoutes: [
-  "GET /",
-  "GET /health", 
-  "GET /api/health",
-  "POST /api/generate",
-  "POST /api/generate-image",
-  "POST /api/creative",
-  "POST /api/detect-mood",
-  "POST /api/text-to-speech",
-  "POST /api/songs",
-  "POST /api/auth/signup",
-  "POST /api/auth/login",
-  "* /api/moods",
-  "* /api/letters",
-  "* /api/mood-tracker",
-  "* /api/daily-journal", // ⬅️ ADD THIS LINE
-  "* /api/community"
-]
+      "GET /",
+      "GET /health",
+      "GET /api/health",
+      "POST /api/generate",
+      "POST /api/generate-image",
+      "POST /api/creative",
+      "POST /api/detect-mood",
+      "POST /api/text-to-speech",
+      "POST /api/songs",
+      "POST /api/auth/signup",
+      "POST /api/auth/login",
+      "GET /api/emotion-bots",
+      "POST /api/emotion-bots",
+      "GET /api/emotion-bots/:id",
+      "POST /api/emotion-bots/:id/chat",
+      "GET /api/emotion-bots/:id/chat",
+      "POST /api/emotion-bots/:id/rate",
+      "GET /api/emotion-bots/my/bots",
+      "PUT /api/emotion-bots/:id",
+      "DELETE /api/emotion-bots/:id",
+      "* /api/moods",
+      "* /api/letters",
+      "* /api/mood-tracker",
+      "* /api/daily-journal",
+      "* /api/community",
+    ],
   });
 });
 
@@ -1314,12 +1304,10 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
   console.error("Global error handler caught:", err);
 
-  // Check if headers were already sent
   if (res.headersSent) {
     return next(err);
   }
 
-  // Don't leak error details in production
   const isDevelopment = process.env.NODE_ENV === "development";
 
   res.status(err.status || 500).json({
@@ -1360,9 +1348,18 @@ app.listen(PORT, () => {
   console.log(`   POST /api/songs`);
   console.log(`   POST /api/auth/signup`);
   console.log(`   POST /api/auth/login`);
+  console.log(`   GET  /api/emotion-bots`);
+  console.log(`   POST /api/emotion-bots`);
+  console.log(`   GET  /api/emotion-bots/:id`);
+  console.log(`   POST /api/emotion-bots/:id/chat`);
+  console.log(`   GET  /api/emotion-bots/:id/chat`);
+  console.log(`   POST /api/emotion-bots/:id/rate`);
+  console.log(`   GET  /api/emotion-bots/my/bots`);
+  console.log(`   PUT  /api/emotion-bots/:id`);
+  console.log(`   DELETE /api/emotion-bots/:id`);
   console.log(`   *    /api/moods`);
   console.log(`   *    /api/letters`);
   console.log(`   *    /api/mood-tracker`);
-  console.log(`   *    /api/daily-journal`); // ⬅️ ADD THIS LINE
+  console.log(`   *    /api/daily-journal`);
   console.log(`   *    /api/community`);
 });

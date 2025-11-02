@@ -45,7 +45,15 @@ router.post("/signup", async (req, res) => {
     const user = new User({ name, username, email: email.toLowerCase(), password: hashed });
     await user.save();
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
+    // Include more user info in token for better compatibility
+    const token = jwt.sign({ 
+      id: user._id,
+      userId: user._id,  // Added for compatibility
+      username: user.username || user.name,
+      email: user.email,
+      name: user.name
+    }, JWT_SECRET, { expiresIn: "7d" });
+    
     const safeUser = { id: user._id, name: user.name, email: user.email, username: user.username };
 
     res.json({ token, user: safeUser });
@@ -74,7 +82,15 @@ router.post("/login", async (req, res) => {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(400).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
+    // Include more user info in token for better compatibility
+    const token = jwt.sign({ 
+      id: user._id,
+      userId: user._id,  // Added for compatibility
+      username: user.username || user.name,
+      email: user.email,
+      name: user.name
+    }, JWT_SECRET, { expiresIn: "7d" });
+    
     const safeUser = { id: user._id, name: user.name, email: user.email, username: user.username };
     res.json({ token, user: safeUser });
   } catch (err) {
